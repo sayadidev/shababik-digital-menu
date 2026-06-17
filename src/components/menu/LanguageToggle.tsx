@@ -3,10 +3,6 @@
 import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
-/**
- * Persistent bilingual toggle — switches between English (LTR) and Arabic (RTL).
- * Preserves the current pathname across the switch.
- */
 export default function LanguageToggle() {
   const locale = useLocale();
   const pathname = usePathname();
@@ -16,10 +12,20 @@ export default function LanguageToggle() {
     <Link
       href={pathname}
       locale={other}
-      className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100 active:scale-95"
+      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted shadow-xs transition-all hover:border-brand/30 hover:text-foreground active:scale-95"
     >
-      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+      <svg
+        className="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 5h12M9 3v2m0 4V9m0 4v2m0 4v2M5 3l14 14m0 0v-4m0 4h-4"
+        />
       </svg>
       <span>{other === "ar" ? "العربية" : "English"}</span>
     </Link>

@@ -5,7 +5,8 @@ import { useLocale } from "next-intl";
 import { trackEvent } from "@/lib/actions/analytics";
 import LanguageToggle from "./LanguageToggle";
 import CategorySection from "./CategorySection";
-import type { MenuData } from "@/lib/menu";
+import ItemDetailSheet from "./ItemDetailSheet";
+import type { MenuData, ItemWithVariants } from "@/lib/menu";
 
 type Props = {
   data: MenuData;
@@ -17,6 +18,9 @@ export default function MenuView({ data }: Props) {
     data.categories[0]?.id ?? null,
   );
   const [loaded, setLoaded] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ItemWithVariants | null>(
+    null,
+  );
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +148,7 @@ export default function MenuView({ data }: Props) {
               key={cat.id}
               category={cat}
               sectionRef={observeSections}
+              onSelectItem={setSelectedItem}
             />
           ))
         )}
@@ -155,6 +160,12 @@ export default function MenuView({ data }: Props) {
           &copy; {new Date().getFullYear()} Shababik Cafe
         </p>
       </footer>
+
+      {/* Item detail sheet */}
+      <ItemDetailSheet
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+      />
     </div>
   );
 }

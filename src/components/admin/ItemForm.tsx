@@ -8,11 +8,17 @@ import { createItem, updateItem } from "@/lib/actions/item";
 import { setVariants } from "@/lib/actions/item-variant";
 import Toast from "@/components/admin/Toast";
 import imageCompression from "browser-image-compression";
+import { setItemImages } from "@/lib/actions/item-image";
 import type { CategoryRow, ItemRow, ItemVariantRow } from "@/lib/validations";
+
+type ItemInitialData = ItemRow & {
+  variants: ItemVariantRow[];
+  item_images?: { id: string; image_url: string; sort_order: number }[];
+};
 
 type Props = {
   categories: CategoryRow[];
-  initialData?: ItemRow & { variants: ItemVariantRow[] };
+  initialData?: ItemInitialData;
 };
 
 type VariantEntry = {
@@ -38,6 +44,14 @@ export default function ItemForm({ categories, initialData }: Props) {
   const [descAr, setDescAr] = useState(initialData?.description_ar ?? "");
   const [imageUrl, setImageUrl] = useState(initialData?.image_url ?? "");
   const [imageUploading, setImageUploading] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>(
+    initialData?.item_images
+      ? initialData.item_images
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((img) => img.image_url)
+      : [],
+  );
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [variants, setVariantsState] = useState<VariantEntry[]>(
     initialData?.variants?.length
       ? initialData.variants.map((v) => ({
@@ -63,10 +77,7 @@ export default function ItemForm({ categories, initialData }: Props) {
       prev.map((v, i) => (i === idx ? { ...v, [field]: value } : v)),
     );
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageUploading(true);
+  async function uploadFile(file: File): Promise<string | null> {
     try {
       const compressed = await imageCompression(file, {
         maxWidthOrHeight: 800,
@@ -81,24 +92,39 @@ export default function ItemForm({ categories, initialData }: Props) {
         .from("item-images")
         .upload(fileName, compressed, { upsert: true });
       if (error) {
-        setToast({
-          message: `${t("uploadImage")}: ${error.message}`,
-          type: "error",
-        });
-        return;
+        setToast({ message: `${t("uploadImage")}: ${error.message}`, type: "error" });
+        return null;
       }
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("item-images").getPublicUrl(fileName);
-      setImageUrl(publicUrl);
+      const { data: { publicUrl } } = supabase.storage
+        .from("item-images")
+        .getPublicUrl(fileName);
+      return publicUrl;
     } catch (err) {
       setToast({
         message: err instanceof Error ? err.message : "Upload failed",
         type: "error",
       });
-    } finally {
-      setImageUploading(false);
+      return null;
     }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    const url = await uploadFile(file);
+    if (url) setImageUrl(url);
+    setImageUploading(false);
+    e.target.value = "";
+  }
+
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGalleryUploading(true);
+    const url = await uploadFile(file);
+    if (url) setGalleryImages((prev) => [...prev, url]);
+    setGalleryUploading(false);
     e.target.value = "";
   }
 
@@ -143,6 +169,8 @@ export default function ItemForm({ categories, initialData }: Props) {
         view_count: initialData?.view_count ?? 0,
       };
 
+      let itemId: string | null = isEdit ? initialData!.id : null;
+
       if (isEdit && initialData) {
         const result = await updateItem(initialData.id, itemData);
         if (!result.success) throw new Error(result.error);
@@ -163,6 +191,7 @@ export default function ItemForm({ categories, initialData }: Props) {
         const result = await createItem(itemData);
         if (!result.success) throw new Error(result.error);
         const newId = result.data!.id;
+        itemId = newId;
         if (validVariants.length > 0) {
           const vResult = await setVariants(
             newId,
@@ -176,6 +205,12 @@ export default function ItemForm({ categories, initialData }: Props) {
           );
           if (!vResult.success) throw new Error(vResult.error);
         }
+      }
+
+      // Save gallery images
+      if (itemId && galleryImages.length > 0) {
+        const imgResult = await setItemImages(itemId, galleryImages);
+        if (!imgResult.success) throw new Error(imgResult.error);
       }
 
       setToast({ message: t("saveSuccess"), type: "success" });
@@ -344,6 +379,51 @@ export default function ItemForm({ categories, initialData }: Props) {
                 </button>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* Gallery Images */}
+        <section className="rounded-xl border border-gray-200 bg-white p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            {t("gallery")}
+          </h2>
+
+          <div className="flex flex-wrap gap-3">
+            {galleryImages.map((url, i) => (
+              <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                <img
+                  src={url}
+                  alt={`Gallery ${i + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setGalleryImages((prev) => prev.filter((_, j) => j !== i))}
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+                >
+                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-brand hover:text-brand">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleGalleryUpload}
+                disabled={galleryUploading}
+                className="hidden"
+              />
+            </label>
+            {galleryUploading && (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+              </div>
+            )}
           </div>
         </section>
 

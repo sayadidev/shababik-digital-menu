@@ -44,14 +44,19 @@ export async function getItems(
   ) as unknown as ItemWithCategory[];
 }
 
-type ItemWithVariants = ItemRow & { variants: ItemVariantRow[] };
+type ItemWithVariantsAndImages = ItemRow & {
+  variants: ItemVariantRow[];
+  item_images: { id: string; image_url: string; sort_order: number }[];
+};
 
-export async function getItem(id: string): Promise<ItemWithVariants> {
+export async function getItem(
+  id: string,
+): Promise<ItemWithVariantsAndImages> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("items")
-    .select("*, item_variants(*)")
+    .select("*, item_variants(*), item_images(*)")
     .eq("id", id)
     .single();
 
@@ -60,13 +65,15 @@ export async function getItem(id: string): Promise<ItemWithVariants> {
 
   const item = data as Record<string, unknown> & {
     item_variants?: ItemVariantRow[];
+    item_images?: { id: string; image_url: string; sort_order: number }[];
   };
 
   return {
     ...item,
     variants: item.item_variants ?? [],
+    item_images: item.item_images ?? [],
     item_variants: undefined,
-  } as unknown as ItemWithVariants;
+  } as unknown as ItemWithVariantsAndImages;
 }
 
 export async function createItem(

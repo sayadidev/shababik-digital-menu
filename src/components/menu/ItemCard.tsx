@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { trackEvent } from "@/lib/actions/analytics";
 import type { ItemWithVariants } from "@/lib/menu";
 
 type Props = {
   item: ItemWithVariants;
+  onSelect: (item: ItemWithVariants) => void;
 };
 
-export default function ItemCard({ item }: Props) {
+export default function ItemCard({ item, onSelect }: Props) {
   const locale = useLocale();
   const t = useTranslations("common");
 
@@ -17,13 +17,9 @@ export default function ItemCard({ item }: Props) {
   const description =
     locale === "ar" ? item.description_ar : item.description_en;
 
-  const handleTap = () => {
-    trackEvent("item_tap", item.id).catch(() => {});
-  };
-
   return (
     <article
-      onClick={handleTap}
+      onClick={() => onSelect(item)}
       className="group relative flex gap-4 rounded-xl border border-border bg-surface p-4 shadow-xs transition-all duration-200 hover:shadow-md active:scale-[0.99]"
     >
       {/* Bestseller badge */}

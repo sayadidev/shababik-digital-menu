@@ -39,4 +39,12 @@ export interface AnalyticsEvent {
   timestamp: string;
 }
 
+export interface ItemImage {
+  id: string;
+  item_id: string;
+  image_url: string;
+  sort_order: number;
+  created_at?: string;
+}
+
 export type Locale = "en" | "ar";

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Category, ItemVariant } from "@/types/database";
+import type { Category, ItemVariant, ItemImage } from "@/types/database";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ export type ItemWithVariants = {
   is_bestseller: boolean;
   view_count: number;
   item_variants: ItemVariant[];
+  item_images: ItemImage[];
 };
 
 export type MenuCategory = Category & {
@@ -27,10 +28,6 @@ export type MenuData = {
 
 // ─── Data fetching ───────────────────────────────────────────────────────────
 
-/**
- * Fetch the full public menu: categories + active items + variants.
- * Runs on the server using the anon key (RLS permits public SELECT).
- */
 export async function getMenuData(): Promise<MenuData> {
   const supabase = await createClient();
 
@@ -40,10 +37,10 @@ export async function getMenuData(): Promise<MenuData> {
     .select("*")
     .order("order_index", { ascending: true });
 
-  // 2. Fetch all active items with their variants
+  // 2. Fetch all active items with their variants and gallery images
   const { data: items } = await supabase
     .from("items")
-    .select("*, item_variants(*)")
+    .select("*, item_variants(*), item_images(*)")
     .eq("is_active", true);
 
   // 3. Group items by category, bestsellers first
@@ -74,4 +71,20 @@ export async function getMenuData(): Promise<MenuData> {
     .filter((cat) => cat.items.length > 0);
 
   return { categories: categoriesWithItems };
+}
+
+// ─── Single item fetch for detail view ───────────────────────────────────────
+
+export async function getItemById(
+  itemId: string,
+): Promise<ItemWithVariants | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("items")
+    .select("*, item_variants(*), item_images(*)")
+    .eq("id", itemId)
+    .single();
+
+  return data as unknown as ItemWithVariants | null;
 }

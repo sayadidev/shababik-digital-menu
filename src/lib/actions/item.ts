@@ -147,26 +147,19 @@ export async function deleteItem(
 
 export async function toggleActive(
   id: string,
+  newValue: boolean,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
   const supabase = createAdminClient();
 
-  const { data: current, error: fetchError } = await supabase
-    .from("items")
-    .select("is_active")
-    .eq("id", id)
-    .single();
-
-  if (fetchError) return { success: false, error: fetchError.message };
-  if (!current) return { success: false, error: "Item not found" };
-
   const { data: item, error } = await supabase
     .from("items")
-    .update({ is_active: !current.is_active })
+    .update({ is_active: newValue })
     .eq("id", id)
     .select()
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (!item) return { success: false, error: "Item not found" };
 
   revalidatePath("/admin");
   revalidateMenuPaths();
@@ -175,26 +168,19 @@ export async function toggleActive(
 
 export async function toggleBestseller(
   id: string,
+  newValue: boolean,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
   const supabase = createAdminClient();
 
-  const { data: current, error: fetchError } = await supabase
-    .from("items")
-    .select("is_bestseller")
-    .eq("id", id)
-    .single();
-
-  if (fetchError) return { success: false, error: fetchError.message };
-  if (!current) return { success: false, error: "Item not found" };
-
   const { data: item, error } = await supabase
     .from("items")
-    .update({ is_bestseller: !current.is_bestseller })
+    .update({ is_bestseller: newValue })
     .eq("id", id)
     .select()
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (!item) return { success: false, error: "Item not found" };
 
   revalidatePath("/admin");
   revalidateMenuPaths();

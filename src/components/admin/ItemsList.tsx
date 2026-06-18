@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
@@ -23,7 +23,6 @@ type Props = {
 
 export default function ItemsList({ items, categories }: Props) {
   const t = useTranslations("admin");
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [toast, setToast] = useState<{
@@ -31,6 +30,24 @@ export default function ItemsList({ items, categories }: Props) {
     type: "success" | "error";
   } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const router = useRouter();
+  const [toggling, setToggling] = useState<Set<string>>(new Set());
+  const [optimistic, setOptimistic] = useState<
+    Record<string, { is_active?: boolean; is_bestseller?: boolean }>
+  >({});
+
+  const getItem = useCallback(
+    (id: string) => {
+      const o = optimistic[id];
+      const item = items.find((i) => i.id === id)!;
+      return {
+        ...item,
+        is_active: o?.is_active ?? item.is_active,
+        is_bestseller: o?.is_bestseller ?? item.is_bestseller,
+      };
+    },
+    [items, optimistic],
+  );
 
   const filtered = items.filter((item) => {
     const q = search.toLowerCase();
@@ -45,21 +62,39 @@ export default function ItemsList({ items, categories }: Props) {
 
   const handleToggle = async (
     id: string,
-    action: typeof toggleActive | typeof toggleBestseller,
+    field: "is_active" | "is_bestseller",
+    currentValue: boolean,
   ) => {
-    const result = await action(id);
-    if (result.success) {
-      router.refresh();
-    } else {
+    setToggling((prev) => new Set(prev).add(id));
+    setOptimistic((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: !currentValue },
+    }));
+
+    const action =
+      field === "is_active" ? toggleActive : toggleBestseller;
+    const result = await action(id, !currentValue);
+
+    setToggling((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    if (!result.success) {
+      setOptimistic((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], [field]: currentValue },
+      }));
       setToast({ message: result.error || "Error", type: "error" });
     }
   };
 
   const handleDelete = async (id: string) => {
+    setDeleting(null);
     const result = await deleteItem(id);
     if (result.success) {
       setToast({ message: t("deleteSuccess"), type: "success" });
-      setDeleting(null);
       router.refresh();
     } else {
       setToast({ message: result.error || "Error", type: "error" });
@@ -151,33 +186,53 @@ export default function ItemsList({ items, categories }: Props) {
                 <td className="px-4 py-3">
                   <button
                     type="button"
-                    onClick={() => handleToggle(item.id, toggleActive)}
+                    onClick={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
+                    disabled={toggling.has(item.id)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      item.is_active ? "bg-green-500" : "bg-gray-300"
+                      getItem(item.id).is_active ? "bg-green-500" : "bg-gray-300"
                     }`}
-                    aria-label={item.is_active ? t("inStock") : t("outOfStock")}
+                    aria-label={getItem(item.id).is_active ? t("inStock") : t("outOfStock")}
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        item.is_active ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
+                    {toggling.has(item.id) ? (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          getItem(item.id).is_active ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    )}
                   </button>
                 </td>
                 <td className="px-4 py-3">
                   <button
                     type="button"
-                    onClick={() => handleToggle(item.id, toggleBestseller)}
+                    onClick={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
+                    disabled={toggling.has(item.id)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      item.is_bestseller ? "bg-brand" : "bg-gray-300"
+                      getItem(item.id).is_bestseller ? "bg-brand" : "bg-gray-300"
                     }`}
                     aria-label={t("bestseller")}
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        item.is_bestseller ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
+                    {toggling.has(item.id) ? (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          getItem(item.id).is_bestseller ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    )}
                   </button>
                 </td>
                 <td className="px-4 py-3">
@@ -246,32 +301,52 @@ export default function ItemsList({ items, categories }: Props) {
                 <span>{t("inStock")}</span>
                 <button
                   type="button"
-                  onClick={() => handleToggle(item.id, toggleActive)}
+                  onClick={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
+                  disabled={toggling.has(item.id)}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    item.is_active ? "bg-green-500" : "bg-gray-300"
+                    getItem(item.id).is_active ? "bg-green-500" : "bg-gray-300"
                   }`}
                 >
-                  <span
-                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                      item.is_active ? "translate-x-[18px]" : "translate-x-1"
-                    }`}
-                  />
+                  {toggling.has(item.id) ? (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <svg className="h-3 w-3 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        getItem(item.id).is_active ? "translate-x-[18px]" : "translate-x-1"
+                      }`}
+                    />
+                  )}
                 </button>
               </label>
               <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
                 <span>{t("bestseller")}</span>
                 <button
                   type="button"
-                  onClick={() => handleToggle(item.id, toggleBestseller)}
+                  onClick={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
+                  disabled={toggling.has(item.id)}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    item.is_bestseller ? "bg-brand" : "bg-gray-300"
+                    getItem(item.id).is_bestseller ? "bg-brand" : "bg-gray-300"
                   }`}
                 >
-                  <span
-                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                      item.is_bestseller ? "translate-x-[18px]" : "translate-x-1"
-                    }`}
-                  />
+                  {toggling.has(item.id) ? (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <svg className="h-3 w-3 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        getItem(item.id).is_bestseller ? "translate-x-[18px]" : "translate-x-1"
+                      }`}
+                    />
+                  )}
                 </button>
               </label>
             </div>

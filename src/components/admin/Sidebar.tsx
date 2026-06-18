@@ -27,7 +27,7 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 start-4 z-50 rounded-md border border-gray-200 bg-white p-2 shadow-sm md:hidden"
+        className="btn btn-ghost drawer-button fixed top-4 start-4 z-50 md:hidden"
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,26 +47,22 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed inset-y-0 start-0 z-50 w-64 transform border-e border-gray-200 bg-white transition-transform duration-200 ease-in-out md:static md:z-auto md:translate-x-0 ${
+        className={`fixed inset-y-0 start-0 z-50 w-64 border-e border-border bg-base-100 transition-transform duration-200 ease-in-out md:static md:z-auto md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"
         }`}
       >
-        <div className="flex h-16 items-center border-b border-gray-200 px-6">
-          <span className="text-lg font-bold text-foreground">Shababik</span>
+        <div className="flex h-16 items-center border-b border-border px-6">
+          <span className="text-lg font-bold text-base-content">Shababik</span>
         </div>
 
         <nav className="p-4">
-          <ul className="space-y-1">
+          <ul className="menu rounded-box gap-1">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? "bg-brand-light text-brand-dark"
-                      : "text-muted hover:bg-gray-100"
-                  }`}
+                  className={isActive(item.href) ? "active bg-brand-light text-brand-deep font-medium" : "text-muted"}
                 >
                   {t(item.labelKey)}
                 </Link>

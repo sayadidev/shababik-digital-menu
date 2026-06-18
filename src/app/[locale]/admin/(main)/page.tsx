@@ -6,9 +6,7 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-gray-900">
-        Dashboard
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
       <AnalyticsDashboard initialSummary={initialSummary} />
     </div>
   );

@@ -67,8 +67,7 @@ export default function MenuView({ data }: Props) {
   const isRtl = locale === "ar";
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl bg-background">
-      {/* Header */}
+    <div className="mx-auto min-h-screen max-w-2xl menu-page-bg">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-3.5">
           <div className="flex items-baseline gap-2">
@@ -82,7 +81,6 @@ export default function MenuView({ data }: Props) {
           <LanguageToggle />
         </div>
 
-        {/* Category pills */}
         <nav
           ref={navRef}
           className="scrollbar-hide overflow-x-auto border-t border-border px-5 py-2.5"
@@ -115,7 +113,6 @@ export default function MenuView({ data }: Props) {
         </nav>
       </header>
 
-      {/* Menu sections */}
       <main
         className={`px-5 py-7 transition-all duration-500 ease-out ${
           loaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
@@ -154,14 +151,12 @@ export default function MenuView({ data }: Props) {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border bg-surface px-5 py-5 text-center">
         <p className="text-xs text-muted">
           &copy; {new Date().getFullYear()} Shababik Cafe
         </p>
       </footer>
 
-      {/* Item detail sheet */}
       <ItemDetailSheet
         item={selectedItem}
         onClose={() => setSelectedItem(null)}

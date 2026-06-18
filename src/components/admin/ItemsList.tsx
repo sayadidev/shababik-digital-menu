@@ -23,6 +23,7 @@ type Props = {
 
 export default function ItemsList({ items, categories }: Props) {
   const t = useTranslations("admin");
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [toast, setToast] = useState<{
@@ -30,7 +31,6 @@ export default function ItemsList({ items, categories }: Props) {
     type: "success" | "error";
   } | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const router = useRouter();
   const [toggling, setToggling] = useState<Set<string>>(new Set());
   const [optimistic, setOptimistic] = useState<
     Record<string, { is_active?: boolean; is_bestseller?: boolean }>
@@ -104,10 +104,10 @@ export default function ItemsList({ items, categories }: Props) {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">{t("items")}</h1>
+        <h1 className="text-2xl font-bold">{t("items")}</h1>
         <Link
           href="/admin/items/new"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand/90"
+          className="btn btn-primary"
         >
           {t("addItem")}
         </Link>
@@ -127,12 +127,12 @@ export default function ItemsList({ items, categories }: Props) {
           placeholder={t("search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand focus:outline-none sm:w-64"
+          className="input input-bordered w-full sm:w-64"
         />
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand focus:outline-none sm:w-48"
+          className="select select-bordered w-full sm:w-48"
         >
           <option value="">{t("filterCategory")}</option>
           {categories.map((cat) => (
@@ -143,23 +143,23 @@ export default function ItemsList({ items, categories }: Props) {
         </select>
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white md:block">
-        <table className="w-full text-sm">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="table w-full">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
-              <th className="px-4 py-3">{t("image")}</th>
-              <th className="px-4 py-3">{t("itemNameEn")}</th>
-              <th className="px-4 py-3">{t("category")}</th>
-              <th className="px-4 py-3">{t("inStock")}</th>
-              <th className="px-4 py-3">{t("bestseller")}</th>
-              <th className="px-4 py-3">{t("actions")}</th>
+            <tr>
+              <th>{t("image")}</th>
+              <th>{t("itemNameEn")}</th>
+              <th>{t("category")}</th>
+              <th>{t("inStock")}</th>
+              <th>{t("bestseller")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => (
-              <tr key={item.id} className="border-b border-gray-100 last:border-0">
-                <td className="px-4 py-3">
-                  <div className="h-12 w-12 overflow-hidden rounded-lg bg-gray-100">
+              <tr key={item.id}>
+                <td>
+                  <div className="h-12 w-12 overflow-hidden rounded-lg bg-base-200">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -167,7 +167,7 @@ export default function ItemsList({ items, categories }: Props) {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-gray-300">
+                      <div className="flex h-full w-full items-center justify-center text-base-300">
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -175,78 +175,41 @@ export default function ItemsList({ items, categories }: Props) {
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 font-medium">
-                  {item.name_en}
-                  <br />
-                  <span className="text-xs text-gray-500">{item.name_ar}</span>
+                <td>
+                  <div className="font-medium">{item.name_en}</div>
+                  <div className="text-xs text-muted">{item.name_ar}</div>
                 </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {item.category_name_en}
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
+                <td className="text-muted">{item.category_name_en}</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-sm"
+                    checked={getItem(item.id).is_active}
+                    onChange={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
                     disabled={toggling.has(item.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      getItem(item.id).is_active ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                    aria-label={getItem(item.id).is_active ? t("inStock") : t("outOfStock")}
-                  >
-                    {toggling.has(item.id) ? (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <svg className="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      </span>
-                    ) : (
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          getItem(item.id).is_active ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    )}
-                  </button>
+                  />
                 </td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
+                <td>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-sm"
+                    checked={getItem(item.id).is_bestseller}
+                    onChange={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
                     disabled={toggling.has(item.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      getItem(item.id).is_bestseller ? "bg-brand" : "bg-gray-300"
-                    }`}
-                    aria-label={t("bestseller")}
-                  >
-                    {toggling.has(item.id) ? (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <svg className="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      </span>
-                    ) : (
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          getItem(item.id).is_bestseller ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    )}
-                  </button>
+                  />
                 </td>
-                <td className="px-4 py-3">
+                <td>
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/admin/items/${item.id}/edit`}
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-brand-dark transition hover:bg-brand-light"
+                      className="btn btn-soft btn-sm"
                     >
                       {t("editItem")}
                     </Link>
                     <button
                       type="button"
                       onClick={() => setDeleting(item.id)}
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      className="btn btn-soft btn-error btn-sm"
                     >
                       {t("delete")}
                     </button>
@@ -256,7 +219,7 @@ export default function ItemsList({ items, categories }: Props) {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="text-center text-muted py-8">
                   {t("noItems")}
                 </td>
               </tr>
@@ -267,140 +230,102 @@ export default function ItemsList({ items, categories }: Props) {
 
       <div className="space-y-4 md:hidden">
         {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-start gap-4">
-              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.name_en}
-                    className="h-full w-full object-cover"
+          <div key={item.id} className="card card-border border-border bg-base-100">
+            <div className="card-body p-4">
+              <div className="flex items-start gap-4">
+                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-base-200">
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.name_en}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-base-300">
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-base-content">{item.name_en}</p>
+                  <p className="text-xs text-muted">{item.name_ar}</p>
+                  <p className="mt-1 text-xs text-muted">{item.category_name_en}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-border pt-4">
+                <label className="flex items-center gap-2 text-xs font-medium text-muted">
+                  <span>{t("inStock")}</span>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-sm"
+                    checked={getItem(item.id).is_active}
+                    onChange={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
+                    disabled={toggling.has(item.id)}
                   />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-gray-300">
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                )}
+                </label>
+                <label className="flex items-center gap-2 text-xs font-medium text-muted">
+                  <span>{t("bestseller")}</span>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-sm"
+                    checked={getItem(item.id).is_bestseller}
+                    onChange={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
+                    disabled={toggling.has(item.id)}
+                  />
+                </label>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground">{item.name_en}</p>
-                <p className="text-xs text-gray-500">{item.name_ar}</p>
-                <p className="mt-1 text-xs text-gray-500">
-                  {item.category_name_en}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
-              <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                <span>{t("inStock")}</span>
+              <div className="mt-3 flex gap-2">
+                <Link
+                  href={`/admin/items/${item.id}/edit`}
+                  className="btn btn-soft btn-sm flex-1"
+                >
+                  {t("editItem")}
+                </Link>
                 <button
                   type="button"
-                  onClick={() => handleToggle(item.id, "is_active", getItem(item.id).is_active)}
-                  disabled={toggling.has(item.id)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    getItem(item.id).is_active ? "bg-green-500" : "bg-gray-300"
-                  }`}
+                  onClick={() => setDeleting(item.id)}
+                  className="btn btn-soft btn-error btn-sm flex-1"
                 >
-                  {toggling.has(item.id) ? (
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <svg className="h-3 w-3 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    </span>
-                  ) : (
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        getItem(item.id).is_active ? "translate-x-[18px]" : "translate-x-1"
-                      }`}
-                    />
-                  )}
+                  {t("delete")}
                 </button>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                <span>{t("bestseller")}</span>
-                <button
-                  type="button"
-                  onClick={() => handleToggle(item.id, "is_bestseller", getItem(item.id).is_bestseller)}
-                  disabled={toggling.has(item.id)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    getItem(item.id).is_bestseller ? "bg-brand" : "bg-gray-300"
-                  }`}
-                >
-                  {toggling.has(item.id) ? (
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <svg className="h-3 w-3 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    </span>
-                  ) : (
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        getItem(item.id).is_bestseller ? "translate-x-[18px]" : "translate-x-1"
-                      }`}
-                    />
-                  )}
-                </button>
-              </label>
-            </div>
-
-            <div className="mt-3 flex gap-2">
-              <Link
-                href={`/admin/items/${item.id}/edit`}
-                className="flex-1 rounded-lg bg-brand-light px-3 py-2 text-center text-xs font-medium text-brand-dark transition hover:bg-brand/20"
-              >
-                {t("editItem")}
-              </Link>
-              <button
-                type="button"
-                onClick={() => setDeleting(item.id)}
-                className="flex-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100"
-              >
-                {t("delete")}
-              </button>
+              </div>
             </div>
           </div>
         ))}
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+          <div className="card card-border border-base-300 bg-base-200 p-8 text-center text-muted">
             {t("noItems")}
           </div>
         )}
       </div>
 
-      {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-foreground">
-              {t("deleteItem")}
-            </h3>
-            <p className="mt-2 text-sm text-gray-600">{t("confirmDelete")}</p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleting(null)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-              >
-                {t("cancel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(deleting)}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-              >
-                {t("delete")}
-              </button>
-            </div>
+      <dialog className={`modal ${deleting ? "modal-open" : ""}`}>
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">{t("deleteItem")}</h3>
+          <p className="text-sm">{t("confirmDelete")}</p>
+          <div className="modal-action">
+            <button
+              type="button"
+              onClick={() => setDeleting(null)}
+              className="btn btn-ghost"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(deleting!)}
+              className="btn btn-error"
+            >
+              {t("delete")}
+            </button>
           </div>
         </div>
-      )}
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={() => setDeleting(null)}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }

@@ -207,7 +207,6 @@ export default function ItemForm({ categories, initialData }: Props) {
         }
       }
 
-      // Save gallery images
       if (itemId && galleryImages.length > 0) {
         const imgResult = await setItemImages(itemId, galleryImages);
         if (!imgResult.success) throw new Error(imgResult.error);
@@ -235,292 +234,252 @@ export default function ItemForm({ categories, initialData }: Props) {
         />
       )}
 
-      <h1 className="mb-8 text-2xl font-bold text-foreground">
+      <h1 className="mb-8 text-2xl font-bold">
         {isEdit ? t("editItem") : t("addItem")}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Info */}
-        <section className="rounded-xl border border-gray-200 bg-white p-6">
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t("category")}
-              </label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              >
-                <option value="">--</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name_en} / {cat.name_ar}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t("itemNameEn")}
-              </label>
-              <input
-                value={nameEn}
-                onChange={(e) => setNameEn(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t("itemNameAr")}
-              </label>
-              <input
-                value={nameAr}
-                onChange={(e) => setNameAr(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t("descriptionEn")}
-              </label>
-              <textarea
-                rows={3}
-                value={descEn}
-                onChange={(e) => setDescEn(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                {t("descriptionAr")}
-              </label>
-              <textarea
-                rows={3}
-                value={descAr}
-                onChange={(e) => setDescAr(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Image Upload */}
-        <section className="rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            {t("image")}
-          </h2>
-
-          <div className="flex items-start gap-4">
-            <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-gray-300">
-                  <svg
-                    className="h-8 w-8"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+        <div className="card card-border border-border bg-base-100">
+          <div className="card-body">
+            <div className="grid gap-4 md:grid-cols-2">
+              <fieldset className="fieldset">
+                <label className="fieldset-label">{t("category")}</label>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="select select-bordered w-full"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  <option value="">--</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name_en} / {cat.name_ar}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <fieldset className="fieldset">
+                <label className="fieldset-label">{t("itemNameEn")}</label>
+                <input
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  className="input input-bordered w-full"
+                />
+              </fieldset>
+              <fieldset className="fieldset">
+                <label className="fieldset-label">{t("itemNameAr")}</label>
+                <input
+                  value={nameAr}
+                  onChange={(e) => setNameAr(e.target.value)}
+                  className="input input-bordered w-full"
+                />
+              </fieldset>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <fieldset className="fieldset">
+                <label className="fieldset-label">{t("descriptionEn")}</label>
+                <textarea
+                  rows={3}
+                  value={descEn}
+                  onChange={(e) => setDescEn(e.target.value)}
+                  className="textarea textarea-bordered w-full"
+                />
+              </fieldset>
+              <fieldset className="fieldset">
+                <label className="fieldset-label">{t("descriptionAr")}</label>
+                <textarea
+                  rows={3}
+                  value={descAr}
+                  onChange={(e) => setDescAr(e.target.value)}
+                  className="textarea textarea-bordered w-full"
+                />
+              </fieldset>
+            </div>
+          </div>
+        </div>
+
+        <div className="card card-border border-border bg-base-100">
+          <div className="card-body">
+            <h2 className="card-title">{t("image")}</h2>
+
+            <div className="flex items-start gap-4">
+              <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-base-200">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    className="h-full w-full object-cover"
                   />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-base-300">
+                    <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1">
+                <label className="btn btn-outline gap-2 cursor-pointer">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {imageUploading ? (
+                    <span className="loading loading-spinner loading-xs" />
+                  ) : imageUploading ? t("uploading") : t("uploadImage")}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={imageUploading}
+                    className="hidden"
+                  />
+                </label>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl("")}
+                    className="btn btn-ghost btn-sm text-error ms-3"
+                  >
+                    {t("delete")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card card-border border-border bg-base-100">
+          <div className="card-body">
+            <h2 className="card-title">{t("gallery")}</h2>
+
+            <div className="flex flex-wrap gap-3">
+              {galleryImages.map((url, i) => (
+                <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-border bg-base-200">
+                  <img
+                    src={url}
+                    alt={`Gallery ${i + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setGalleryImages((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+                  >
+                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-base-300 text-base-300 transition hover:border-brand hover:text-brand">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                {imageUploading ? t("uploading") : t("uploadImage")}
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={imageUploading}
+                  onChange={handleGalleryUpload}
+                  disabled={galleryUploading}
                   className="hidden"
                 />
               </label>
-              {imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrl("")}
-                  className="ms-3 text-sm text-red-500 hover:text-red-700"
-                >
-                  {t("delete")}
-                </button>
+              {galleryUploading && (
+                <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-border bg-base-200">
+                  <span className="loading loading-spinner loading-md text-brand" />
+                </div>
               )}
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* Gallery Images */}
-        <section className="rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            {t("gallery")}
-          </h2>
+        <div className="card card-border border-border bg-base-100">
+          <div className="card-body">
+            <h2 className="card-title">Sizes / Prices</h2>
 
-          <div className="flex flex-wrap gap-3">
-            {galleryImages.map((url, i) => (
-              <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                <img
-                  src={url}
-                  alt={`Gallery ${i + 1}`}
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setGalleryImages((prev) => prev.filter((_, j) => j !== i))}
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+            <div className="space-y-3">
+              {variants.map((v, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-wrap items-end gap-3 rounded-lg border border-base-200 bg-base-200 p-3"
                 >
-                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-brand hover:text-brand">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleGalleryUpload}
-                disabled={galleryUploading}
-                className="hidden"
-              />
-            </label>
-            {galleryUploading && (
-              <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-              </div>
-            )}
+                  <fieldset className="fieldset flex-1 min-w-[120px]">
+                    <label className="fieldset-label text-xs">{t("variantSizeEn")}</label>
+                    <input
+                      value={v.size_name_en}
+                      onChange={(e) => updateVariant(idx, "size_name_en", e.target.value)}
+                      className="input input-bordered w-full"
+                    />
+                  </fieldset>
+                  <fieldset className="fieldset flex-1 min-w-[120px]">
+                    <label className="fieldset-label text-xs">{t("variantSizeAr")}</label>
+                    <input
+                      value={v.size_name_ar}
+                      onChange={(e) => updateVariant(idx, "size_name_ar", e.target.value)}
+                      className="input input-bordered w-full"
+                    />
+                  </fieldset>
+                  <fieldset className="fieldset w-28">
+                    <label className="fieldset-label text-xs">{t("priceUsd")}</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={v.price_usd}
+                      onChange={(e) => updateVariant(idx, "price_usd", e.target.value)}
+                      className="input input-bordered w-full"
+                    />
+                  </fieldset>
+                  <fieldset className="fieldset w-28">
+                    <label className="fieldset-label text-xs">{t("priceSyp")}</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={v.price_syp}
+                      onChange={(e) => updateVariant(idx, "price_syp", e.target.value)}
+                      className="input input-bordered w-full"
+                    />
+                  </fieldset>
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(idx)}
+                    disabled={variants.length === 1}
+                    className="btn btn-ghost btn-sm text-error disabled:opacity-30"
+                  >
+                    {t("removeVariant")}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addVariant}
+              className="btn btn-dashed btn-sm mt-3"
+            >
+              {t("addVariant")}
+            </button>
           </div>
-        </section>
+        </div>
 
-        {/* Sizes / Prices */}
-        <section className="rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Sizes / Prices
-          </h2>
-
-          <div className="space-y-3">
-            {variants.map((v, idx) => (
-              <div
-                key={idx}
-                className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3"
-              >
-                <div className="flex-1 min-w-[120px]">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    {t("variantSizeEn")}
-                  </label>
-                  <input
-                    value={v.size_name_en}
-                    onChange={(e) => updateVariant(idx, "size_name_en", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                  />
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    {t("variantSizeAr")}
-                  </label>
-                  <input
-                    value={v.size_name_ar}
-                    onChange={(e) => updateVariant(idx, "size_name_ar", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                  />
-                </div>
-                <div className="w-28">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    {t("priceUsd")}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={v.price_usd}
-                    onChange={(e) => updateVariant(idx, "price_usd", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                  />
-                </div>
-                <div className="w-28">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    {t("priceSyp")}
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={v.price_syp}
-                    onChange={(e) => updateVariant(idx, "price_syp", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeVariant(idx)}
-                  disabled={variants.length === 1}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-30"
-                >
-                  {t("removeVariant")}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={addVariant}
-            className="mt-3 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-brand hover:text-brand-dark"
-          >
-            {t("addVariant")}
-          </button>
-        </section>
-
-        {/* Actions */}
         <div className="flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={() => router.push("/admin/items")}
-            className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="btn btn-ghost"
           >
             {t("cancel")}
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-brand px-6 py-2 text-sm font-medium text-white transition hover:bg-brand/90 disabled:opacity-50"
+            className="btn btn-primary"
           >
-            {submitting ? "..." : t("save")}
+            {submitting ? <span className="loading loading-spinner" /> : t("save")}
           </button>
         </div>
       </form>

@@ -33,14 +33,12 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
       : item.description_en
     : "";
 
-  // Track view + animate in
   useEffect(() => {
     if (!item) return;
     trackEvent("item_tap", item.id).catch(() => {});
     requestAnimationFrame(() => setVisible(true));
   }, [item]);
 
-  // Close on Escape key
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -75,17 +73,15 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        {/* Handle bar */}
         <div className="flex justify-center pt-2 pb-1">
           <span className="h-1 w-10 rounded-full bg-border" />
         </div>
 
-        {/* Close button */}
         <div className="absolute end-4 top-4 z-10">
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50"
+            className="btn btn-circle btn-ghost btn-sm bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 border-0"
             aria-label="Close"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +90,6 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
           </button>
         </div>
 
-        {/* Image gallery */}
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl bg-brand-light/30">
           {allImages.length > 0 ? (
             <>
@@ -115,7 +110,7 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                         i === 0 ? allImages.length - 1 : i - 1,
                       )
                     }
-                    className={`absolute top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50 ${
+                    className={`btn btn-circle btn-ghost btn-sm absolute top-1/2 -translate-y-1/2 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 border-0 ${
                       isRtl ? "end-3" : "start-3"
                     }`}
                     aria-label="Previous image"
@@ -131,7 +126,7 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                         i === allImages.length - 1 ? 0 : i + 1,
                       )
                     }
-                    className={`absolute top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50 ${
+                    className={`btn btn-circle btn-ghost btn-sm absolute top-1/2 -translate-y-1/2 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 border-0 ${
                       isRtl ? "start-3" : "end-3"
                     }`}
                     aria-label="Next image"
@@ -167,26 +162,21 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
           )}
         </div>
 
-        {/* Content */}
         <div className="max-h-[50vh] overflow-y-auto px-5 py-4" dir={isRtl ? "rtl" : "ltr"}>
-          {/* Bestseller badge */}
           {item.is_bestseller && (
-            <span className="mb-2 inline-block rounded-full bg-brand-deep px-3 py-0.5 text-[11px] font-semibold text-white">
+            <span className="badge badge-secondary border-0 mb-2">
               {t("bestseller")}
             </span>
           )}
 
-          {/* Name */}
           <h2 className="text-xl font-bold text-foreground">{name}</h2>
 
-          {/* Description */}
           {description && (
             <p className="mt-2 text-sm leading-relaxed text-muted">
               {description}
             </p>
           )}
 
-          {/* Variants / Prices */}
           <div className="mt-5 space-y-2.5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
               {locale === "ar" ? "الأسعار" : "Pricing"}
@@ -216,11 +206,10 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
             })}
           </div>
 
-          {/* Close button at bottom */}
           <button
             type="button"
             onClick={handleClose}
-            className="mt-6 w-full rounded-xl border border-border bg-background py-3 text-sm font-medium text-muted transition hover:bg-border/50"
+            className="btn btn-outline mt-6 w-full rounded-xl"
           >
             {locale === "ar" ? "إغلاق" : "Close"}
           </button>

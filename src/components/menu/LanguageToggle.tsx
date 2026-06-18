@@ -12,7 +12,7 @@ export default function LanguageToggle() {
     <Link
       href={pathname}
       locale={other}
-      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted shadow-xs transition-all hover:border-brand/30 hover:text-foreground active:scale-95"
+      className="btn btn-outline btn-sm rounded-full border-border"
     >
       <svg
         className="h-3.5 w-3.5"

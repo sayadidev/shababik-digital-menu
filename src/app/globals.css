@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
 :root {
   --background: #f7f3ee;
@@ -9,16 +10,6 @@
   --brand-deep: #8b5e34;
   --muted: #7a7068;
   --border: #e8e0d8;
-  --amber-50: #fdf8f0;
-  --amber-100: #f0e6d8;
-  --amber-200: #e0d0b8;
-  --amber-300: #d0b890;
-  --amber-400: #c0a070;
-  --amber-500: #c8914a;
-  --amber-600: #b07830;
-  --amber-700: #8b5e34;
-  --amber-800: #6a4420;
-  --amber-900: #4a3018;
 }
 
 @theme inline {
@@ -32,6 +23,9 @@
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary: var(--brand);
+  --color-secondary: var(--brand-deep);
+  --color-accent: var(--brand);
 }
 
 html {
@@ -40,8 +34,6 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -50,11 +42,14 @@ body {
   text-align: right;
 }
 
-/* Scrollbar styling for category pills */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+.menu-page-bg {
+  background-color: var(--background);
 }

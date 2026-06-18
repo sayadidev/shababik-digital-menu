@@ -19,7 +19,7 @@ export default async function AdminMainLayout({ children, params }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
+    <div className="flex min-h-screen overflow-x-hidden bg-base-200">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-6xl">{children}</div>

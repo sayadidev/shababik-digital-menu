@@ -43,62 +43,55 @@ export default function CategoryFormModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="mb-4 text-lg font-semibold">
+    <dialog className="modal modal-open" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-4">
           {category ? t("editCategory") : t("addCategory")}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">
-              {t("categoryNameEn")}
-            </label>
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <fieldset className="fieldset">
+            <label className="fieldset-label">{t("categoryNameEn")}</label>
             <input
               type="text"
               value={nameEn}
               onChange={(e) => setNameEn(e.target.value)}
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+              className="input input-bordered w-full"
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">
-              {t("categoryNameAr")}
-            </label>
+          </fieldset>
+          <fieldset className="fieldset mt-4">
+            <label className="fieldset-label">{t("categoryNameAr")}</label>
             <input
               type="text"
               value={nameAr}
               onChange={(e) => setNameAr(e.target.value)}
               required
               dir="rtl"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+              className="input input-bordered w-full"
             />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
+          </fieldset>
+          <div className="modal-action">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-gray-100 disabled:opacity-50"
+              className="btn btn-ghost"
             >
               {t("cancel")}
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
+              className="btn btn-primary"
             >
-              {t("save")}
+              {submitting ? <span className="loading loading-spinner" /> : t("save")}
             </button>
           </div>
         </form>
       </div>
-    </div>
+      <form method="dialog" className="modal-backdrop">
+        <button onClick={onClose}>close</button>
+      </form>
+    </dialog>
   );
 }

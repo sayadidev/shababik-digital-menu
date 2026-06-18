@@ -31,32 +31,29 @@ export default function ConfirmDialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="mb-6 text-sm text-foreground">{message}</p>
-        <div className="flex justify-end gap-3">
+    <dialog className="modal modal-open" onClick={onCancel}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <p className="text-sm">{message}</p>
+        <div className="modal-action">
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-gray-100 disabled:opacity-50"
+            className="btn btn-ghost"
           >
             {t("cancel")}
           </button>
           <button
             onClick={handleConfirm}
             disabled={submitting}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            className="btn btn-error"
           >
-            {t("delete")}
+            {submitting ? <span className="loading loading-spinner" /> : t("delete")}
           </button>
         </div>
       </div>
-    </div>
+      <form method="dialog" className="modal-backdrop">
+        <button onClick={onCancel}>close</button>
+      </form>
+    </dialog>
   );
 }

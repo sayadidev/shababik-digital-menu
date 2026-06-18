@@ -25,7 +25,6 @@ export default function CategorySection({
       data-category-id={category.id}
       className="mb-12 scroll-mt-28"
     >
-      {/* Section header with decorative line */}
       <div className="mb-5 flex items-center gap-3">
         <h2 className="whitespace-nowrap text-lg font-bold text-foreground">
           {name}

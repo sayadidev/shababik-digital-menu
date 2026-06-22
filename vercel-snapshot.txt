@@ -1,7 +1,0 @@
-uid=43_0 RootWebArea url="https://shababik-menu.vercel.app/en"
-  uid=43_1 heading "This page couldn’t load" level="1"
-  uid=43_2 StaticText "A server error occurred. Reload to try again."
-  uid=43_3 form
-    uid=43_4 button "Reload"
-  uid=43_5 StaticText "ERROR "
-  uid=43_6 StaticText "1208863836"

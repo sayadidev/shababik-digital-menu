@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shababik — Admin Dashboard Concepts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#b87a4a',
+            'brand-light': '#e0ccb8',
+            'brand-deep': '#7a4a2a',
+            cream: '#f5efdf',
+            surface: '#fffcf8',
+            foreground: '#3B2818',
+            muted: '#8a7a6a',
+            border: '#d4c4b0',
+            accent: '#D4B895',
+            rose: '#C46A6A',
+            success: '#3a6a3a',
+            error: '#b55a5a',
+          },
+          fontFamily: { geist: ['Geist', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Geist', system-ui, sans-serif; background: #f5efdf; color: #3B2818; }
+    .card { background: #fffcf8; border-radius: 1.5rem; box-shadow: 0 1px 3px #d4c4b040, 0 4px 12px #d4c4b020; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px #b87a4a20; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; }
+    .num { font-size: 3rem; font-weight: 700; line-height: 1; }
+    .concept-link { text-decoration: none; color: inherit; display: block; }
+    .preview-box { height: 160px; border-radius: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="max-w-6xl mx-auto px-6 py-16">
+    <div class="flex items-center gap-4 mb-4">
+      <img src="/wooden-trans-logo.webp" alt="Shababik" class="h-12" />
+      <span class="text-2xl font-semibold text-foreground/60">/</span>
+      <h1 class="text-2xl font-semibold text-foreground">Admin Dashboard Concepts</h1>
+    </div>
+    <p class="text-muted text-lg mb-12 max-w-2xl">Five distinct layout approaches for the Shababik admin panel — each with a different navigation paradigm, dashboard hierarchy, and mobile strategy. All derived from the warm caramel + cream brand identity.</p>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Concept 1 -->
+      <a href="concept-1.html" class="concept-link card p-6">
+        <div class="preview-box bg-gradient-to-br from-[#7a4a2a] to-[#5a3a1a] text-white mb-5">
+          <span class="text-7xl opacity-20">☕</span>
+        </div>
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="text-xl font-bold">Café Command</h2>
+          <span class="badge bg-brand text-white">#1</span>
+        </div>
+        <p class="text-muted text-sm mb-4">Fixed dark sidebar, stats cards, bar chart, data tables. The classic admin layout — polished with caramel accents and smooth transitions.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge bg-brand-light text-brand-deep text-xs">Sidebar</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Stats Cards</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Data Table</span>
+        </div>
+      </a>
+
+      <!-- Concept 2 -->
+      <a href="concept-2.html" class="concept-link card p-6">
+        <div class="preview-box bg-gradient-to-br from-[#fffcf8] to-[#f0e8d8] text-foreground border border-border mb-5">
+          <span class="text-7xl opacity-30">⬆</span>
+        </div>
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="text-xl font-bold">Floating Bar</h2>
+          <span class="badge bg-brand text-white">#2</span>
+        </div>
+        <p class="text-muted text-sm mb-4">Bottom glass navigation, mobile-first feed layout, floating action button. Feels native and airy — like a modern fintech app.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge bg-brand-light text-brand-deep text-xs">Bottom Nav</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Glassmorphism</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">FAB</span>
+        </div>
+      </a>
+
+      <!-- Concept 3 -->
+      <a href="concept-3.html" class="concept-link card p-6">
+        <div class="preview-box bg-gradient-to-br from-[#b87a4a] to-[#D4B895] text-white mb-5">
+          <span class="text-7xl opacity-20">◈</span>
+        </div>
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="text-xl font-bold">The Atelier</h2>
+          <span class="badge bg-brand text-white">#3</span>
+        </div>
+        <p class="text-muted text-sm mb-4">Top navigation + pill tabs, hero stats bar, gallery-style image cards. Editorial, spacious, and visually driven — like a creative studio.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge bg-brand-light text-brand-deep text-xs">Top Nav</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Pill Tabs</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Gallery</span>
+        </div>
+      </a>
+
+      <!-- Concept 4 -->
+      <a href="concept-4.html" class="concept-link card p-6">
+        <div class="preview-box bg-gradient-to-br from-[#2a1f14] to-[#1a1208] text-white mb-5">
+          <span class="text-7xl opacity-20">⌘</span>
+        </div>
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="text-xl font-bold">The Terminal</h2>
+          <span class="badge bg-brand text-white">#4</span>
+        </div>
+        <p class="text-muted text-sm mb-4">Icon sidebar (expand on hover), dark theme, Cmd+K command palette, metric tiles, ranked data view. Power-user oriented and data-centric.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge bg-brand-light text-brand-deep text-xs">Icon Sidebar</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Dark Theme</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Cmd+K</span>
+        </div>
+      </a>
+
+      <!-- Concept 5 -->
+      <a href="concept-5.html" class="concept-link card p-6">
+        <div class="preview-box bg-gradient-to-br from-[#fffcf8] to-[#e0ccb8] text-foreground border border-border mb-5">
+          <span class="text-7xl opacity-20">▤</span>
+        </div>
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="text-xl font-bold">The Bento</h2>
+          <span class="badge bg-brand text-white">#5</span>
+        </div>
+        <p class="text-muted text-sm mb-4">Asymmetric bento grid dashboard, contextual sliding panel, card-based everything. Modular, widget-driven, and highly flexible.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge bg-brand-light text-brand-deep text-xs">Bento Grid</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Context Panel</span>
+          <span class="badge bg-brand-light text-brand-deep text-xs">Card Table</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

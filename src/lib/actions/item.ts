@@ -166,6 +166,38 @@ export async function toggleActive(
   return { success: true, data: item };
 }
 
+export async function setOfferPosition(
+  id: string,
+  position: number | null,
+): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
+  const supabase = createAdminClient();
+
+  // Clear this position from any other item first
+  if (position !== null) {
+    const { error: clearError } = await supabase
+      .from("items")
+      .update({ is_offer: false, offer_position: null })
+      .eq("offer_position", position)
+      .neq("id", id);
+
+    if (clearError) return { success: false, error: clearError.message };
+  }
+
+  const { data: item, error } = await supabase
+    .from("items")
+    .update({ is_offer: position !== null, offer_position: position })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  if (!item) return { success: false, error: "Item not found" };
+
+  revalidatePath("/admin");
+  revalidateMenuPaths();
+  return { success: true, data: item };
+}
+
 export async function toggleBestseller(
   id: string,
   newValue: boolean,

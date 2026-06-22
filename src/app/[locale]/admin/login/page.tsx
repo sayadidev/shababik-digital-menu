@@ -1,95 +1,107 @@
 "use client";
 
+import { FormEvent, useState } from "react";
+import { useParams } from "next/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { useState } from "react";
 
 export default function AdminLoginPage() {
-  const t = useTranslations("auth");
-  const tCommon = useTranslations("common");
-  const router = useRouter();
-  const supabase = createClient();
-
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale || "en";
+  const t = (en: string, ar: string) => locale === "ar" ? ar : en;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleSubmit(e: React.FormEvent) {
+  const otherLocale = locale === "en" ? "ar" : "en";
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError("");
     setLoading(true);
 
-    const { error: signInError } =
-      await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setLoading(false);
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
 
-    if (signInError) {
-      setError(signInError.message);
-      return;
+      router.push("/admin");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setLoading(false);
     }
-
-    router.push("/admin");
-  }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 bg-base-200">
-      <div className="card w-full max-w-sm bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h1 className="card-title justify-center text-2xl font-bold">
-            Shababik
-          </h1>
-          <p className="mb-2 text-center text-sm text-muted">
-            {t("signInToDashboard")}
-          </p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={locale === "ar" ? "rtl" : "ltr"}>
+      <div className="w-full max-w-sm">
+        <div className="bg-surface rounded-2xl shadow-[0_1px_3px_rgba(212,196,176,0.25),0_4px_12px_rgba(212,196,176,0.12)] p-8">
+          <div className="flex flex-col items-center mb-8">
+            <img src="/wooden-trans-logo.webp" alt="Shababik" className="w-16 h-16 object-contain mb-4" />
+            <h1 className="text-lg font-bold text-foreground">{t("Admin Login", "تسجيل الدخول")}</h1>
+            <p className="text-sm text-muted mt-1">{t("Sign in to manage your menu", "سجل الدخول لإدارة القائمة")}</p>
+          </div>
+
+          <Link
+            href="/admin/login"
+            locale={otherLocale}
+            className="text-xs text-primary font-medium hover:underline text-center block mb-4"
+          >
+            {t("Switch to العربية", "Switch to English")}
+          </Link>
 
           {error && (
-            <div role="alert" className="alert alert-error text-sm">
-              <span>{error}</span>
+            <div className="mb-4 p-3 rounded-xl bg-error-bg border border-error-border text-sm text-error">
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <fieldset className="fieldset">
-              <label className="fieldset-label" htmlFor="email">
-                {t("email")}
-              </label>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">{t("Email", "البريد الإلكتروني")}</label>
               <input
-                id="email"
                 type="email"
-                required
-                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input input-bordered w-full"
                 placeholder="admin@shababik.com"
-              />
-            </fieldset>
-
-            <fieldset className="fieldset">
-              <label className="fieldset-label" htmlFor="password">
-                {t("password")}
-              </label>
-              <input
-                id="password"
-                type="password"
                 required
-                autoComplete="current-password"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">{t("Password", "كلمة المرور")}</label>
+              <input
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input input-bordered w-full"
                 placeholder="••••••••"
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               />
-            </fieldset>
-
+            </div>
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary w-full"
+              className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? <span className="loading loading-spinner" /> : t("signIn")}
+              {loading && (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              )}
+              {loading ? t("Signing in...", "جاري تسجيل الدخول...") : t("Sign In", "تسجيل الدخول")}
             </button>
           </form>
         </div>

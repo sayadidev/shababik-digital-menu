@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Floating Bar — Admin Concept 2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: '#b87a4a', 'brand-light': '#e0ccb8', 'brand-deep': '#7a4a2a', cream: '#f5efdf', surface: '#fffcf8', foreground: '#3B2818', muted: '#8a7a6a', border: '#d4c4b0', accent: '#D4B895', rose: '#C46A6A', success: '#3a6a3a', error: '#b55a5a' }, fontFamily: { geist: ['Geist', 'system-ui', 'sans-serif'] } } } }
+    </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Geist', system-ui, sans-serif; background: #f5efdf; color: #3B2818; overflow-x: hidden; }
+    .glass { background: rgba(255, 252, 248, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 196, 176, 0.3); }
+    .bottom-nav { border-radius: 1.25rem 1.25rem 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.04); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); }
+    .bottom-nav.hidden { transform: translateY(100%); }
+    .fab { width: 52px; height: 52px; background: #b87a4a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 300; box-shadow: 0 4px 16px rgba(184, 122, 74, 0.35); transition: all 0.3s cubic-bezier(0.22,1,0.36,1); cursor: pointer; }
+    .fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(184, 122, 74, 0.45); }
+    .fab:active { transform: scale(0.95); }
+    .card { background: #fffcf8; border-radius: 1.25rem; box-shadow: 0 1px 3px #d4c4b040, 0 4px 12px #d4c4b020; transition: all 0.3s cubic-bezier(0.22,1,0.36,1); }
+    .card:active { transform: scale(0.98); }
+    .nav-tab { padding: 6px 0; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; color: #8a7a6a; transition: color 0.2s ease; cursor: pointer; position: relative; }
+    .nav-tab.active { color: #b87a4a; }
+    .nav-tab.active::after { content: ''; width: 20px; height: 3px; background: #b87a4a; border-radius: 999px; position: absolute; top: -2px; }
+    .nav-tab span { font-size: 10px; font-weight: 500; }
+    .sparkline { display: flex; align-items: flex-end; gap: 2px; }
+    .sparkline div { width: 4px; border-radius: 2px; background: #b87a4a; min-height: 4px; }
+    .rank-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; background: #e0ccb8; color: #7a4a2a; }
+    .rank-badge.top { background: #b87a4a; color: white; }
+    .desktop-rail { display: none; }
+    @media (min-width: 768px) {
+      .mobile-bottom { display: none !important; }
+      .desktop-rail { display: flex; }
+      body { padding-left: 72px; }
+    }
+    @media (max-width: 767px) {
+      .desktop-rail { display: none !important; }
+      body { padding-bottom: 80px; }
+    }
+    .counter { animation: countUp 1.5s ease-out forwards; }
+    @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .stagger > * { opacity: 0; animation: fadeUp 0.4s ease forwards; }
+    .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.1s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.15s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.2s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.25s; }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <!-- Desktop left rail -->
+  <aside class="desktop-rail fixed left-0 top-0 bottom-0 z-50 flex-col items-center py-6 gap-6 glass border-r border-border" style="width:72px">
+    <img src="/wooden-trans-logo.webp" alt="S" class="w-8 h-8 object-contain" />
+    <div class="flex flex-col items-center gap-5 flex-1">
+      <button class="w-10 h-10 rounded-xl flex items-center justify-center text-brand bg-brand/10 transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></button>
+      <button class="w-10 h-10 rounded-xl flex items-center justify-center text-muted hover:text-foreground hover:bg-brand-light/30 transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></button>
+      <button class="w-10 h-10 rounded-xl flex items-center justify-center text-muted hover:text-foreground hover:bg-brand-light/30 transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></button>
+    </div>
+    <button class="w-10 h-10 rounded-full bg-brand/10 text-brand flex items-center justify-center text-sm font-semibold">A</button>
+  </aside>
+
+  <!-- Main content -->
+  <main class="min-h-screen">
+    <!-- Slim top bar -->
+    <header class="sticky top-0 z-40 glass px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">S</div>
+        <span class="text-sm font-semibold hidden sm:inline">Dashboard</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-muted px-3 py-1.5 bg-brand-light/30 rounded-full">Today · Jun 22</span>
+        <div class="w-7 h-7 rounded-full bg-brand-light flex items-center justify-center text-xs font-medium text-brand-deep">EN</div>
+      </div>
+    </header>
+
+    <div class="p-5 md:p-8 max-w-4xl mx-auto space-y-5 stagger">
+      <!-- KPI row -->
+      <div class="grid grid-cols-3 gap-3 md:gap-5">
+        <div class="card p-4 md:p-5">
+          <p class="text-xs text-muted mb-1">Views Today</p>
+          <p class="text-2xl md:text-3xl font-bold counter">1,247</p>
+          <p class="text-xs text-success mt-1">↑ 12%</p>
+        </div>
+        <div class="card p-4 md:p-5">
+          <p class="text-xs text-muted mb-1">This Week</p>
+          <p class="text-2xl md:text-3xl font-bold counter">8,463</p>
+          <p class="text-xs text-success mt-1">↑ 8.2%</p>
+        </div>
+        <div class="card p-4 md:p-5">
+          <p class="text-xs text-muted mb-1">Total Items</p>
+          <p class="text-2xl md:text-3xl font-bold counter">43</p>
+          <p class="text-xs text-muted mt-1">8 categories</p>
+        </div>
+      </div>
+
+      <!-- Sparkline card -->
+      <div class="card p-5 md:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold">Views Trend (7 days)</h3>
+          <span class="text-xs text-success">+5.2% vs last week</span>
+        </div>
+        <div class="sparkline gap-1 h-24 items-end" style="display:flex">
+          <div style="height:40%;width:100%"></div>
+          <div style="height:55%;width:100%"></div>
+          <div style="height:45%;width:100%"></div>
+          <div style="height:70%;width:100%"></div>
+          <div style="height:50%;width:100%"></div>
+          <div style="height:80%;width:100%"></div>
+          <div style="height:65%;width:100%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-muted mt-2">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+
+      <!-- Trending list + Quick actions 2-col -->
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="card p-5">
+          <h3 class="text-sm font-semibold mb-4">Trending Items</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="rank-badge top">1</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Shawarma Plate</p>
+                <p class="text-xs text-muted">342 views</p>
+              </div>
+              <span class="text-xs text-success">↑ 23%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="rank-badge">2</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Mansaf</p>
+                <p class="text-xs text-muted">287 views</p>
+              </div>
+              <span class="text-xs text-success">↑ 15%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="rank-badge">3</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Kunafa</p>
+                <p class="text-xs text-muted">201 views</p>
+              </div>
+              <span class="text-xs text-muted">→ 0%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="rank-badge">4</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Arabic Coffee</p>
+                <p class="text-xs text-muted">178 views</p>
+              </div>
+              <span class="text-xs text-success">↑ 8%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="rank-badge">5</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Hummus</p>
+                <p class="text-xs text-muted">145 views</p>
+              </div>
+              <span class="text-xs error" style="color:#b55a5a">↓ 3%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <h3 class="text-sm font-semibold mb-4">Quick Actions</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="p-4 rounded-xl border border-border text-left hover:border-brand hover:bg-brand/5 transition-all">
+              <p class="text-lg mb-1">🍽</p>
+              <p class="text-sm font-medium">New Item</p>
+              <p class="text-xs text-muted">Add to menu</p>
+            </button>
+            <button class="p-4 rounded-xl border border-border text-left hover:border-brand hover:bg-brand/5 transition-all">
+              <p class="text-lg mb-1">📂</p>
+              <p class="text-sm font-medium">Category</p>
+              <p class="text-xs text-muted">Organize menu</p>
+            </button>
+            <button class="p-4 rounded-xl border border-border text-left hover:border-brand hover:bg-brand/5 transition-all">
+              <p class="text-lg mb-1">📊</p>
+              <p class="text-sm font-medium">Report</p>
+              <p class="text-xs text-muted">View analytics</p>
+            </button>
+            <button class="p-4 rounded-xl border border-border text-left hover:border-brand hover:bg-brand/5 transition-all">
+              <p class="text-lg mb-1">👁</p>
+              <p class="text-sm font-medium">Preview</p>
+              <p class="text-xs text-muted">See live menu</p>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent items as horizontal scroll on mobile, grid on desktop -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold">Recent Items</h3>
+          <button class="text-xs text-brand font-medium">View All →</button>
+        </div>
+        <div class="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto pb-2 md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
+          <div class="card p-3 min-w-[140px] md:min-w-0 shrink-0 md:shrink flex flex-col items-center text-center gap-2 border border-border/50 shadow-none">
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 mx-auto"></div>
+            <p class="text-xs font-medium leading-tight">Shawarma Plate</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">Active</span>
+          </div>
+          <div class="card p-3 min-w-[140px] md:min-w-0 shrink-0 md:shrink flex flex-col items-center text-center gap-2 border border-border/50 shadow-none">
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 mx-auto"></div>
+            <p class="text-xs font-medium leading-tight">Mansaf</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">Active</span>
+          </div>
+          <div class="card p-3 min-w-[140px] md:min-w-0 shrink-0 md:shrink flex flex-col items-center text-center gap-2 border border-border/50 shadow-none">
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 mx-auto"></div>
+            <p class="text-xs font-medium leading-tight">Kunafa</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">Active</span>
+          </div>
+          <div class="card p-3 min-w-[140px] md:min-w-0 shrink-0 md:shrink flex flex-col items-center text-center gap-2 border border-border/50 shadow-none">
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 mx-auto"></div>
+            <p class="text-xs font-medium leading-tight">Arabic Coffee</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-muted/20 text-muted font-medium">Inactive</span>
+          </div>
+          <div class="card p-3 min-w-[140px] md:min-w-0 shrink-0 md:shrink flex flex-col items-center text-center gap-2 border border-border/50 shadow-none">
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 mx-auto"></div>
+            <p class="text-xs font-medium leading-tight">Hummus</p>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">Active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile bottom nav (glass) -->
+  <nav class="mobile-bottom bottom-nav fixed bottom-0 left-0 right-0 z-50 glass px-2 py-1 flex items-start pt-3" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+    <button class="nav-tab active"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span>Dashboard</span></button>
+    <button class="nav-tab"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg><span>Categories</span></button>
+    <button class="fab relative -top-3 flex items-center justify-center text-2xl font-light leading-none">+</button>
+    <button class="nav-tab"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span>Items</span></button>
+    <button class="nav-tab"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span>Analytics</span></button>
+  </nav>
+</body>
+</html>

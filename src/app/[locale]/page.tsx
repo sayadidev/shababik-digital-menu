@@ -2,10 +2,9 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getMenuData } from "@/lib/menu";
-import MenuView from "@/components/menu/MenuView";
+import Design10 from "@/components/designs/Design10";
 import SkeletonMenu from "@/components/menu/SkeletonMenu";
 
-// ISR: revalidate at most every 60 seconds, or immediately when admin makes a change
 export const revalidate = 60;
 
 type Props = {
@@ -15,9 +14,8 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "menu" });
-
   return {
-    title: t("meta_title"),
+    title: `Design 10 — ${t("meta_title")}`,
     description: t("meta_description"),
     openGraph: {
       title: t("meta_title"),
@@ -34,7 +32,7 @@ export default async function HomePage() {
 
   return (
     <Suspense fallback={<SkeletonMenu />}>
-      <MenuView data={data} />
+      <Design10 data={data} />
     </Suspense>
   );
 }

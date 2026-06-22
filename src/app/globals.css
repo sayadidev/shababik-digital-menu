@@ -1,55 +1,147 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-:root {
-  --background: #f7f3ee;
-  --foreground: #1a1614;
-  --surface: #ffffff;
-  --brand: #c8914a;
-  --brand-light: #f0e6d8;
-  --brand-deep: #8b5e34;
-  --muted: #7a7068;
-  --border: #e8e0d8;
+/* ── Admin Theme: Warm Caramel / Wooden Brown ── */
+:root,
+:root:not([data-theme]) {
+  --background: #f5efdf;
+  --foreground: #3B2818;
+  --surface: #fffcf8;
+  --primary: #9a6a3a;
+  --primary-content: #ffffff;
+  --secondary: #7a5a3a;
+  --secondary-content: #ffffff;
+  --accent: #D4B895;
+  --accent-content: #3B2818;
+  --muted: #8a7a6a;
+  --border: #d4c4b0;
+  --rose: #C46A6A;
+  --error: #b55a5a;
+  --error-bg: #fce8e8;
+  --error-border: #e8b4b4;
+  --error-content: #ffffff;
+  --success: #5a8a3a;
+  --success-bg: #eaf5e8;
+  --success-border: #b8d8b4;
+  --success-content: #ffffff;
+
+  /* ── daisyUI 5 OKLCH overrides ── */
+  --p: 0.48 0.07 65;
+  --pf: 0.38 0.07 65;
+  --pc: 0.95 0.01 85;
+  --s: 0.35 0.04 55;
+  --sf: 0.28 0.04 55;
+  --sc: 0.95 0.01 85;
+  --a: 0.72 0.05 75;
+  --af: 0.62 0.05 75;
+  --ac: 0.25 0.02 55;
+  --n: 0.30 0.02 50;
+  --nf: 0.25 0.02 50;
+  --nc: 0.95 0.01 85;
+  --b1: 0.92 0.02 85;
+  --b2: 0.88 0.02 80;
+  --b3: 0.84 0.02 78;
+  --bc: 0.25 0.02 55;
+  --in: 0.55 0.02 60;
+  --in-c: 0.95 0.01 85;
+  --wa: 0.58 0.07 75;
+  --wa-c: 0.95 0.01 85;
+  --er: 0.48 0.10 30;
+  --er-c: 0.95 0.01 85;
+  --su: 0.48 0.07 130;
+  --su-c: 0.95 0.01 85;
+
+  /* ── Override daisyUI's Lab color generation with hex values ── */
+  --color-background: #f5efdf;
+  --color-foreground: #3b2818;
+  --color-surface: #fffcf8;
+  --color-primary: #9a6a3a;
+  --color-primary-content: #fff;
+  --color-secondary: #7a5a3a;
+  --color-secondary-content: #fff;
+  --color-accent: #d4b895;
+  --color-accent-content: #3b2818;
+  --color-muted: #8a7a6a;
+  --color-border: #d4c4b0;
+  --color-rose: #c46a6a;
+  --color-error: #b55a5a;
+  --color-error-content: #fff;
+  --color-error-bg: #fce8e8;
+  --color-error-border: #e8b4b4;
+  --color-success: #5a8a3a;
+  --color-success-content: #fff;
+  --color-success-bg: #eaf5e8;
+  --color-success-border: #b8d8b4;
+  --color-neutral: #5a4a3a;
+  --color-neutral-content: #f5f0ec;
+  --color-base-100: #fffcf8;
+  --color-base-200: #f5f0ec;
+  --color-base-300: #e8e0d8;
+  --color-base-content: #3b2818;
+  --color-info: #8a7a6a;
+  --color-info-content: #fff;
+  --color-warning: #c4954a;
+  --color-warning-content: #fff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-brand: var(--brand);
-  --color-brand-light: var(--brand-light);
-  --color-brand-deep: var(--brand-deep);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
+@theme {
+  --color-background: #f5efdf;
+  --color-foreground: #3B2818;
+  --color-surface: #fffcf8;
+  --color-primary: #9a6a3a;
+  --color-primary-content: #ffffff;
+  --color-secondary: #7a5a3a;
+  --color-secondary-content: #ffffff;
+  --color-accent: #D4B895;
+  --color-accent-content: #3B2818;
+  --color-muted: #8a7a6a;
+  --color-border: #d4c4b0;
+  --color-rose: #C46A6A;
+  --color-error: #b55a5a;
+  --color-error-content: #ffffff;
+  --color-error-bg: #fce8e8;
+  --color-error-border: #e8b4b4;
+  --color-success: #5a8a3a;
+  --color-success-content: #ffffff;
+  --color-success-bg: #eaf5e8;
+  --color-success-border: #b8d8b4;
+  --color-neutral: #5a4a3a;
+  --color-neutral-content: #f5f0ec;
+  --color-base-100: #fffcf8;
+  --color-base-200: #f5f0ec;
+  --color-base-300: #e8e0d8;
+  --color-base-content: #3B2818;
+  --color-info: #8a7a6a;
+  --color-info-content: #ffffff;
+  --color-warning: #c4954a;
+  --color-warning-content: #ffffff;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-primary: var(--brand);
-  --color-secondary: var(--brand-deep);
-  --color-accent: var(--brand);
 }
 
-html {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
+html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+@keyframes fade-in-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fade-in-up 0.35s ease-out both; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+[dir="rtl"] { text-align: right; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.menu-page-bg { background-color: var(--background); }
 
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ══════════════════════════════════════════════════
+   Design 10 — Chai Spice  (cinnamon, warm orange)
+   ══════════════════════════════════════════════════ */
 
-[dir="rtl"] {
-  text-align: right;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.menu-page-bg {
-  background-color: var(--background);
+[data-theme="10"] {
+  --background: #e8d8c4;
+  --foreground: #2e2218;
+  --surface: #f8f4ec;
+  --brand: #b8743a;
+  --brand-light: #e0ccb8;
+  --brand-deep: #7a4a2a;
+  --muted: #7a6a5a;
+  --border: #ccbca8;
+  --color-primary: #b8743a;
+  --color-secondary: #7a4a2a;
+  --color-accent: #9a5c2a;
 }

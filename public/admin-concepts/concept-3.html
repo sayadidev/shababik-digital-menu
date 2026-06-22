@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Atelier — Admin Concept 3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: '#b87a4a', 'brand-light': '#e0ccb8', 'brand-deep': '#7a4a2a', cream: '#f5efdf', surface: '#fffcf8', foreground: '#3B2818', muted: '#8a7a6a', border: '#d4c4b0', accent: '#D4B895', rose: '#C46A6A', success: '#3a6a3a', error: '#b55a5a' }, fontFamily: { geist: ['Geist', 'system-ui', 'sans-serif'] } } } }
+    </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Geist', system-ui, sans-serif; background: #f5efdf; color: #3B2818; }
+    .top-nav { background: #fffcf8; border-bottom: 1px solid #d4c4b0; }
+    .tab-pill { padding: 6px 18px; border-radius: 999px; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease; cursor: pointer; color: #8a7a6a; }
+    .tab-pill:hover { color: #3B2818; background: #e0ccb850; }
+    .tab-pill.active { background: #b87a4a; color: white; }
+    .hero-stat { text-align: center; padding: 0 1.5rem; }
+    .hero-stat:not(:last-child) { border-right: 1px solid #d4c4b0; }
+    .hero-stat .num { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+    .hero-stat .label { font-size: 0.875rem; color: #8a7a6a; margin-top: 4px; }
+    .gallery-card { border-radius: 1rem; overflow: hidden; position: relative; aspect-ratio: 4/3; cursor: pointer; transition: all 0.4s cubic-bezier(0.22,1,0.36,1); }
+    .gallery-card:hover { transform: scale(1.02); box-shadow: 0 12px 32px rgba(184,122,74,0.15); }
+    .gallery-card .gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(59,40,24,0.8) 0%, transparent 50%); }
+    .gallery-card .info { position: absolute; bottom: 0; left: 0; right: 0; padding: 1rem 1.25rem; color: white; }
+    .card { background: #fffcf8; border-radius: 1.25rem; box-shadow: 0 1px 3px #d4c4b040, 0 4px 12px #d4c4b020; transition: all 0.3s cubic-bezier(0.22,1,0.36,1); }
+    .item-row { transition: all 0.2s ease; cursor: pointer; border-radius: 0.75rem; }
+    .item-row:hover { background: #e0ccb840; }
+    .underline-slide { position: relative; }
+    .underline-slide::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: #b87a4a; border-radius: 1px; transform: scaleX(0); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); transform-origin: left; }
+    .underline-slide:hover::after { transform: scaleX(1); }
+    @media (max-width: 768px) {
+      .hero-stat { border-right: none !important; padding: 0.5rem 0; }
+      .hero-stat .num { font-size: 1.75rem; }
+      .desktop-only { display: none; }
+      .scroll-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .scroll-tabs::-webkit-scrollbar { display: none; }
+    }
+    @media (min-width: 769px) {
+      .mobile-only { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Nav -->
+  <header class="top-nav sticky top-0 z-40">
+    <div class="flex items-center justify-between px-6 py-3 max-w-7xl mx-auto">
+      <div class="flex items-center gap-4">
+        <img src="/wooden-trans-logo.webp" alt="Shababik" class="h-8 object-contain" />
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-muted font-medium hidden sm:block">Welcome back, Ahmad</span>
+        <div class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-semibold">A</div>
+        <div class="w-8 h-8 rounded-full bg-brand-light text-brand-deep flex items-center justify-center text-xs font-semibold">EN</div>
+      </div>
+    </div>
+    <!-- Secondary pill tabs -->
+    <div class="scroll-tabs flex items-center gap-2 px-6 pb-3 max-w-7xl mx-auto" style="margin-top:-4px">
+      <span class="tab-pill active">Dashboard</span>
+      <span class="tab-pill">Categories</span>
+      <span class="tab-pill">Items</span>
+      <span class="tab-pill">Analytics</span>
+      <span class="tab-pill ml-auto desktop-only" style="background:#e0ccb8;color:#7a4a2a">+ New</span>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <!-- Hero stats bar -->
+    <div class="card flex flex-col sm:flex-row items-center justify-around py-6 px-4">
+      <div class="hero-stat"><div class="num" style="color:#b87a4a">1,247</div><div class="label">Views Today</div></div>
+      <div class="hero-stat"><div class="num" style="color:#b87a4a">8,463</div><div class="label">This Week</div></div>
+      <div class="hero-stat"><div class="num" style="color:#b87a4a">43</div><div class="label">Total Items</div></div>
+      <div class="hero-stat" style="border-right:none"><div class="num" style="color:#b87a4a">8</div><div class="label">Categories</div></div>
+    </div>
+
+    <!-- Row: Trending + Recent Activity -->
+    <div class="grid lg:grid-cols-3 gap-6">
+      <div class="card p-6 lg:col-span-2">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-semibold">Trending Items</h2>
+          <a href="#" class="text-sm text-brand font-medium underline-slide">View all</a>
+        </div>
+        <div class="space-y-1">
+          <div class="item-row flex items-center gap-4 px-3 py-3">
+            <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-xs font-bold shrink-0">1</span>
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 shrink-0"></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium">Shawarma Plate</p><p class="text-xs text-muted">Main Courses</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">342</p><p class="text-xs text-success">↑ 23%</p></div>
+          </div>
+          <div class="item-row flex items-center gap-4 px-3 py-3">
+            <span class="w-7 h-7 rounded-full bg-accent text-brand-deep flex items-center justify-center text-xs font-bold shrink-0">2</span>
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 shrink-0"></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium">Mansaf</p><p class="text-xs text-muted">Main Courses</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">287</p><p class="text-xs text-success">↑ 15%</p></div>
+          </div>
+          <div class="item-row flex items-center gap-4 px-3 py-3">
+            <span class="w-7 h-7 rounded-full bg-accent text-brand-deep flex items-center justify-center text-xs font-bold shrink-0">3</span>
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 shrink-0"></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium">Kunafa</p><p class="text-xs text-muted">Desserts</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">201</p><p class="text-xs text-muted">→ 0%</p></div>
+          </div>
+          <div class="item-row flex items-center gap-4 px-3 py-3">
+            <span class="w-7 h-7 rounded-full bg-accent text-brand-deep flex items-center justify-center text-xs font-bold shrink-0">4</span>
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 shrink-0"></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium">Arabic Coffee</p><p class="text-xs text-muted">Beverages</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">178</p><p class="text-xs text-success">↑ 8%</p></div>
+          </div>
+          <div class="item-row flex items-center gap-4 px-3 py-3">
+            <span class="w-7 h-7 rounded-full bg-accent text-brand-deep flex items-center justify-center text-xs font-bold shrink-0">5</span>
+            <div class="w-12 h-12 rounded-xl bg-brand-light/50 shrink-0"></div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium">Hummus</p><p class="text-xs text-muted">Appetizers</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">145</p><p class="text-xs text-error" style="color:#b55a5a">↓ 3%</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <h2 class="font-semibold mb-6">Recent Activity</h2>
+        <div class="space-y-5">
+          <div class="flex gap-3">
+            <div class="w-2 h-2 rounded-full bg-brand mt-1.5 shrink-0"></div>
+            <div><p class="text-sm font-medium">Item updated</p><p class="text-xs text-muted">Shawarma Plate price changed</p><p class="text-xs text-muted mt-0.5">2 min ago</p></div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
+            <div><p class="text-sm font-medium">Category created</p><p class="text-xs text-muted">"Specialty Drinks" added</p><p class="text-xs text-muted mt-0.5">1 hour ago</p></div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></div>
+            <div><p class="text-sm font-medium">Item added</p><p class="text-xs text-muted">"Sahlab" added to Desserts</p><p class="text-xs text-muted mt-0.5">3 hours ago</p></div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-2 h-2 rounded-full bg-muted mt-1.5 shrink-0"></div>
+            <div><p class="text-sm font-medium">Item deactivated</p><p class="text-xs text-muted">"Ice Coffee" marked inactive</p><p class="text-xs text-muted mt-0.5">5 hours ago</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category gallery -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold">Categories</h2>
+        <a href="#" class="text-sm text-brand font-medium underline-slide">Manage</a>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="gallery-card" style="background: linear-gradient(135deg, #b87a4a, #D4B895);">
+          <div class="gradient"></div>
+          <div class="info"><p class="font-semibold text-lg">Main Courses</p><p class="text-sm opacity-90">أطباق رئيسية</p></div>
+        </div>
+        <div class="gallery-card" style="background: linear-gradient(135deg, #7a4a2a, #b87a4a);">
+          <div class="gradient"></div>
+          <div class="info"><p class="font-semibold text-lg">Appetizers</p><p class="text-sm opacity-90">مقبلات</p></div>
+        </div>
+        <div class="gallery-card" style="background: linear-gradient(135deg, #C46A6A, #D4B895);">
+          <div class="gradient"></div>
+          <div class="info"><p class="font-semibold text-lg">Desserts</p><p class="text-sm opacity-90">حلويات</p></div>
+        </div>
+        <div class="gallery-card" style="background: linear-gradient(135deg, #3a6a3a, #8aaa7a);">
+          <div class="gradient"></div>
+          <div class="info"><p class="font-semibold text-lg">Beverages</p><p class="text-sm opacity-90">مشروبات</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini table: all items -->
+    <div class="card overflow-hidden">
+      <div class="flex items-center justify-between p-6 pb-4">
+        <h2 class="font-semibold">All Items</h2>
+        <button class="text-sm text-brand font-medium">+ Add Item</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+              <th class="text-left px-6 py-3 font-medium">Name</th>
+              <th class="text-left px-6 py-3 font-medium">Category</th>
+              <th class="text-left px-6 py-3 font-medium">Price (USD)</th>
+              <th class="text-left px-6 py-3 font-medium">Status</th>
+              <th class="text-left px-6 py-3 font-medium">Views</th>
+              <th class="text-right px-6 py-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="item-row border-b border-border/50">
+              <td class="px-6 py-4 font-medium">Shawarma Plate</td>
+              <td class="px-6 py-4 text-muted">Main Courses</td>
+              <td class="px-6 py-4">$8.50</td>
+              <td class="px-6 py-4"><span class="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-medium">Active</span></td>
+              <td class="px-6 py-4 text-muted">342</td>
+              <td class="px-6 py-4 text-right text-muted hover:text-foreground transition-colors cursor-pointer">✎</td>
+            </tr>
+            <tr class="item-row border-b border-border/50">
+              <td class="px-6 py-4 font-medium">Mansaf</td>
+              <td class="px-6 py-4 text-muted">Main Courses</td>
+              <td class="px-6 py-4">$12.00</td>
+              <td class="px-6 py-4"><span class="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-medium">Active</span></td>
+              <td class="px-6 py-4 text-muted">287</td>
+              <td class="px-6 py-4 text-right text-muted hover:text-foreground transition-colors cursor-pointer">✎</td>
+            </tr>
+            <tr class="item-row border-b border-border/50">
+              <td class="px-6 py-4 font-medium">Kunafa</td>
+              <td class="px-6 py-4 text-muted">Desserts</td>
+              <td class="px-6 py-4">$5.50</td>
+              <td class="px-6 py-4"><span class="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-medium">Active</span></td>
+              <td class="px-6 py-4 text-muted">201</td>
+              <td class="px-6 py-4 text-right text-muted hover:text-foreground transition-colors cursor-pointer">✎</td>
+            </tr>
+            <tr class="item-row border-b border-border/50">
+              <td class="px-6 py-4 font-medium">Arabic Coffee</td>
+              <td class="px-6 py-4 text-muted">Beverages</td>
+              <td class="px-6 py-4">$3.00</td>
+              <td class="px-6 py-4"><span class="text-xs px-2 py-1 rounded-full bg-error/10 text-error font-medium">Inactive</span></td>
+              <td class="px-6 py-4 text-muted">178</td>
+              <td class="px-6 py-4 text-right text-muted hover:text-foreground transition-colors cursor-pointer">✎</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-border mt-12 py-6 text-center text-xs text-muted">
+    <div class="flex items-center justify-center gap-2 mb-2">
+      <img src="/wooden-trans-logo.webp" alt="S" class="h-5" />
+    </div>
+    <p>© 2026 Shababik Cafe · Admin Panel</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Café Command — Admin Concept 1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: '#b87a4a', 'brand-light': '#e0ccb8', 'brand-deep': '#7a4a2a', cream: '#f5efdf', surface: '#fffcf8', foreground: '#3B2818', muted: '#8a7a6a', border: '#d4c4b0', accent: '#D4B895', rose: '#C46A6A', success: '#3a6a3a', error: '#b55a5a' }, fontFamily: { geist: ['Geist', 'system-ui', 'sans-serif'] } } } }
+    </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Geist', system-ui, sans-serif; background: #f5efdf; color: #3B2818; overflow-x: hidden; }
+    .sidebar { width: 280px; min-height: 100vh; background: #7a4a2a; transition: width 0.3s cubic-bezier(0.22,1,0.36,1), transform 0.3s ease; }
+    .sidebar.collapsed { width: 64px; }
+    .sidebar.collapsed .nav-label { display: none; }
+    .sidebar.collapsed .logo-text { display: none; }
+    .sidebar.collapsed .section-title { display: none; }
+    .card { background: #fffcf8; border-radius: 1rem; box-shadow: 0 1px 3px #d4c4b040, 0 4px 12px #d4c4b020; transition: all 0.3s cubic-bezier(0.22,1,0.36,1); }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #b87a4a20; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 10px; color: #d4c4b0; transition: all 0.2s ease; cursor: pointer; position: relative; }
+    .nav-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%) scaleY(0); width: 3px; height: 20px; background: linear-gradient(to bottom, #b87a4a, #D4B895); border-radius: 0 3px 3px 0; transition: transform 0.2s ease; }
+    .nav-item:hover { background: #5a3a1a; color: #fffcf8; }
+    .nav-item:hover::before { transform: translateY(-50%) scaleY(1); }
+    .nav-item.active { background: #5a3a1a; color: #fffcf8; }
+    .nav-item.active::before { transform: translateY(-50%) scaleY(1); }
+    .stat-card { flex: 1; min-width: 180px; }
+    .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+    .bar { height: 8px; border-radius: 999px; background: #e0ccb8; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #b87a4a, #D4B895); transition: width 1s cubic-bezier(0.22,1,0.36,1); }
+    .table-row { transition: background 0.15s ease; }
+    .table-row:hover { background: #e0ccb840; }
+    .toggle { width: 36px; height: 20px; border-radius: 999px; background: #d4c4b0; cursor: pointer; position: relative; transition: background 0.2s ease; }
+    .toggle.active { background: #b87a4a; }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: transform 0.2s ease; }
+    .toggle.active::after { transform: translateX(16px); }
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; top: 0; left: 0; z-index: 100; transform: translateX(-100%); width: 280px; }
+      .sidebar.open { transform: translateX(0); }
+      .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+      .overlay.show { display: block; }
+      .stat-card { min-width: 100%; }
+    }
+    .hamburger { display: none; }
+    @media (max-width: 768px) { .hamburger { display: flex; } }
+    .mobile-bar { display: none; }
+    @media (max-width: 768px) { .mobile-bar { display: flex; } }
+    .toast { animation: slideIn 0.3s cubic-bezier(0.22,1,0.36,1), fadeOut 0.3s 2.7s ease forwards; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(-8px); } }
+  </style>
+</head>
+<body>
+  <!-- Overlay for mobile -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar fixed top-0 left-0 z-50 flex flex-col p-4" id="sidebar">
+    <div class="flex items-center gap-3 mb-8 px-3 pt-2">
+      <img src="/wooden-trans-logo.webp" alt="S" class="w-8 h-8 object-contain" />
+      <span class="logo-text text-surface font-bold text-lg tracking-tight">Shababik</span>
+    </div>
+    <div class="section-title text-brand-light/50 text-xs font-semibold uppercase tracking-widest px-3 mb-3">Menu</div>
+    <nav class="flex-1 flex flex-col gap-1">
+      <div class="nav-item active"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg><span class="nav-label">Categories</span></div>
+      <div class="nav-item"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span class="nav-label">Items</span></div>
+      <div class="nav-item"><svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span class="nav-label">Analytics</span></div>
+    </nav>
+    <div class="flex items-center gap-3 px-3 py-3 mt-auto border-t border-white/10 cursor-pointer text-brand-light/60 hover:text-brand-light transition-colors">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      <span class="nav-label text-sm">Log out</span>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="md:ml-[280px] transition-all duration-300">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-40 bg-cream/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-6 py-3">
+      <div class="flex items-center gap-4">
+        <button class="hamburger p-2 rounded-lg hover:bg-brand-light/50 transition-colors" onclick="toggleSidebar()">
+          <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="text-lg font-semibold">Dashboard</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" placeholder="Search items..." class="w-48 lg:w-64 pl-10 pr-4 py-2 rounded-full bg-surface border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all" />
+        </div>
+        <div class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-semibold">A</div>
+      </div>
+    </header>
+
+    <main class="p-6 lg:p-8">
+      <!-- Stats -->
+      <div class="flex flex-wrap gap-4 mb-8">
+        <div class="card p-5 stat-card">
+          <div class="flex items-center gap-2 text-muted text-sm mb-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            Menu Views Today
+          </div>
+          <div class="stat-value text-foreground">1,247</div>
+          <div class="text-xs text-success font-medium mt-1">↑ 12% from yesterday</div>
+        </div>
+        <div class="card p-5 stat-card">
+          <div class="flex items-center gap-2 text-muted text-sm mb-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Views This Week
+          </div>
+          <div class="stat-value text-foreground">8,463</div>
+          <div class="text-xs text-success font-medium mt-1">↑ 8.2% from last week</div>
+        </div>
+        <div class="card p-5 stat-card">
+          <div class="flex items-center gap-2 text-muted text-sm mb-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Total Items
+          </div>
+          <div class="stat-value text-foreground">43</div>
+          <div class="text-xs text-muted font-medium mt-1">across 8 categories</div>
+        </div>
+      </div>
+
+      <!-- Chart + Trending -->
+      <div class="grid lg:grid-cols-5 gap-6 mb-8">
+        <div class="card p-6 lg:col-span-3">
+          <h3 class="font-semibold text-sm text-muted uppercase tracking-wider mb-4">Views by day this week</h3>
+          <div class="flex items-end gap-3 h-40">
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand-light" style="height:40%"></div><span class="text-xs text-muted">Mon</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand/70" style="height:55%"></div><span class="text-xs text-muted">Tue</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand" style="height:45%"></div><span class="text-xs text-muted">Wed</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand/80" style="height:70%"></div><span class="text-xs text-muted">Thu</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand-light" style="height:50%"></div><span class="text-xs text-muted">Fri</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand/60" style="height:80%"></div><span class="text-xs text-muted">Sat</span></div>
+            <div class="flex-1 flex flex-col items-center gap-1"><div class="w-full rounded-t-md bg-brand" style="height:65%"></div><span class="text-xs text-muted">Sun</span></div>
+          </div>
+        </div>
+        <div class="card p-6 lg:col-span-2">
+          <h3 class="font-semibold text-sm text-muted uppercase tracking-wider mb-4">Trending Items</h3>
+          <div class="space-y-4">
+            <div><div class="flex justify-between text-sm mb-1"><span class="font-medium">Shawarma Plate</span><span class="text-muted">342 views</span></div><div class="bar"><div class="bar-fill" style="width:100%"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-1"><span class="font-medium">Mansaf</span><span class="text-muted">287 views</span></div><div class="bar"><div class="bar-fill" style="width:84%"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-1"><span class="font-medium">Kunafa</span><span class="text-muted">201 views</span></div><div class="bar"><div class="bar-fill" style="width:59%"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-1"><span class="font-medium">Arabic Coffee</span><span class="text-muted">178 views</span></div><div class="bar"><div class="bar-fill" style="width:52%"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-1"><span class="font-medium">Hummus</span><span class="text-muted">145 views</span></div><div class="bar"><div class="bar-fill" style="width:42%"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div class="card overflow-hidden">
+        <div class="flex items-center justify-between p-6 pb-4">
+          <h3 class="font-semibold text-sm text-muted uppercase tracking-wider">All Items</h3>
+          <button class="px-4 py-2 bg-brand text-white text-sm font-medium rounded-full hover:bg-brand-deep transition-colors">+ New Item</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="text-left px-6 py-3 font-medium">Item</th>
+                <th class="text-left px-6 py-3 font-medium">Category</th>
+                <th class="text-left px-6 py-3 font-medium">Price (USD)</th>
+                <th class="text-left px-6 py-3 font-medium">Active</th>
+                <th class="text-left px-6 py-3 font-medium">Bestseller</th>
+                <th class="text-right px-6 py-3 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="table-row border-b border-border/50">
+                <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-brand-light/50 shrink-0"></div><span class="font-medium">Shawarma Plate</span></div></td>
+                <td class="px-6 py-4 text-muted">Main Courses</td>
+                <td class="px-6 py-4">$8.50</td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4 text-right"><button class="text-muted hover:text-foreground transition-colors p-1">✎</button></td>
+              </tr>
+              <tr class="table-row border-b border-border/50">
+                <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-brand-light/50 shrink-0"></div><span class="font-medium">Mansaf</span></div></td>
+                <td class="px-6 py-4 text-muted">Main Courses</td>
+                <td class="px-6 py-4">$12.00</td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4"><div class="toggle"></div></td>
+                <td class="px-6 py-4 text-right"><button class="text-muted hover:text-foreground transition-colors p-1">✎</button></td>
+              </tr>
+              <tr class="table-row border-b border-border/50">
+                <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-brand-light/50 shrink-0"></div><span class="font-medium">Kunafa</span></div></td>
+                <td class="px-6 py-4 text-muted">Desserts</td>
+                <td class="px-6 py-4">$5.50</td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4 text-right"><button class="text-muted hover:text-foreground transition-colors p-1">✎</button></td>
+              </tr>
+              <tr class="table-row border-b border-border/50">
+                <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-brand-light/50 shrink-0"></div><span class="font-medium">Arabic Coffee</span></div></td>
+                <td class="px-6 py-4 text-muted">Beverages</td>
+                <td class="px-6 py-4">$3.00</td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4"><div class="toggle"></div></td>
+                <td class="px-6 py-4 text-right"><button class="text-muted hover:text-foreground transition-colors p-1">✎</button></td>
+              </tr>
+              <tr class="table-row">
+                <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-brand-light/50 shrink-0"></div><span class="font-medium">Hummus</span></div></td>
+                <td class="px-6 py-4 text-muted">Appetizers</td>
+                <td class="px-6 py-4">$4.50</td>
+                <td class="px-6 py-4"><div class="toggle active"></div></td>
+                <td class="px-6 py-4"><div class="toggle"></div></td>
+                <td class="px-6 py-4 text-right"><button class="text-muted hover:text-foreground transition-colors p-1">✎</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Toast notification -->
+      <div class="toast fixed top-6 right-6 bg-surface border border-border rounded-xl shadow-lg p-4 flex items-center gap-3 z-50">
+        <svg class="w-5 h-5 text-success shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-sm font-medium">Item updated successfully</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile bottom bar -->
+  <div class="mobile-bar fixed bottom-0 left-0 right-0 z-40 bg-surface/90 backdrop-blur-xl border-t border-border px-4 py-2 justify-around">
+    <button class="flex flex-col items-center gap-0.5 text-brand"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="text-[10px] font-medium">Dashboard</span></button>
+    <button class="flex flex-col items-center gap-0.5 text-muted"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg><span class="text-[10px] font-medium">Categories</span></button>
+    <button class="flex flex-col items-center gap-0.5 text-muted"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><span class="text-[10px] font-medium">Items</span></button>
+    <button class="flex flex-col items-center gap-0.5 text-muted"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span class="text-[10px] font-medium">Analytics</span></button>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
+  </script>
+</body>
+</html>

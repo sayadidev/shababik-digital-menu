@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Terminal — Admin Concept 4</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: '#b87a4a', 'brand-light': '#e0ccb8', 'brand-deep': '#7a4a2a', cream: '#f5efdf', surface: '#fffcf8', foreground: '#3B2818', muted: '#8a7a6a', border: '#d4c4b0', accent: '#D4B895', rose: '#C46A6A', success: '#3a6a3a', error: '#b55a5a', darkbg: '#1a140e', darkcard: '#2a221a' }, fontFamily: { geist: ['Geist', 'system-ui', 'sans-serif'] } } } }
+    </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Geist', 'SF Mono', system-ui, sans-serif; background: #1a140e; color: #e8ddd0; overflow-x: hidden; }
+    .dark-card { background: #2a221a; border-radius: 1rem; border: 1px solid #3a322a; transition: all 0.3s cubic-bezier(0.22,1,0.36,1); }
+    .dark-card:hover { border-color: #b87a4a40; box-shadow: 0 0 20px #b87a4a10; }
+    .sidebar { width: 64px; min-height: 100vh; background: #0f0c08; border-right: 1px solid #2a221a; transition: width 0.25s cubic-bezier(0.22,1,0.36,1); position: fixed; top: 0; left: 0; z-index: 50; overflow: hidden; }
+    .sidebar:hover { width: 220px; }
+    .sidebar:hover .nav-label { opacity: 1; }
+    .sidebar:hover .section-label { opacity: 0.5; }
+    .nav-label { opacity: 0; transition: opacity 0.2s 0.1s; white-space: nowrap; }
+    .section-label { opacity: 0; transition: opacity 0.2s 0.1s; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; color: #b87a4a; padding: 0 16px; margin: 16px 0 6px; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #8a7a6a; transition: all 0.2s ease; cursor: pointer; }
+    .icon-btn:hover { background: #b87a4a15; color: #b87a4a; }
+    .icon-btn.active { background: #b87a4a20; color: #b87a4a; border: 1px solid #b87a4a30; }
+    .metric-tile .num { font-size: 2.25rem; font-weight: 700; line-height: 1; color: #fffcf8; }
+    .metric-tile .label { font-size: 0.75rem; color: #8a7a6a; letter-spacing: 0.02em; }
+    .metric-tile .accent-line { width: 32px; height: 2px; background: #b87a4a; border-radius: 1px; margin: 8px 0; }
+    .cmd-bar { background: #2a221a; border: 1px solid #3a322a; border-radius: 12px; padding: 8px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s ease; }
+    .cmd-bar:hover { border-color: #b87a4a50; background: #322a22; }
+    .cmd-bar kbd { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: #0f0c08; color: #8a7a6a; border: 1px solid #3a322a; font-family: inherit; }
+    .table-row { border-bottom: 1px solid #2a221a; transition: background 0.15s ease; }
+    .table-row:hover { background: #2a221a60; }
+    .spark-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .spark-dot.up { background: #3a6a3a; box-shadow: 0 0 6px #3a6a3a50; }
+    .spark-dot.down { background: #b55a5a; box-shadow: 0 0 6px #b55a5a50; }
+    .spark-dot.flat { background: #8a7a6a; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0f0c08; }
+    ::-webkit-scrollbar-thumb { background: #3a322a; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b87a4a40; }
+    @media (max-width: 768px) {
+      .sidebar { width: 0; border: none; }
+      .sidebar.open { width: 280px; }
+      .sidebar .nav-label { opacity: 1; }
+      .sidebar .section-label { opacity: 0.5; }
+      .mobile-header { display: flex !important; }
+      body { padding-left: 0 !important; }
+    }
+    @media (min-width: 769px) {
+      body { padding-left: 64px; }
+      .mobile-header { display: none !important; }
+    }
+    .overlay { display: none; }
+    .overlay.show { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Mobile overlay -->
+  <div class="overlay fixed inset-0 bg-black/60 z-40" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar flex flex-col p-3" id="sidebar">
+    <div class="flex items-center gap-3 px-1 py-2 mb-4">
+      <img src="/wooden-trans-logo.webp" alt="S" class="w-8 h-8 object-contain shrink-0" />
+      <span class="nav-label font-bold text-surface tracking-tight">Shababik</span>
+    </div>
+
+    <div class="section-label">Navigate</div>
+    <div class="flex flex-col gap-1 px-1">
+      <div class="icon-btn active" style="width:100%;justify-content:flex-start;gap:12px;padding:0 10px;height:38px;border-radius:8px">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="nav-label text-sm" style="opacity:1">Dashboard</span>
+      </div>
+      <div class="icon-btn" style="width:100%;justify-content:flex-start;gap:12px;padding:0 10px;height:38px;border-radius:8px">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span class="nav-label text-sm" style="opacity:1">Categories</span>
+      </div>
+      <div class="icon-btn" style="width:100%;justify-content:flex-start;gap:12px;padding:0 10px;height:38px;border-radius:8px">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        <span class="nav-label text-sm" style="opacity:1">Items</span>
+      </div>
+      <div class="icon-btn" style="width:100%;justify-content:flex-start;gap:12px;padding:0 10px;height:38px;border-radius:8px">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span class="nav-label text-sm" style="opacity:1">Analytics</span>
+      </div>
+    </div>
+
+    <div class="section-label mt-auto">Account</div>
+    <div class="flex items-center gap-3 px-1 py-2 border-t border-[#2a221a] mt-2 cursor-pointer">
+      <div class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-semibold shrink-0">A</div>
+      <div class="nav-label" style="opacity:1"><p class="text-sm font-medium text-surface">Ahmad</p><p class="text-xs text-muted">Log out</p></div>
+    </div>
+  </aside>
+
+  <!-- Mobile header -->
+  <div class="mobile-header fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3" style="background:#1a140e;border-bottom:1px solid #2a221a">
+    <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-[#2a221a] transition-colors">
+      <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <img src="/wooden-trans-logo.webp" alt="S" class="h-6" />
+    <div class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center text-xs font-semibold">A</div>
+  </div>
+
+  <!-- Main -->
+  <main class="p-5 md:p-8 max-w-6xl mx-auto" style="padding-top:max(1.25rem,env(safe-area-inset-top))">
+    <!-- Header row -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-xl font-bold text-surface">Dashboard</h1>
+        <p class="text-sm text-muted">Mon, Jun 22, 2026</p>
+      </div>
+      <div class="cmd-bar text-sm text-muted flex items-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span class="flex-1 mx-2 hidden sm:inline">Quick search...</span>
+        <kbd>⌘K</kbd>
+      </div>
+    </div>
+
+    <!-- Metric tiles 2x2 -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="dark-card p-5 metric-tile">
+        <div class="accent-line"></div>
+        <div class="num">1,247</div>
+        <div class="label">Views Today</div>
+        <div class="flex items-center gap-1.5 mt-2"><span class="spark-dot up"></span><span class="text-xs text-success">+12% vs yesterday</span></div>
+      </div>
+      <div class="dark-card p-5 metric-tile">
+        <div class="accent-line"></div>
+        <div class="num">8,463</div>
+        <div class="label">Views This Week</div>
+        <div class="flex items-center gap-1.5 mt-2"><span class="spark-dot up"></span><span class="text-xs text-success">+8.2% vs last week</span></div>
+      </div>
+      <div class="dark-card p-5 metric-tile">
+        <div class="accent-line"></div>
+        <div class="num">43</div>
+        <div class="label">Active Items</div>
+        <div class="flex items-center gap-1.5 mt-2"><span class="spark-dot flat"></span><span class="text-xs text-muted">across 8 categories</span></div>
+      </div>
+      <div class="dark-card p-5 metric-tile">
+        <div class="accent-line"></div>
+        <div class="num">2,847</div>
+        <div class="label">Avg. Daily Views</div>
+        <div class="flex items-center gap-1.5 mt-2"><span class="spark-dot up"></span><span class="text-xs text-success">+5.4% this month</span></div>
+      </div>
+    </div>
+
+    <!-- Trending table -->
+    <div class="dark-card overflow-hidden">
+      <div class="flex items-center justify-between p-5 pb-3">
+        <h2 class="text-sm font-semibold text-surface">Trending Items</h2>
+        <button class="text-xs text-brand font-medium">View all →</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-muted text-xs uppercase tracking-wider border-b border-[#2a221a]">
+              <th class="text-left px-5 py-3 font-medium">#</th>
+              <th class="text-left px-5 py-3 font-medium">Item</th>
+              <th class="text-left px-5 py-3 font-medium">Category</th>
+              <th class="text-right px-5 py-3 font-medium">Views</th>
+              <th class="text-right px-5 py-3 font-medium">Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="table-row">
+              <td class="px-5 py-3.5"><span class="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-xs font-bold text-white">1</span></td>
+              <td class="px-5 py-3.5 font-medium text-surface">Shawarma Plate</td>
+              <td class="px-5 py-3.5 text-muted">Main Courses</td>
+              <td class="px-5 py-3.5 text-right font-mono text-surface">342</td>
+              <td class="px-5 py-3.5 text-right"><span class="spark-dot up inline-block"></span></td>
+            </tr>
+            <tr class="table-row">
+              <td class="px-5 py-3.5"><span class="w-6 h-6 rounded-full bg-[#3a322a] flex items-center justify-center text-xs font-bold text-muted">2</span></td>
+              <td class="px-5 py-3.5 font-medium text-surface">Mansaf</td>
+              <td class="px-5 py-3.5 text-muted">Main Courses</td>
+              <td class="px-5 py-3.5 text-right font-mono text-surface">287</td>
+              <td class="px-5 py-3.5 text-right"><span class="spark-dot up inline-block"></span></td>
+            </tr>
+            <tr class="table-row">
+              <td class="px-5 py-3.5"><span class="w-6 h-6 rounded-full bg-[#3a322a] flex items-center justify-center text-xs font-bold text-muted">3</span></td>
+              <td class="px-5 py-3.5 font-medium text-surface">Kunafa</td>
+              <td class="px-5 py-3.5 text-muted">Desserts</td>
+              <td class="px-5 py-3.5 text-right font-mono text-surface">201</td>
+              <td class="px-5 py-3.5 text-right"><span class="spark-dot flat inline-block"></span></td>
+            </tr>
+            <tr class="table-row">
+              <td class="px-5 py-3.5"><span class="w-6 h-6 rounded-full bg-[#3a322a] flex items-center justify-center text-xs font-bold text-muted">4</span></td>
+              <td class="px-5 py-3.5 font-medium text-surface">Arabic Coffee</td>
+              <td class="px-5 py-3.5 text-muted">Beverages</td>
+              <td class="px-5 py-3.5 text-right font-mono text-surface">178</td>
+              <td class="px-5 py-3.5 text-right"><span class="spark-dot up inline-block"></span></td>
+            </tr>
+            <tr class="table-row">
+              <td class="px-5 py-3.5"><span class="w-6 h-6 rounded-full bg-[#3a322a] flex items-center justify-center text-xs font-bold text-muted">5</span></td>
+              <td class="px-5 py-3.5 font-medium text-surface">Hummus</td>
+              <td class="px-5 py-3.5 text-muted">Appetizers</td>
+              <td class="px-5 py-3.5 text-right font-mono text-surface">145</td>
+              <td class="px-5 py-3.5 text-right"><span class="spark-dot down inline-block"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick actions row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+      <div class="dark-card p-4 flex items-center gap-3 cursor-pointer hover:border-brand/30 transition-all">
+        <div class="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-lg shrink-0">+</div>
+        <div><p class="text-sm font-medium text-surface">New Item</p><p class="text-xs text-muted">Add to menu</p></div>
+      </div>
+      <div class="dark-card p-4 flex items-center gap-3 cursor-pointer hover:border-brand/30 transition-all">
+        <div class="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-lg shrink-0">📂</div>
+        <div><p class="text-sm font-medium text-surface">Category</p><p class="text-xs text-muted">Organize</p></div>
+      </div>
+      <div class="dark-card p-4 flex items-center gap-3 cursor-pointer hover:border-brand/30 transition-all">
+        <div class="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-lg shrink-0">📊</div>
+        <div><p class="text-sm font-medium text-surface">Report</p><p class="text-xs text-muted">Export data</p></div>
+      </div>
+      <div class="dark-card p-4 flex items-center gap-3 cursor-pointer hover:border-brand/30 transition-all">
+        <div class="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-lg shrink-0">👁</div>
+        <div><p class="text-sm font-medium text-surface">Preview</p><p class="text-xs text-muted">Live menu</p></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
+  </script>
+</body>
+</html>

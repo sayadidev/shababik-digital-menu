@@ -33,6 +33,8 @@ export const itemSchema = z.object({
   image_url: z.string().max(2048).default(""),
   is_active: z.boolean().default(true),
   is_bestseller: z.boolean().default(false),
+  is_offer: z.boolean().default(false),
+  offer_position: z.number().int().min(1).max(3).nullable().default(null),
   view_count: z.number().int().min(0).default(0),
 });
 

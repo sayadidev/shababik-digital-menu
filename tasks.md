@@ -68,7 +68,18 @@
 - [ ] Test on real mobile devices over cellular connection (requires Vercel URL)
 - [x] Finalize hardcoded branding (sticky header, cafe name, amber palette)
 
-## Milestone 8: Testing, QA & Launch
+## Milestone 8: Admin Dashboard Redesign (Design Concepts)
+- [x] Create 5 distinct admin dashboard layout concepts with brand-aligned visuals
+  - [x] Concept 1 — "Café Command": Fixed dark sidebar, stats cards, bar chart, data table
+  - [x] Concept 2 — "Floating Bar": Glass bottom nav, mobile-first feed, FAB, sparkline
+  - [x] Concept 3 — "The Atelier": Top nav + pill tabs, hero stats bar, gallery cards
+  - [x] Concept 4 — "The Terminal": Icon sidebar (expand on hover), dark theme, Cmd+K, metric tiles
+  - [x] Concept 5 — "The Bento": Asymmetric bento grid, contextual slide panel, card-based table
+- [ ] Choose final concept and implement as the new admin layout
+- [ ] Build admin dashboard components using selected concept
+- [ ] Replace old admin layout with new design
+
+## Milestone 9: Testing, QA & Launch
 - [ ] Set up GitHub repository and push code
 - [ ] Deploy to Vercel (production)
 - [ ] Configure custom domain for Shababik Cafe (optional)

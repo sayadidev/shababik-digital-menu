@@ -49,11 +49,18 @@ export type TrendingItem = {
   view_count: number;
 };
 
+export type DailyView = {
+  date: string;
+  count: number;
+};
+
 export type AnalyticsSummary = {
   menuViewsToday: number;
   menuViewsThisWeek: number;
   totalItems: number;
+  totalCategories: number;
   trendingItems: TrendingItem[];
+  dailyViews: DailyView[];
 };
 
 /**
@@ -63,54 +70,64 @@ export type AnalyticsSummary = {
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
   const admin = createAdminClient();
 
-  // Date boundaries
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - 7);
+  weekStart.setDate(weekStart.getDate() - 6);
 
   const todayStr = todayStart.toISOString();
   const weekStr = weekStart.toISOString();
 
-  // Query today's menu_load events
-  const { count: todayCount, error: todayErr } = await admin
-    .from("analytics_events")
-    .select("id", { count: "exact", head: true })
-    .eq("event_type", "menu_load")
-    .gte("timestamp", todayStr);
-
-  if (todayErr) console.error("todayErr:", todayErr);
-
-  // Query this week's menu_load events
-  const { count: weekCount, error: weekErr } = await admin
-    .from("analytics_events")
-    .select("id", { count: "exact", head: true })
-    .eq("event_type", "menu_load")
-    .gte("timestamp", weekStr);
-
-  if (weekErr) console.error("weekErr:", weekErr);
-
-  // Query trending items (top 5 by view_count)
-  const { data: trendingData, error: trendingErr } = await admin
-    .from("items")
-    .select("id, name_en, name_ar, view_count")
-    .order("view_count", { ascending: false })
-    .limit(5);
-
-  if (trendingErr) console.error("trendingErr:", trendingErr);
-
-  // Total active items
-  const { count: totalCount, error: totalErr } = await admin
-    .from("items")
-    .select("id", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  if (totalErr) console.error("totalErr:", totalErr);
+  const [todayRes, weekRes, trendingRes, totalItemsRes, categoriesRes, dailyRes] =
+    await Promise.all([
+      admin
+        .from("analytics_events")
+        .select("id", { count: "exact", head: true })
+        .eq("event_type", "menu_load")
+        .gte("timestamp", todayStr),
+      admin
+        .from("analytics_events")
+        .select("id", { count: "exact", head: true })
+        .eq("event_type", "menu_load")
+        .gte("timestamp", weekStr),
+      admin
+        .from("items")
+        .select("id, name_en, name_ar, view_count")
+        .order("view_count", { ascending: false })
+        .limit(5),
+      admin
+        .from("items")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true),
+      admin
+        .from("categories")
+        .select("id", { count: "exact", head: true }),
+      Promise.all(
+        Array.from({ length: 7 }, (_, i) => {
+          const dayStart = new Date(todayStart);
+          dayStart.setDate(dayStart.getDate() - (6 - i));
+          const dayEnd = new Date(dayStart);
+          dayEnd.setDate(dayEnd.getDate() + 1);
+          return admin
+            .from("analytics_events")
+            .select("id", { count: "exact", head: true })
+            .eq("event_type", "menu_load")
+            .gte("timestamp", dayStart.toISOString())
+            .lt("timestamp", dayEnd.toISOString())
+            .then((res) => ({
+              date: dayStart.toISOString().slice(0, 10),
+              count: res.count ?? 0,
+            }));
+        }),
+      ),
+    ]);
 
   return {
-    menuViewsToday: todayCount ?? 0,
-    menuViewsThisWeek: weekCount ?? 0,
-    totalItems: totalCount ?? 0,
-    trendingItems: (trendingData ?? []) as TrendingItem[],
+    menuViewsToday: todayRes.count ?? 0,
+    menuViewsThisWeek: weekRes.count ?? 0,
+    totalItems: totalItemsRes.count ?? 0,
+    totalCategories: categoriesRes.count ?? 0,
+    trendingItems: (trendingRes.data ?? []) as TrendingItem[],
+    dailyViews: dailyRes,
   };
 }

@@ -13,6 +13,8 @@ export type ItemWithVariants = {
   image_url: string;
   is_active: boolean;
   is_bestseller: boolean;
+  is_offer: boolean;
+  offer_position: number | null;
   view_count: number;
   item_variants: ItemVariant[];
   item_images: ItemImage[];

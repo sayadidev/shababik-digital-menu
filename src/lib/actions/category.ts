@@ -105,16 +105,14 @@ export async function reorderCategories(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createAdminClient();
 
-  const updates = ids.map((id, index) => ({
-    id,
-    order_index: index,
-  }));
+  for (let i = 0; i < ids.length; i++) {
+    const { error } = await supabase
+      .from("categories")
+      .update({ order_index: i })
+      .eq("id", ids[i]);
 
-  const { error } = await supabase
-    .from("categories")
-    .upsert(updates, { onConflict: "id" });
-
-  if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: error.message };
+  }
 
   revalidatePath("/admin");
   revalidateMenuPaths();

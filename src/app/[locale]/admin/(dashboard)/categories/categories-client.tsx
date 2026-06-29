@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { createCategory, updateCategory, deleteCategory } from "@/lib/actions/category";
+import { createCategory, updateCategory, deleteCategory, reorderCategories } from "@/lib/actions/category";
 
 type Category = {
   id: string;
@@ -120,7 +120,6 @@ function EditDialog({ category, open, onClose, locale }: { category: Category; o
 function CategoryForm({ category, onClose, locale }: { category?: Category; onClose: () => void; locale: string }) {
   const [nameEn, setNameEn] = useState(category?.name_en ?? "");
   const [nameAr, setNameAr] = useState(category?.name_ar ?? "");
-  const [orderIndex, setOrderIndex] = useState(category?.order_index ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -131,8 +130,8 @@ function CategoryForm({ category, onClose, locale }: { category?: Category; onCl
     setSaving(true);
 
     const res = category
-      ? await updateCategory(category.id, { name_en: nameEn, name_ar: nameAr, order_index: orderIndex })
-      : await createCategory({ name_en: nameEn, name_ar: nameAr, order_index: orderIndex });
+      ? await updateCategory(category.id, { name_en: nameEn, name_ar: nameAr, order_index: category.order_index })
+      : await createCategory({ name_en: nameEn, name_ar: nameAr, order_index: 0 });
 
     setSaving(false);
 
@@ -179,16 +178,7 @@ function CategoryForm({ category, onClose, locale }: { category?: Category; onCl
               className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">{t(locale, "Display Order", "ترتيب العرض")}</label>
-            <input
-              type="number"
-              min="0"
-              value={orderIndex}
-              onChange={(e) => setOrderIndex(parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-            />
-          </div>
+
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
@@ -217,4 +207,133 @@ function CategoryForm({ category, onClose, locale }: { category?: Category; onCl
   );
 }
 
-export { CreateButton, EditButton, DeleteButton, CreateDialog, EditDialog };
+function DragHandle() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8h16M4 16h16" />
+    </svg>
+  );
+}
+
+function CategoryList({ categories, locale: l }: { categories: Category[]; locale: string }) {
+  const router = useRouter();
+  const listRef = useRef<HTMLDivElement>(null);
+  const dragIdx = useRef<number | null>(null);
+  const touchStartY = useRef(0);
+  const [list, setList] = useState(categories);
+  const [reordering, setReordering] = useState(false);
+  const [dragging, setDragging] = useState(-1);
+  const [error, setError] = useState("");
+
+  // Sync with server data after refresh/revalidation
+  useEffect(() => {
+    setList(categories);
+  }, [categories]);
+
+  // ── HTML5 DnD (desktop) ────────────────────
+  const handleDragStart = (idx: number) => { dragIdx.current = idx; };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDragEnter = (idx: number) => {
+    const from = dragIdx.current;
+    if (from === null || from === idx) return;
+    const updated = [...list];
+    const [moved] = updated.splice(from, 1);
+    updated.splice(idx, 0, moved);
+    dragIdx.current = idx;
+    setList(updated);
+  };
+  const handleDrop = async () => {
+    dragIdx.current = null;
+    setReordering(true);
+    setError("");
+    const res = await reorderCategories(list.map((c) => c.id));
+    setReordering(false);
+    if (res.success) {
+      router.refresh();
+    } else {
+      setError(res.error ?? t(l, "Reorder failed", "فشل إعادة الترتيب"));
+      setList(categories);
+    }
+  };
+
+  // ── Touch DnD (mobile) ─────────────────────
+  const handleTouchStart = (idx: number, e: React.TouchEvent) => {
+    dragIdx.current = idx;
+    touchStartY.current = e.touches[0].clientY;
+    setDragging(idx);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragIdx.current === null) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    const itemEl = (el as HTMLElement).closest("[data-cat-idx]");
+    if (!itemEl) return;
+    const to = parseInt(itemEl.getAttribute("data-cat-idx") ?? "", 10);
+    if (isNaN(to)) return;
+    const from = dragIdx.current;
+    if (from === to || from === null) return;
+    const updated = [...list];
+    const [moved] = updated.splice(from, 1);
+    updated.splice(to, 0, moved);
+    dragIdx.current = to;
+    setList(updated);
+  };
+  const handleTouchEnd = async () => {
+    setDragging(-1);
+    dragIdx.current = null;
+    setReordering(true);
+    setError("");
+    const res = await reorderCategories(list.map((c) => c.id));
+    setReordering(false);
+    if (res.success) {
+      router.refresh();
+    } else {
+      setError(res.error ?? t(l, "Reorder failed", "فشل إعادة الترتيب"));
+      setList(categories);
+    }
+  };
+
+  return (
+    <div ref={listRef} className="space-y-1">
+      {error && (
+        <div className="p-3 rounded-xl bg-error-bg border border-error-border text-sm text-error mb-2">
+          {error}
+        </div>
+      )}
+      {list.map((cat, idx) => (
+        <div key={cat.id}
+          data-cat-idx={idx}
+          draggable
+          onDragStart={() => handleDragStart(idx)}
+          onDragEnter={() => handleDragEnter(idx)}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onTouchStart={(e) => handleTouchStart(idx, e)}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-shadow cursor-grab active:cursor-grabbing select-none ${
+            reordering ? "pointer-events-none opacity-60" : ""
+          } ${idx === dragging ? "shadow-lg bg-white relative z-10" : ""} ${idx !== dragging && idx % 2 === 0 ? "bg-white/40" : ""} hover:bg-primary/5`}
+          style={{ touchAction: "none" }}>
+          <span className="shrink-0 text-muted/40">
+            <DragHandle />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">{cat.name_en}</p>
+            <p className="text-xs text-muted" dir="rtl">{cat.name_ar} · {cat.itemCount} {t(l, "items", "أصناف")}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <EditButton category={cat} />
+            <DeleteButton category={cat} />
+          </div>
+        </div>
+      ))}
+      <div className="text-[11px] text-muted/50 text-center pt-1">
+        {t(l, "Drag to reorder", "اسحب لإعادة الترتيب")}
+      </div>
+    </div>
+  );
+}
+
+export { CreateButton, EditButton, DeleteButton, CreateDialog, EditDialog, CategoryList };

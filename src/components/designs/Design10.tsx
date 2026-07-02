@@ -83,6 +83,7 @@ export default function Design10({ data }: { data: MenuData }) {
       if (!tickingRef.current) {
         requestAnimationFrame(() => {
           setShowHeader(window.scrollY > threshold);
+          setHeroExited(window.scrollY > 20);
           tickingRef.current = false;
         });
         tickingRef.current = true;
@@ -156,20 +157,6 @@ export default function Design10({ data }: { data: MenuData }) {
     return result;
   }, [data.categories]);
 
-  // Hero exit animation on scroll
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setHeroExited(!entry.isIntersecting);
-      },
-      { threshold: 0 },
-    );
-    observer.observe(hero);
-    return () => observer.disconnect();
-  }, []);
-
   const scrollTo = (id: string) => {
     const el = sectionRefs.current.get(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -179,7 +166,7 @@ export default function Design10({ data }: { data: MenuData }) {
     <div className="min-h-screen" style={{ backgroundColor: P.bg }}>
       {/* ── Hero — logo + 3 featured glassy cards ── */}
       <section ref={heroRef}
-        className="relative flex flex-col items-center overflow-hidden"
+        className="relative flex flex-col items-center"
         style={{
           minHeight: "100dvh",
           backgroundColor: "#f5efdf",
@@ -287,6 +274,34 @@ export default function Design10({ data }: { data: MenuData }) {
             })}
           </div>
         )}
+
+          {/* ── Swipe-Up Indicator ────────────────────── */}
+          <div className={`max-md:absolute max-md:bottom-10 max-md:left-1/2 max-md:-translate-x-1/2 md:relative md:mt-10 transition-all duration-700 ease-out ${heroExited ? "opacity-0 scale-75" : "opacity-100 scale-100"}`}
+            style={{ pointerEvents: "none", zIndex: 10 }}>
+
+            {/* Expanding ring behind the pill */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full animate-ping"
+                style={{ backgroundColor: P.accent, opacity: 0.12, animationDuration: "2.5s" }} />
+            </div>
+
+            {/* Glass pill backdrop for visibility over the hero */}
+            <div className="relative flex flex-col items-center gap-0 px-7 py-3.5 rounded-2xl"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.12)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.2)",
+                animation: "gentle-float 2.4s ease-in-out infinite",
+              }}>
+              <svg className="w-6 h-6 -mb-1.5" fill="none" stroke={P.accent} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+              <svg className="w-6 h-6 -mt-1.5" fill="none" stroke={P.accent} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
       </section>
 
       {/* ── Sticky Header ────────────────────────── */}

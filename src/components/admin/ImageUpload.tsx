@@ -20,13 +20,14 @@ type Props = {
   currentUrl?: string;
   onUpload: (url: string) => void;
   locale?: string;
+  compact?: boolean;
 };
 
 function t(locale: string | undefined, en: string, ar: string) {
   return locale === "ar" ? ar : en;
 }
 
-export default function ImageUpload({ currentUrl, onUpload, locale }: Props) {
+export default function ImageUpload({ currentUrl, onUpload, locale, compact }: Props) {
   const [preview, setPreview] = useState(currentUrl || "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +70,37 @@ export default function ImageUpload({ currentUrl, onUpload, locale }: Props) {
     }
   };
 
+  if (compact) {
+    return (
+      <div className="space-y-1">
+        <div
+          onClick={() => !uploading && inputRef.current?.click()}
+          className="relative flex items-center justify-center rounded-lg border border-dashed border-border bg-white cursor-pointer hover:border-primary transition-all overflow-hidden"
+          style={{ width: 52, height: 52 }}
+        >
+          {uploading ? (
+            <svg className="w-4 h-4 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : preview ? (
+            <>
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+              <button type="button" onClick={(e) => { e.stopPropagation(); setPreview(""); onUpload(""); }}
+                className="absolute top-0.5 end-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center text-[8px]">✕</button>
+            </>
+          ) : (
+            <svg className="w-4 h-4" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            </svg>
+          )}
+        </div>
+        <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        {error && <p className="text-[10px] text-error">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-foreground mb-1">
@@ -77,7 +109,7 @@ export default function ImageUpload({ currentUrl, onUpload, locale }: Props) {
       <div
         onClick={() => !uploading && inputRef.current?.click()}
         className="relative flex items-center justify-center rounded-xl border-2 border-dashed border-border bg-white cursor-pointer hover:border-primary hover:bg-primary/5 transition-all overflow-hidden"
-        style={{ minHeight: 160 }}
+        style={{ minHeight: 120 }}
       >
         {uploading ? (
           <div className="flex flex-col items-center gap-2 py-8">

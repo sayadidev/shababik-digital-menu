@@ -20,29 +20,29 @@ export default function ItemCard({ item, onSelect }: Props) {
   return (
     <article
       onClick={() => onSelect(item)}
-      className="card card-border border-border bg-surface transition-all duration-200 hover:shadow-md active:scale-[0.99] cursor-pointer"
+      className="relative cursor-pointer rounded-2xl border border-black/5 bg-white shadow-sm ring-1 ring-transparent transition-all duration-150 active:scale-[0.98] hover:shadow-md hover:ring-black/[0.03]"
     >
       {item.is_bestseller && (
-        <div className="badge badge-secondary absolute -top-2.5 start-4 z-10 border-0 text-[11px] font-semibold shadow-xs">
+        <div className="absolute -top-2.5 left-4 z-10 rounded-full bg-amber-500 px-3 py-0.5 text-[11px] font-semibold text-white shadow-sm rtl:right-4 rtl:left-auto">
           {t("bestseller")}
         </div>
       )}
 
-      <div className="card-body flex-row gap-4 p-4">
-        <div className="relative mt-1 h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-24">
+      <div className="flex gap-4 p-4">
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl">
           {item.image_url ? (
             <Image
               src={item.image_url}
               alt={name}
               fill
-              sizes="(max-width: 640px) 88px, 96px"
-              className="object-cover transition-transform duration-300 hover:scale-105"
+              sizes="96px"
+              className="object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-brand-light/40">
+            <div className="flex h-full w-full items-center justify-center bg-[#F5F0E6]">
               <svg
-                className="h-8 w-8 text-brand/50"
+                className="h-8 w-8 text-[#9a6a3a]/40"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -59,32 +59,35 @@ export default function ItemCard({ item, onSelect }: Props) {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col justify-center">
-          <h3 className="text-sm font-semibold text-foreground sm:text-base">
+          <h3 className="text-base font-bold text-gray-900 sm:text-lg">
             {name}
           </h3>
           {description && (
-            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted sm:text-sm">
+            <p className="mt-1 line-clamp-2 text-sm text-gray-500">
               {description}
             </p>
           )}
 
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {item.item_variants.map((v) => {
               const sizeName =
                 locale === "ar" ? v.size_name_ar : v.size_name_en;
               return (
                 <div
                   key={v.id}
-                  className="inline-flex items-baseline gap-1 rounded-md border border-border bg-brand-light/30 px-2.5 py-1 text-xs"
+                  className="inline-flex flex-col rounded-lg bg-[#F5F0E6] px-3 py-1.5"
                 >
-                  {item.item_variants.length > 1 && sizeName && (
-                    <span className="font-medium text-muted">{sizeName}</span>
-                  )}
-                  <span className="font-semibold tabular-nums text-foreground">
-                    ${v.price_usd.toFixed(2)}
+                  <span className="flex items-baseline gap-1">
+                    {item.item_variants.length > 1 && sizeName && (
+                      <span className="text-xs font-medium text-[#5A4A3A]">
+                        {sizeName}
+                      </span>
+                    )}
+                    <span className="text-sm font-bold tabular-nums text-[#5A4A3A]">
+                      ${v.price_usd.toFixed(2)}
+                    </span>
                   </span>
-                  <span className="text-border">/</span>
-                  <span className="tabular-nums text-muted">
+                  <span className="text-[11px] tabular-nums text-[#8A7A6A]">
                     {v.price_syp.toLocaleString()} {t("syp")}
                   </span>
                 </div>

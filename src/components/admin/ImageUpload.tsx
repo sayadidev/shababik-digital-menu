@@ -21,13 +21,16 @@ type Props = {
   onUpload: (url: string) => void;
   locale?: string;
   compact?: boolean;
+  formatHint?: string;
+  sizeHint?: string;
+  dimsHint?: string;
 };
 
 function t(locale: string | undefined, en: string, ar: string) {
   return locale === "ar" ? ar : en;
 }
 
-export default function ImageUpload({ currentUrl, onUpload, locale, compact }: Props) {
+export default function ImageUpload({ currentUrl, onUpload, locale, compact, formatHint, sizeHint, dimsHint }: Props) {
   const [preview, setPreview] = useState(currentUrl || "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -135,13 +138,17 @@ export default function ImageUpload({ currentUrl, onUpload, locale, compact }: P
             </button>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-8">
+          <div className="flex flex-col items-center gap-1.5 py-6">
             <svg className="w-8 h-8 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span className="text-sm text-muted">{t(locale, "Click to upload image", "انقر لرفع صورة")}</span>
-            <span className="text-[11px] text-muted/60">{t(locale, "Max 10MB · Auto-compressed", "10 ميجابايت كحد أقصى · ضغط تلقائي")}</span>
-            <span className="text-[10px] text-muted/40">{t(locale, "Recommended: 1200×900px · 4:3 ratio", "يُفضل: 1200×900 بكسل · نسبة 4:3")}</span>
+            {formatHint && (
+              <p className="text-xs text-gray-500">{formatHint}{sizeHint ? ` · ${sizeHint}` : ""}</p>
+            )}
+            {dimsHint && (
+              <p className="text-xs text-gray-400">{dimsHint}</p>
+            )}
           </div>
         )}
       </div>

@@ -109,7 +109,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-24">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-32">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -156,10 +156,14 @@ export default function SettingsPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             {t("Hero Background Image", "صورة خلفية الهيرو")}
           </label>
-          <ImageUpload currentUrl={heroImageUrl} onUpload={setHeroImageUrl} locale={locale} />
-          <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
-            {t("JPEG, PNG or WebP · Max 10MB · 1440×900px recommended", "JPEG، PNG أو WebP · الحد الأقصى 10 ميغابايت · يوصى بـ 1440×900 بكسل")}
-          </p>
+          <ImageUpload
+            currentUrl={heroImageUrl}
+            onUpload={setHeroImageUrl}
+            locale={locale}
+            formatHint={t("JPEG, PNG, WebP", "JPEG، PNG، WebP")}
+            sizeHint={t("Max 10MB", "الحد الأقصى 10 ميغابايت")}
+            dimsHint={t("1440×900px recommended", "الأبعاد الموصى بها: 1440×900 بكسل")}
+          />
         </div>
 
         {/* Hero Logo */}
@@ -167,10 +171,14 @@ export default function SettingsPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             {t("Hero Logo", "شعار الهيرو")}
           </label>
-          <ImageUpload currentUrl={heroLogoUrl} onUpload={setHeroLogoUrl} locale={locale} />
-          <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
-            {t("PNG with transparency preferred · Max 5MB · 400×200px recommended", "يفضل PNG شفاف · الحد الأقصى 5 ميغابايت · يوصى بـ 400×200 بكسل")}
-          </p>
+          <ImageUpload
+            currentUrl={heroLogoUrl}
+            onUpload={setHeroLogoUrl}
+            locale={locale}
+            formatHint={t("PNG with transparency, WebP, SVG", "PNG شفاف، WebP، SVG")}
+            sizeHint={t("Max 5MB", "الحد الأقصى 5 ميغابايت")}
+            dimsHint={t("400×200px recommended", "الأبعاد الموصى بها: 400×200 بكسل")}
+          />
         </div>
 
         {/* Header Logo */}
@@ -178,10 +186,14 @@ export default function SettingsPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             {t("Header & Footer Logo", "شعار الرأس والتذييل")}
           </label>
-          <ImageUpload currentUrl={headerLogoUrl} onUpload={setHeaderLogoUrl} locale={locale} />
-          <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
-            {t("Small logo for sticky header and footer · 120×60px recommended", "شعار صغير للرأس الثابت والتذييل · يوصى بـ 120×60 بكسل")}
-          </p>
+          <ImageUpload
+            currentUrl={headerLogoUrl}
+            onUpload={setHeaderLogoUrl}
+            locale={locale}
+            formatHint={t("PNG with transparency, WebP, SVG", "PNG شفاف، WebP، SVG")}
+            sizeHint={t("Max 5MB", "الحد الأقصى 5 ميغابايت")}
+            dimsHint={t("120×60px recommended", "الأبعاد الموصى بها: 120×60 بكسل")}
+          />
         </div>
       </div>
 
@@ -412,7 +424,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Sticky Save Footer ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200 px-4 py-3 md:pl-[88px] rtl:md:pr-[88px] rtl:md:pl-4">
+      <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-50 bg-white/90 backdrop-blur border-t border-gray-200 px-4 py-3 md:pl-[88px] rtl:md:pr-[88px] rtl:md:pl-0">
         <div className="max-w-3xl mx-auto flex items-center justify-end gap-3">
           <button
             type="button"

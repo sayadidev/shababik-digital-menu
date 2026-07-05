@@ -15,8 +15,7 @@ export default async function ItemsPage({
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">{t("Menu Items", "الأصناف")} ({items.length})</h2>
+      <div className="flex items-center justify-end">
         <Link
           href="/admin/items/new"
           locale={locale}

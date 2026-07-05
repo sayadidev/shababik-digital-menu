@@ -10,6 +10,7 @@ const pageTitles: Record<string, { en: string; ar: string }> = {
   "/admin/items": { en: "Items", ar: "الأصناف" },
   "/admin/items/new": { en: "New Item", ar: "صنف جديد" },
   "/admin/analytics": { en: "Analytics", ar: "الإحصائيات" },
+  "/admin/orders": { en: "Orders", ar: "الطلبات" },
 };
 
 export default function TopBar() {
@@ -30,11 +31,11 @@ export default function TopBar() {
   const otherLocale = locale === "en" ? "ar" : "en";
 
   return (
-    <header className="sticky top-0 z-30 bg-surface/70 backdrop-blur-xl border-b border-border">
-      <div className="flex items-center justify-between px-4 md:px-6 h-14">
+    <header className="sticky top-0 z-30 bg-[#FDFBF7] border-b border-border">
+      <div className="flex justify-between items-center px-4 py-3">
         <div className="flex items-center gap-3">
           <Link href="/admin" locale={locale} className="md:hidden shrink-0">
-            <img src="/wooden-trans-logo.webp" alt="S" className="w-8 h-8 object-contain" />
+            <img src="/wooden-trans-logo.webp" alt="S" className="h-10 object-contain" />
           </Link>
           <h1 className="text-sm font-semibold text-foreground">{title}</h1>
         </div>

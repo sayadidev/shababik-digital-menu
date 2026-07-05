@@ -109,7 +109,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-[140px]">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -423,15 +423,12 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Sticky Save Footer ── */}
-      <div
-        className="fixed left-0 right-0 w-full bg-white border-t border-gray-200 p-4 flex justify-between sm:justify-end items-center gap-3 z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-        style={{ bottom: "72px" }}
-      >
+      {/* ── Save & Cancel ── */}
+      <div className="w-full mt-8 mb-12 flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all"
+          className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2 transition-colors"
         >
           {t("Cancel", "إلغاء")}
         </button>
@@ -439,7 +436,7 @@ export default function SettingsPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 inline-flex items-center gap-2"
+          className="bg-[#3C3025] text-white px-8 py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform disabled:opacity-50 inline-flex items-center gap-2"
         >
           {saving && (
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">

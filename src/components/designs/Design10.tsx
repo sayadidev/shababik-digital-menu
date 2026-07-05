@@ -503,11 +503,11 @@ export default function Design10({ data }: { data: MenuData }) {
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           backgroundColor: "rgba(245,239,223,0.82)",
-          boxShadow: showHeader ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
-          borderBottom: showHeader ? "1px solid #dcc8b4" : "1px solid transparent",
-          transform: showHeader ? "translateY(0)" : "translateY(-100%)",
-          opacity: showHeader ? 1 : 0,
-          pointerEvents: showHeader ? "auto" : "none",
+          boxShadow: (showHeader || searchOpen) ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
+          borderBottom: (showHeader || searchOpen) ? "1px solid #dcc8b4" : "1px solid transparent",
+          transform: (showHeader || searchOpen) ? "translateY(0)" : "translateY(-100%)",
+          opacity: (showHeader || searchOpen) ? 1 : 0,
+          pointerEvents: (showHeader || searchOpen) ? "auto" : "none",
           transition: "transform 0.35s ease-out, opacity 0.25s ease-out",
         }}>
         {/* ── Top Bar: Lang · Logo · Table Pill ──── */}
@@ -532,71 +532,69 @@ export default function Design10({ data }: { data: MenuData }) {
 
         {/* ── Categories Nav + Expandable Search ──────── */}
         <nav className="flex items-center px-4 pb-2.5 min-h-[44px]">
-          {!searchOpen ? (
-            <div className="scrollbar-hide overflow-x-auto flex-1 min-w-0">
-              <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
-                {data.categories.map((cat) => {
-                  const name = locale === "ar" ? cat.name_ar : cat.name_en;
-                  const isActive = activeCatId === cat.id;
-                  return (
-                    <button key={cat.id} ref={captureButton} data-cat-id={cat.id} type="button" onClick={() => scrollTo(cat.id)}
-                      className="shrink-0 whitespace-nowrap px-3.5 py-2.5 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0"
-                      style={{
-                        color: isActive ? P.accent : P.muted,
-                        backgroundColor: isActive ? `${P.accent}15` : "transparent",
-                      }}>
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Categories tabs (hidden when search is open) */}
+          <div className={`scrollbar-hide overflow-x-auto flex-1 min-w-0 ${searchOpen ? 'hidden' : ''}`}>
+            <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
+              {data.categories.map((cat) => {
+                const name = locale === "ar" ? cat.name_ar : cat.name_en;
+                const isActive = activeCatId === cat.id;
+                return (
+                  <button key={cat.id} ref={captureButton} data-cat-id={cat.id} type="button" onClick={() => scrollTo(cat.id)}
+                    className="shrink-0 whitespace-nowrap px-3.5 py-2.5 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0"
+                    style={{
+                      color: isActive ? P.accent : P.muted,
+                      backgroundColor: isActive ? `${P.accent}15` : "transparent",
+                    }}>
+                    {name}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="flex-1 flex items-center gap-2 search-expand-enter">
-              <svg className="w-4 h-4 shrink-0" style={{ color: P.muted }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={locale === "ar" ? "ابحث عن عنصر..." : "Search items..."}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-50 min-w-0"
-                style={{ color: P.deep }}
-              />
-              <button
-                type="button"
-                onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-                className="shrink-0 text-xs font-semibold px-2 py-1 rounded-md hover:bg-black/5 transition-colors"
-                style={{ color: P.accent }}
-              >
-                {locale === "ar" ? "إلغاء" : "Cancel"}
-              </button>
-            </div>
-          )}
+          </div>
 
-          {/* Search icon button */}
-          {!searchOpen && (
+          {/* Search input + Cancel (hidden when search is closed) */}
+          <div className={`flex-1 flex items-center gap-2 ${!searchOpen ? 'hidden' : ''}`}>
+            <svg className="w-4 h-4 shrink-0" style={{ color: P.muted }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={locale === "ar" ? "ابحث عن عنصر..." : "Search items..."}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-50 min-w-0"
+              style={{ color: P.deep }}
+            />
             <button
               type="button"
-              onClick={() => setSearchOpen(true)}
-              className="shrink-0 ml-1 p-2 rounded-lg hover:bg-black/5 transition-colors"
-              style={{ color: P.muted }}
-              aria-label={locale === "ar" ? "بحث" : "Search"}
+              onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+              className="shrink-0 text-xs font-semibold px-2 py-1 rounded-md hover:bg-black/5 transition-colors"
+              style={{ color: P.accent }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+              {locale === "ar" ? "إلغاء" : "Cancel"}
             </button>
-          )}
+          </div>
+
+          {/* Search icon button (hidden when search is open) */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className={`shrink-0 ml-1 p-2 rounded-lg hover:bg-black/5 transition-colors ${searchOpen ? 'hidden' : ''}`}
+            style={{ color: P.muted }}
+            aria-label={locale === "ar" ? "بحث" : "Search"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </button>
         </nav>
       </header>
 
       {/* ── Menu Content ────────────────────────── */}
       <div className="mx-auto max-w-4xl px-3 sm:px-4"
         style={{
-          paddingTop: showHeader ? "90px" : "0px",
+          paddingTop: (showHeader || searchOpen) ? "90px" : "0px",
         }}>
         <main className={`transition-all duration-700 ease-out ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${orderingEnabled ? "pb-24" : "pb-8"}`}>
           {/* ── Empty state (no categories at all) ── */}

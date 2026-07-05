@@ -325,6 +325,7 @@ export default function Design10({ data }: { data: MenuData }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: P.bg }}>
       {/* ── Hero — logo + 3 featured glassy cards ── */}
+      {!searchOpen && (
       <section ref={heroRef}
         className="relative flex flex-col items-center overflow-hidden min-h-[92dvh] md:min-h-[100dvh] pt-[10dvh] md:pt-[16dvh]"
         style={{
@@ -494,6 +495,7 @@ export default function Design10({ data }: { data: MenuData }) {
           </div>
         </div>
       </section>
+      )}
 
       {/* ── Unified Sticky Header ────────────────── */}
       <header

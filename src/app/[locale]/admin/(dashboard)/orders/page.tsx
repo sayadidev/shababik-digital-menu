@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
+import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateOrderStatus } from "@/lib/actions/orders";
@@ -17,6 +17,10 @@ interface Order {
   totalUsd: number;
   totalSyp: number;
   createdAt: string;
+  acceptedBy: string | null;
+  completedBy: string | null;
+  rating: number | null;
+  feedbackText: string | null;
 }
 
 // ── DB row → display Order ──
@@ -34,6 +38,10 @@ function toOrder(row: OrderRow): Order {
     totalUsd: row.total_usd,
     totalSyp: row.total_syp,
     createdAt: row.created_at,
+    acceptedBy: row.accepted_by ?? null,
+    completedBy: row.completed_by ?? null,
+    rating: row.rating ?? null,
+    feedbackText: row.feedback_text ?? null,
   };
 }
 
@@ -132,7 +140,7 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, enableUsd, actions = [] }: { order: Order; locale: string; enableUsd: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
+function OrderCard({ order, locale, enableUsd, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; enableUsd: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
@@ -199,6 +207,46 @@ function OrderCard({ order, locale, enableUsd, actions = [] }: { order: Order; l
           ))}
         </div>
       )}
+
+      {showAudit && (order.acceptedBy || order.completedBy) && (
+        <div className="pt-2 border-t border-border/30 space-y-0.5">
+          {order.acceptedBy && (
+            <p className="text-[10px]" style={{ color: "#8a7a6a" }}>
+              {t(locale, "Accepted by:", "تم القبول بواسطة:")}{" "}
+              <span className="font-medium" style={{ color: "#5a4a3a" }}>{order.acceptedBy}</span>
+            </p>
+          )}
+          {order.completedBy && (
+            <p className="text-[10px]" style={{ color: "#8a7a6a" }}>
+              {t(locale, "Completed by:", "تم الإنجاز بواسطة:")}{" "}
+              <span className="font-medium" style={{ color: "#5a4a3a" }}>{order.completedBy}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {showFeedback && order.rating && (
+        <div className="pt-2 border-t border-border/30 space-y-1">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px]" style={{ color: "#8a7a6a" }}>
+              {t(locale, "Rating:", "التقييم:")}
+            </span>
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <svg key={star} className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={star <= order.rating! ? "#F59E0B" : "#E5E7EB"}>
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs font-bold tabular-nums ml-1" style={{ color: "#3B2818" }}>{order.rating}/5</span>
+          </div>
+          {order.feedbackText && (
+            <p className="text-[11px] italic" style={{ color: "#5a4a3a" }}>
+              &ldquo;{order.feedbackText}&rdquo;
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -213,6 +261,9 @@ export default function OrdersPage() {
   const [tier, setTier] = useState<"basic" | "pro">("basic");
   const [enableUsd, setEnableUsd] = useState(true);
   const [tierLoading, setTierLoading] = useState(true);
+  const [isStaff, setIsStaff] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [processingOrders, setProcessingOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<{ completed: Order[]; cancelled: Order[] }>({ completed: [], cancelled: [] });
@@ -220,6 +271,67 @@ export default function OrdersPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  function getAudioCtx(): AudioContext {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioCtxRef.current;
+  }
+
+  const playDing = useCallback(() => {
+    if (!audioEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1047, now + 0.06);
+      osc.frequency.setValueAtTime(1320, now + 0.12);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch {}
+  }, [audioEnabled]);
+
+  const handleEnableAudio = useCallback(async () => {
+    try {
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      setAudioEnabled(true);
+      setAudioReady(true);
+      // play a subtle test ding
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(660, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch {
+      setAudioReady(false);
+    }
+  }, []);
 
   // ── Tier check ──
   useEffect(() => {
@@ -232,6 +344,18 @@ export default function OrdersPage() {
       setTierLoading(false);
     }, () => {
       setTierLoading(false);
+    });
+  }, []);
+
+  // ── Role check ──
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.app_metadata?.role === "staff") {
+        setIsStaff(true);
+      }
+      setUserEmail(session?.user?.email ?? null);
+      setRoleLoaded(true);
     });
   }, []);
 
@@ -292,36 +416,82 @@ export default function OrdersPage() {
     })();
   }, [tab, historyDate, tier]);
 
-  // ── Auto-refresh polling (every 5s) ──
+  // ── Real-time subscription (replaces polling) ──
   useEffect(() => {
     if (tier !== "pro") return;
-    const interval = setInterval(() => {
-      fetchActiveOrders();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [tier, fetchActiveOrders]);
+
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("orders-live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        async (payload) => {
+          const newRow = payload.new as OrderRow;
+          if (newRow.status === "pending") {
+            try {
+              const { data } = await supabase
+                .from("orders")
+                .select("*, order_items(*)")
+                .eq("id", newRow.id)
+                .single();
+              if (data) {
+                const order = toOrder(data as OrderRow);
+                setPendingOrders((prev) => [order, ...prev]);
+                if (!loaded) setLoaded(true);
+                playDing();
+              }
+            } catch {}
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          const oldStatus = (payload.old as Record<string, unknown>)?.status;
+          const newStatus = (payload.new as Record<string, unknown>)?.status;
+          if (oldStatus === "pending" && newStatus === "processing") {
+            playDing();
+          }
+          fetchActiveOrders();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tier, fetchActiveOrders, playDing, loaded]);
 
   // ── Action handlers ──
 
   const handleStatusUpdate = useCallback(async (orderId: string, status: OrderStatus) => {
     setLoadingAction(orderId);
-    const res = await updateOrderStatus(orderId, status);
-    if (res.success) {
-      // Optimistic UI update
-      if (status === "completed" || status === "cancelled") {
-        setPendingOrders(prev => prev.filter(o => o.id !== orderId));
-        setProcessingOrders(prev => prev.filter(o => o.id !== orderId));
-      } else if (status === "processing") {
-        const order = pendingOrders.find(o => o.id === orderId);
-        if (order) {
-          setPendingOrders(prev => prev.filter(o => o.id !== orderId));
-          setProcessingOrders(prev => [...prev, { ...order, status: "processing" }]);
-        }
+
+    if (status === "completed" || status === "cancelled") {
+      setPendingOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setProcessingOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } else if (status === "processing") {
+      const order = pendingOrders.find((o) => o.id === orderId);
+      if (order) {
+        setPendingOrders((prev) => prev.filter((o) => o.id !== orderId));
+        setProcessingOrders((prev) => [
+          ...prev,
+          { ...order, status: "processing", acceptedBy: userEmail },
+        ]);
       }
+    }
+
+    const res = await updateOrderStatus(orderId, status, userEmail);
+    if (res.success) {
       router.refresh();
+    } else {
+      fetchActiveOrders();
     }
     setLoadingAction(null);
-  }, [pendingOrders, router]);
+  }, [pendingOrders, router, userEmail, fetchActiveOrders]);
 
   const history = useMemo(() => historyOrders, [historyOrders]);
 
@@ -335,7 +505,7 @@ export default function OrdersPage() {
     return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [history.completed]);
 
-  if (tierLoading) {
+  if (tierLoading || !roleLoaded) {
     return (
       <div className="p-4 md:p-6 max-w-3xl mx-auto flex items-center justify-center" style={{ minHeight: "50vh" }}>
         <svg className="w-6 h-6 animate-spin" style={{ color: "#9a6a3a" }} viewBox="0 0 24 24" fill="none">
@@ -360,13 +530,45 @@ export default function OrdersPage() {
   const TABS: { key: Tab; labelEn: string; labelAr: string; count?: number }[] = [
     { key: "pending", labelEn: "Pending Orders", labelAr: "قيد الانتظار", count: pendingOrders.length },
     { key: "kds", labelEn: "Kitchen Display", labelAr: "شاشة المطبخ", count: processingOrders.length },
-    { key: "history", labelEn: "Order History", labelAr: "سجل الطلبات" },
+    ...(isStaff ? [] : [{ key: "history" as Tab, labelEn: "Order History", labelAr: "سجل الطلبات" }]),
   ];
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       {tier === "pro" ? (
         <>
+          {/* ── Audio Alerts Toggle ── */}
+          <div className="flex items-center justify-end mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (audioEnabled) {
+                  setAudioEnabled(false);
+                } else {
+                  handleEnableAudio();
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] border-0"
+              style={{
+                backgroundColor: audioEnabled ? "#5a8a3a" : "#f5efdf",
+                color: audioEnabled ? "#fff" : "#8a7a6a",
+              }}
+            >
+              {audioEnabled ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8.8l3.7-3.2c.4-.3 1-.1 1 .4v12c0 .5-.6.7-1 .4L6.5 15.2H4a2 2 0 01-2-2v-4a2 2 0 012-2h2.5z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.586 15H4a2 2 0 01-2-2v-4a2 2 0 012-2h1.586l4.707-3.706C10.923 3.043 12 3.232 12 4v16c0 .768-1.077.957-1.707.294L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+              )}
+              {audioEnabled
+                ? t(locale, "Audio Alerts Active", "التنبيهات الصوتية مفعلة")
+                : t(locale, "Enable Audio Alerts", "تفعيل التنبيهات الصوتية")}
+            </button>
+          </div>
+
           {/* ── Tab Navigation ── */}
           <div className="flex gap-1 mb-5 p-1 rounded-xl" style={{ backgroundColor: "#f5efdf" }}>
             {TABS.map((tabItem) => (
@@ -524,25 +726,7 @@ export default function OrdersPage() {
                             </span>
                           </div>
                           {history.completed.map((order) => (
-                            <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} />
-                          ))}
-                        </>
-                      )}
-                      {history.cancelled.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-2 mb-2 mt-4">
-                            <svg className="w-4 h-4" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#8a7a6a" }}>
-                              {t(locale, "Cancelled", "ملغية")}
-                            </span>
-                            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: "#fce8e8", color: "#b55a5a" }}>
-                              {history.cancelled.length}
-                            </span>
-                          </div>
-                          {history.cancelled.map((order) => (
-                            <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} />
+                            <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} showAudit showFeedback />
                           ))}
                         </>
                       )}

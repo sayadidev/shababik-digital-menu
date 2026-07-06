@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useLocale } from "next-intl";
+import { createClient } from "@/lib/supabase/client";
+import { getUserRole } from "@/lib/auth";
 import { trackMenuLoad } from "@/lib/track-menu-load";
 import ItemDetailSheet from "@/components/menu/ItemDetailSheet";
 import AddToCartSheet from "@/components/menu/AddToCartSheet";
@@ -76,16 +78,13 @@ export default function Design10({ data }: { data: MenuData }) {
   const [canAnimate, setCanAnimate] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const tickingRef = useRef(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchOpenRef = useRef(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => { trackMenuLoad().catch(() => {}); setTimeout(() => setLoaded(true), 100); }, []);
   useEffect(() => { setMounted(true); }, []);
@@ -97,6 +96,17 @@ export default function Design10({ data }: { data: MenuData }) {
       const n = parseInt(t, 10);
       if (n > 0) setTableNumber(n);
     }
+  }, []);
+
+  // Auth session check — real Supabase session for staff/admin
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const role = getUserRole(session);
+      if (role === "staff" || role === "super_admin") {
+        setIsStaff(true);
+      }
+    });
   }, []);
   // Enable card animation after first paint — prevents mount flicker
   useEffect(() => {
@@ -128,13 +138,6 @@ export default function Design10({ data }: { data: MenuData }) {
     setHeroExited(window.scrollY > 20);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    searchOpenRef.current = searchOpen;
-    if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchOpen]);
 
   const observe = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
@@ -178,29 +181,12 @@ export default function Design10({ data }: { data: MenuData }) {
   const enableUsd = data.settings?.enable_usd ?? true;
 
   const handleItemClick = useCallback((item: ItemWithVariants) => {
-    if (searchOpenRef.current) {
-      setSearchOpen(false);
-      setSearchQuery("");
-    }
     if (orderingEnabled) {
       setAddToCartItem({ item, variant: item.item_variants[0] ?? null });
     } else {
       setSelectedItem(item);
     }
   }, [orderingEnabled]);
-
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return data.categories
-      .flatMap(c => c.items)
-      .filter(item =>
-        item.name_en.toLowerCase().includes(q) ||
-        item.name_ar.toLowerCase().includes(q) ||
-        (item.description_en && item.description_en.toLowerCase().includes(q)) ||
-        (item.description_ar && item.description_ar.toLowerCase().includes(q))
-      );
-  }, [searchQuery, data.categories]);
 
   const featuredItems = useMemo(() => {
     const allActive = data.categories.flatMap(c => c.items).filter(i => i.is_active);
@@ -235,97 +221,9 @@ export default function Design10({ data }: { data: MenuData }) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const renderItemRow = (item: ItemWithVariants) => {
-    const name = locale === "ar" ? item.name_ar : item.name_en;
-    const description = locale === "ar" ? item.description_ar : item.description_en;
-    return (
-      <article
-        key={item.id}
-        onClick={() => handleItemClick(item)}
-        className="flex gap-4 py-4 border-b border-[#E8E6E1]/50 last:border-0 active:scale-[0.98] transition-transform cursor-pointer"
-      >
-        <div className="relative w-[90px] h-[90px] sm:w-[100px] sm:h-[100px] shrink-0">
-          {item.image_url ? (
-            <>
-              <Image
-                src={item.image_url}
-                alt={name}
-                fill
-                sizes="100px"
-                className="object-cover rounded-xl"
-                loading="lazy"
-              />
-              {item.is_bestseller && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#B8743A] text-[10px] font-bold flex items-center justify-center text-white shadow-sm z-10">
-                  ★
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="w-full h-full rounded-xl flex items-center justify-center bg-[#F4F0EA]">
-                <Placeholder />
-              </div>
-              {item.is_bestseller && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#B8743A] text-[10px] font-bold flex items-center justify-center text-white shadow-sm z-10">
-                  ★
-                </span>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="flex flex-col flex-1 min-w-0">
-          <h3 className="text-base font-bold text-gray-900">{name}</h3>
-          {description && (
-            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
-              {description}
-            </p>
-          )}
-
-          <div className="flex flex-wrap gap-2 mt-2">
-            {item.item_variants.map((v) => {
-              const sizeName =
-                locale === "ar" ? v.size_name_ar : v.size_name_en;
-              return (
-                <div
-                  key={v.id}
-                  className="inline-flex items-baseline gap-1 px-2 py-0.5 rounded-md bg-[#F4F0EA] text-xs"
-                >
-                  {item.item_variants.length > 1 && sizeName && (
-                    <span className="text-gray-600">{sizeName}</span>
-                  )}
-                  {v.is_offer && v.price_before_usd != null && enableUsd && (
-                    <span className="line-through opacity-50">
-                      ${v.price_before_usd.toFixed(2)}
-                    </span>
-                  )}
-                  {enableUsd ? (
-                    <span className="tabular-nums font-semibold text-gray-900">
-                      ${v.price_usd.toFixed(2)}
-                    </span>
-                  ) : null}
-                  {v.is_offer && v.price_before_syp != null && (
-                    <span className="line-through opacity-50">
-                      {v.price_before_syp.toLocaleString()}
-                    </span>
-                  )}
-                  <span className={`tabular-nums ${enableUsd ? "text-[10px] text-gray-400" : "font-semibold text-gray-900"}`}>
-                    {v.price_syp.toLocaleString()}{!enableUsd ? " SYP" : ""}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </article>
-    );
-  };
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: P.bg }}>
       {/* ── Hero — logo + 3 featured glassy cards ── */}
-      {!searchOpen && (
       <section ref={heroRef}
         className="relative flex flex-col items-center overflow-hidden min-h-[92dvh] md:min-h-[100dvh] pt-[10dvh] md:pt-[16dvh]"
         style={{
@@ -495,7 +393,6 @@ export default function Design10({ data }: { data: MenuData }) {
           </div>
         </div>
       </section>
-      )}
 
       {/* ── Unified Sticky Header ────────────────── */}
       <header
@@ -505,11 +402,11 @@ export default function Design10({ data }: { data: MenuData }) {
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           backgroundColor: "rgba(245,239,223,0.82)",
-          boxShadow: (showHeader || searchOpen) ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
-          borderBottom: (showHeader || searchOpen) ? "1px solid #dcc8b4" : "1px solid transparent",
-          transform: (showHeader || searchOpen) ? "translateY(0)" : "translateY(-100%)",
-          opacity: (showHeader || searchOpen) ? 1 : 0,
-          pointerEvents: (showHeader || searchOpen) ? "auto" : "none",
+          boxShadow: showHeader ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
+          borderBottom: showHeader ? "1px solid #dcc8b4" : "1px solid transparent",
+          transform: showHeader ? "translateY(0)" : "translateY(-100%)",
+          opacity: showHeader ? 1 : 0,
+          pointerEvents: showHeader ? "auto" : "none",
           transition: "transform 0.35s ease-out, opacity 0.25s ease-out",
         }}>
         {/* ── Top Bar: Lang · Logo · Table Pill ──── */}
@@ -522,7 +419,13 @@ export default function Design10({ data }: { data: MenuData }) {
             alt="Shababik"
             className="h-8 w-28 object-contain shrink-0"
           />
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end items-center gap-2">
+            {isStaff && (
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold"
+                style={{ backgroundColor: "#059669", color: "#fff" }}>
+                {locale === "ar" ? "وضع الموظف" : "Staff Mode"}
+              </span>
+            )}
             {tableNumber && (
               <span className="px-3 py-1 rounded-full text-xs font-bold"
                 style={{ backgroundColor: `${P.deep}0e`, color: P.deep }}>
@@ -532,96 +435,38 @@ export default function Design10({ data }: { data: MenuData }) {
           </div>
         </div>
 
-        {/* ── Categories Nav + Expandable Search ──────── */}
-        <nav className="flex items-center px-4 pb-2.5 min-h-[44px]">
-          {/* Categories tabs (hidden when search is open) */}
-          <div className={`scrollbar-hide overflow-x-auto flex-1 min-w-0 ${searchOpen ? 'hidden' : ''}`}>
-            <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
-              {data.categories.map((cat) => {
-                const name = locale === "ar" ? cat.name_ar : cat.name_en;
-                const isActive = activeCatId === cat.id;
-                return (
-                  <button key={cat.id} ref={captureButton} data-cat-id={cat.id} type="button" onClick={() => scrollTo(cat.id)}
-                    className="shrink-0 whitespace-nowrap px-3.5 py-2.5 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0"
-                    style={{
-                      color: isActive ? P.accent : P.muted,
-                      backgroundColor: isActive ? `${P.accent}15` : "transparent",
-                    }}>
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
+        {/* ── Categories Nav ───────────────────────── */}
+        <nav className="scrollbar-hide overflow-x-auto px-4 pb-2.5">
+          <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
+            {data.categories.map((cat) => {
+              const name = locale === "ar" ? cat.name_ar : cat.name_en;
+              const isActive = activeCatId === cat.id;
+              return (
+                <button key={cat.id} ref={captureButton} data-cat-id={cat.id} type="button" onClick={() => scrollTo(cat.id)}
+                  className="shrink-0 whitespace-nowrap px-3.5 py-2.5 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0"
+                  style={{
+                    color: isActive ? P.accent : P.muted,
+                    backgroundColor: isActive ? `${P.accent}15` : "transparent",
+                  }}>
+                  {name}
+                </button>
+              );
+            })}
           </div>
-
-          {/* Search input + Cancel (hidden when search is closed) */}
-          <div className={`flex-1 flex items-center gap-2 ${!searchOpen ? 'hidden' : ''}`}>
-            <svg className="w-4 h-4 shrink-0" style={{ color: P.muted }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={locale === "ar" ? "ابحث عن عنصر..." : "Search items..."}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-50 min-w-0"
-              style={{ color: P.deep }}
-            />
-            <button
-              type="button"
-              onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-              className="shrink-0 text-xs font-semibold px-2 py-1 rounded-md hover:bg-black/5 transition-colors"
-              style={{ color: P.accent }}
-            >
-              {locale === "ar" ? "إلغاء" : "Cancel"}
-            </button>
-          </div>
-
-          {/* Search icon button (hidden when search is open) */}
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className={`shrink-0 ml-1 p-2 rounded-lg hover:bg-black/5 transition-colors ${searchOpen ? 'hidden' : ''}`}
-            style={{ color: P.muted }}
-            aria-label={locale === "ar" ? "بحث" : "Search"}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-          </button>
         </nav>
       </header>
 
       {/* ── Menu Content ────────────────────────── */}
       <div className="mx-auto max-w-4xl px-3 sm:px-4"
         style={{
-          paddingTop: (showHeader || searchOpen) ? "90px" : "0px",
+          paddingTop: showHeader ? "90px" : "0px",
         }}>
         <main className={`transition-all duration-700 ease-out ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${orderingEnabled ? "pb-24" : "pb-8"}`}>
-          {/* ── Empty state (no categories at all) ── */}
-          {data.categories.length === 0 && !searchQuery.trim() ? (
+          {data.categories.length === 0 ? (
             <div className="flex flex-col items-center py-24 text-center">
               <p className="text-sm" style={{ color: P.muted }}>{locale === "ar" ? "القائمة قيد الإعداد" : "Menu coming soon"}</p>
             </div>
-          ) : searchOpen && searchQuery.trim() ? (
-            /* ── Search Results ── */
-            filteredItems.length === 0 ? (
-              <div className="flex flex-col items-center py-24 text-center gap-2">
-                <svg className="w-10 h-10" style={{ color: P.muted, opacity: 0.4 }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-                <p className="text-sm" style={{ color: P.muted }}>
-                  {locale === "ar" ? "لا توجد نتائج" : "No results found"}
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {filteredItems.map(renderItemRow)}
-              </div>
-            )
           ) : (
-            /* ── Normal Categorised Layout ── */
             data.categories.map((cat) => {
               const catName = locale === "ar" ? cat.name_ar : cat.name_en;
               return (
@@ -632,7 +477,92 @@ export default function Design10({ data }: { data: MenuData }) {
                     <span className="text-[11px] leading-none" style={{ color: P.accent }}>♡</span>
                     <div className="h-[1.5px] flex-1 rounded-full" style={{ background: `linear-gradient(to ${isRtl ? "right" : "left"}, ${P.border}, transparent)` }} />
                   </div>
-                  {cat.items.map(renderItemRow)}
+                  {cat.items.map((item) => {
+                      const name = locale === "ar" ? item.name_ar : item.name_en;
+                      const description = locale === "ar" ? item.description_ar : item.description_en;
+                      return (
+                        <article
+                          key={item.id}
+                          onClick={() => handleItemClick(item)}
+                          className="flex gap-4 py-4 border-b border-[#E8E6E1]/50 last:border-0 active:scale-[0.98] transition-transform cursor-pointer"
+                        >
+                          <div className="relative w-[90px] h-[90px] sm:w-[100px] sm:h-[100px] shrink-0">
+                            {item.image_url ? (
+                              <>
+                                <Image
+                                  src={item.image_url}
+                                  alt={name}
+                                  fill
+                                  sizes="100px"
+                                  className="object-cover rounded-xl"
+                                  loading="lazy"
+                                />
+                                {item.is_bestseller && (
+                                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#B8743A] text-[10px] font-bold flex items-center justify-center text-white shadow-sm z-10">
+                                    ★
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-full h-full rounded-xl flex items-center justify-center bg-[#F4F0EA]">
+                                  <Placeholder />
+                                </div>
+                                {item.is_bestseller && (
+                                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#B8743A] text-[10px] font-bold flex items-center justify-center text-white shadow-sm z-10">
+                                    ★
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <h3 className="text-base font-bold text-gray-900">{name}</h3>
+                            {description && (
+                              <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                                {description}
+                              </p>
+                            )}
+
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {item.item_variants.map((v) => {
+                                const sizeName =
+                                  locale === "ar" ? v.size_name_ar : v.size_name_en;
+                                return (
+                                  <div
+                                    key={v.id}
+                                    className="inline-flex items-baseline gap-1 px-2 py-0.5 rounded-md bg-[#F4F0EA] text-xs"
+                                  >
+                                    {item.item_variants.length > 1 && sizeName && (
+                                      <span className="text-gray-600">{sizeName}</span>
+                                    )}
+                                    {v.is_offer && v.price_before_usd != null && enableUsd && (
+                                      <span className="line-through opacity-50">
+                                        ${v.price_before_usd.toFixed(2)}
+                                      </span>
+                                    )}
+                                    {enableUsd ? (
+                                      <span className="tabular-nums font-semibold text-gray-900">
+                                        ${v.price_usd.toFixed(2)}
+                                      </span>
+                                    ) : null}
+                                    {v.is_offer && v.price_before_syp != null && (
+                                      <span className="line-through opacity-50">
+                                        {v.price_before_syp.toLocaleString()}
+                                      </span>
+                                    )}
+                                    <span className={`tabular-nums ${enableUsd ? "text-[10px] text-gray-400" : "font-semibold text-gray-900"}`}>
+                                      {v.price_syp.toLocaleString()}{!enableUsd ? " SYP" : ""}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                 </section>
               );
             })
@@ -669,7 +599,7 @@ export default function Design10({ data }: { data: MenuData }) {
           <FloatingActiveOrder locale={locale} />
           <FloatingCart locale={locale} tableNumber={tableNumber} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
           {reviewOpen && (
-            <CartReviewSheet tableNumber={tableNumber} locale={locale} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} />
+            <CartReviewSheet tableNumber={tableNumber} locale={locale} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
           )}
         </>
       ) : (

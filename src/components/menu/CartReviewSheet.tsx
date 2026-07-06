@@ -90,6 +90,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
       items: items.map((item) => ({
         name: locale === "ar" ? item.nameAr : item.nameEn,
         quantity: item.quantity,
+        variant: locale === "ar" ? item.variantNameAr : item.variantNameEn,
         notes: item.notes || undefined,
       })),
       total_usd: totalPriceUsd,
@@ -109,6 +110,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
           status: "pending",
           items: items.map((item) => ({
             name: locale === "ar" ? item.nameAr : item.nameEn,
+            variant: locale === "ar" ? item.variantNameAr : item.variantNameEn,
             quantity: item.quantity,
             notes: item.notes || undefined,
           })),

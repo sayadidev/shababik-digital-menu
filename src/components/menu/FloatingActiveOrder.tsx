@@ -248,14 +248,21 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
 
                 <div className="space-y-2 mb-5">
                   {activeOrder.items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-[#E8E6E1]/40">
+                    <div key={i} className="flex items-start justify-between py-1.5 border-b border-[#E8E6E1]/40">
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm text-gray-900 font-medium">{item.name}</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-sm text-gray-900 font-bold">{item.name}</span>
+                          {item.variant && (
+                            <span className="text-xs text-gray-500">{item.variant}</span>
+                          )}
+                        </div>
                         {item.notes && (
-                          <p className="text-xs text-gray-400 truncate">{item.notes}</p>
+                          <p className="text-xs text-red-600 font-bold mt-0.5">
+                            {item.notes}
+                          </p>
                         )}
                       </div>
-                      <span className="text-sm text-gray-500 shrink-0 ml-3">x{item.quantity}</span>
+                      <span className="text-sm text-gray-500 shrink-0 ml-3 font-bold">x{item.quantity}</span>
                     </div>
                   ))}
                 </div>
@@ -276,10 +283,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    handleDismiss();
-                  }}
+                  onClick={() => setShowModal(false)}
                   className="w-full mt-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all"
                 >
                   {locale === "ar" ? "إغلاق" : "Close"}

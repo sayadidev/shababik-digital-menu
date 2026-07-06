@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface ActiveOrder {
@@ -8,7 +8,7 @@ export interface ActiveOrder {
   tableNumber: number;
   totalUsd: number;
   totalSyp: number;
-  items: { name: string; quantity: number; notes?: string }[];
+  items: { name: string; variant?: string; quantity: number; notes?: string }[];
   status: string;
   createdAt: string;
 }
@@ -59,10 +59,15 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Supabase Realtime subscription
+  const supabaseRef = useRef(createClient());
+  const orderIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!activeOrder) return;
 
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
+    orderIdRef.current = activeOrder.orderId;
+
     const channel = supabase
       .channel(`order-${activeOrder.orderId}`)
       .on(
@@ -74,7 +79,8 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
           filter: `id=eq.${activeOrder.orderId}`,
         },
         (payload) => {
-          const newStatus = (payload.new as Record<string, unknown>).status as string | undefined;
+          const newRow = payload.new as Record<string, unknown>;
+          const newStatus = newRow.status as string | undefined;
           if (!newStatus) return;
 
           setActiveOrderState((prev) => {
@@ -85,17 +91,29 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") {
+          console.warn("Realtime channel subscribe status:", status);
+        }
+      });
 
-    // On mount, fetch current status
+    // On mount, fetch current status — bypass Next.js cache
     (async () => {
       try {
-        const res = await fetch(`/api/order-status?orderId=${activeOrder.orderId}`);
+        const res = await fetch(`/api/order-status?orderId=${activeOrder.orderId}`, {
+          cache: "no-store",
+        });
         if (!res.ok) return;
         const data = await res.json();
-        if (data.status !== activeOrder.status) {
-          setActiveOrderState((prev) => (prev ? { ...prev, status: data.status } : null));
-        }
+        setActiveOrderState((prev) => {
+          if (!prev || prev.orderId !== activeOrder.orderId) return prev;
+          if (data.status !== prev.status) {
+            const updated = { ...prev, status: data.status as string };
+            saveOrder(updated);
+            return updated;
+          }
+          return prev;
+        });
       } catch {}
     })();
 

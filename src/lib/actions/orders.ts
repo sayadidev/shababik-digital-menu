@@ -9,6 +9,7 @@ export interface OrderItemRow {
   id: string;
   order_id: string;
   item_name: string;
+  variant_name?: string | null;
   quantity: number;
   notes?: string | null;
 }
@@ -104,7 +105,7 @@ export async function getActiveOrders(): Promise<OrderRow[]> {
 
 export async function createOrder(input: {
   table_number?: number;
-  items: { name: string; quantity: number; notes?: string }[];
+  items: { name: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
   total_syp: number;
 }): Promise<{ success: boolean; orderId?: string; error?: string }> {
@@ -128,6 +129,7 @@ export async function createOrder(input: {
   const orderItems = input.items.map((item) => ({
     order_id: order.id,
     item_name: item.name,
+    variant_name: item.variant || null,
     quantity: item.quantity,
     notes: item.notes || null,
   }));

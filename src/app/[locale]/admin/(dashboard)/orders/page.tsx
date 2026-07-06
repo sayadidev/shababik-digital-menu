@@ -13,7 +13,7 @@ interface Order {
   id: string;
   tableNumber: number;
   status: OrderStatus;
-  items: { name: string; quantity: number; notes?: string }[];
+  items: { name: string; variant?: string; quantity: number; notes?: string }[];
   totalUsd: number;
   totalSyp: number;
   createdAt: string;
@@ -32,6 +32,7 @@ function toOrder(row: OrderRow): Order {
     status: row.status as OrderStatus,
     items: (row.order_items ?? []).map((oi: OrderItemRow) => ({
       name: oi.item_name,
+      variant: oi.variant_name ?? undefined,
       quantity: oi.quantity,
       notes: oi.notes ?? undefined,
     })),
@@ -160,16 +161,27 @@ function OrderCard({ order, locale, enableUsd, showAudit = false, showFeedback =
 
       <div className="divide-y divide-border/30">
         {order.items.map((item, i) => (
-          <div key={i} className="flex items-center justify-between py-1.5 text-sm">
+          <div key={i} className="flex items-start justify-between py-1.5">
             <div className="min-w-0 flex-1">
-              <span className="text-foreground font-medium">{item.name}</span>
-              {item.notes && (
-                <span className="text-muted text-[11px] block truncate" style={{ color: "#8a7a6a" }}>
-                  {t(locale, "Note:", "ملاحظة:")} {item.notes}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                  {item.quantity}x
                 </span>
+                <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                  {item.name}
+                </span>
+              </div>
+              {item.variant && (
+                <p className="text-xs ml-6 mt-0.5" style={{ color: "#8a7a6a" }}>
+                  {t(locale, "Size:", "الحجم:")} {item.variant}
+                </p>
+              )}
+              {item.notes && (
+                <p className="text-xs font-bold italic ml-6 mt-0.5 flex items-center gap-1" style={{ color: "#dc2626" }}>
+                  ⚠️ {t(locale, "Note:", "ملاحظة:")} {item.notes}
+                </p>
               )}
             </div>
-            <span className="text-muted font-medium tabular-nums shrink-0 ml-3" style={{ color: "#8a7a6a" }}>x{item.quantity}</span>
           </div>
         ))}
       </div>

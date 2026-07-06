@@ -148,23 +148,25 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
             </div>
 
             {isReady ? (
-              <div className="p-5" dir={isRtl ? "rtl" : "ltr"}>
-                <div className="text-center mb-5">
-                  <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-6" dir={isRtl ? "rtl" : "ltr"}>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center shadow-sm">
+                    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {locale === "ar" ? "شكراً لطلبك!" : "Thank You!"}
+                  <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#3B2818" }}>
+                    {locale === "ar" ? "رأيك يهمنا! 🌟" : "Your Opinion Matters! 🌟"}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {locale === "ar" ? "كيف كانت تجربتك؟" : "How was your experience?"}
+                  <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                    {locale === "ar"
+                      ? "نأمل أنك استمتعت بطلبك. شاركنا بتجربتك لنستمر بتقديم الأفضل لك."
+                      : "We hope you enjoyed your order. Share your experience to help us serve you better."}
                   </p>
                 </div>
 
                 {/* Star Rating */}
-                <div className="flex justify-center gap-1.5 mb-5" dir="ltr">
+                <div className="flex justify-center gap-2 mb-6" dir="ltr">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -172,10 +174,10 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
-                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      className="transition-all duration-150 hover:scale-125 active:scale-95"
                     >
                       <svg
-                        className="w-9 h-9"
+                        className="w-10 h-10 drop-shadow-sm"
                         viewBox="0 0 24 24"
                         fill={(hoverRating || rating) >= star ? "#F59E0B" : "#E5E7EB"}
                         stroke={(hoverRating || rating) >= star ? "#D97706" : "#D1D5DB"}
@@ -191,26 +193,32 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                 <textarea
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
-                  placeholder={locale === "ar" ? "أخبرنا المزيد عن تجربتك (اختياري)" : "Tell us more about your experience (optional)"}
+                  placeholder={locale === "ar"
+                    ? "أخبرنا المزيد عن تجربتك (اختياري)..."
+                    : "Tell us more about your experience (optional)..."}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl text-sm bg-white border border-[#E8E6E1] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all"
+                  className="w-full px-4 py-3 rounded-xl text-sm bg-white border border-[#E8E6E1] text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all"
                 />
 
                 {/* Buttons */}
-                <div className="flex gap-3 mt-4">
+                <div className="flex gap-3 mt-5">
                   <button
                     type="button"
                     onClick={handleSkip}
                     disabled={submitting}
-                    className="flex-1 py-3 rounded-xl bg-[#E8E6E1] text-gray-600 text-sm font-semibold active:scale-[0.98] transition-all disabled:opacity-50"
+                    className="flex-1 py-3.5 rounded-xl bg-[#E8E6E1] text-gray-500 text-sm font-semibold active:scale-[0.98] transition-all disabled:opacity-50 hover:bg-[#ddd9d0]"
                   >
-                    {locale === "ar" ? "تخطي / إغلاق" : "Skip / Close"}
+                    {locale === "ar" ? "تخطي" : "Skip"}
                   </button>
                   <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={rating === 0 || submitting}
-                    className="flex-1 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                    style={{
+                      backgroundColor: rating > 0 ? "#059669" : "#9CA3AF",
+                      color: "#fff",
+                    }}
                   >
                     {submitting && (
                       <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -218,7 +226,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
                     )}
-                    {locale === "ar" ? "إرسال التقييم" : "Submit"}
+                    {locale === "ar" ? "إرسال التقييم" : "Submit Feedback"}
                   </button>
                 </div>
               </div>

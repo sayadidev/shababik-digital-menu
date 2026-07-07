@@ -19,11 +19,12 @@ type Variant = {
   isOffer: boolean;
   priceBeforeUsd: string;
   priceBeforeSyp: string;
+  priceBeforeTry: string;
   imageUrl: string;
 };
 
 function emptyVariant(): Variant {
-  return { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", imageUrl: "" };
+  return { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "", imageUrl: "" };
 }
 
 async function loadCategories(): Promise<CategoryRow[]> {
@@ -95,6 +96,7 @@ export default function NewItemPage() {
           is_offer: v.isOffer,
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
+          price_before_try: v.isOffer ? (parseFloat(v.priceBeforeTry) || null) : null,
         }));
 
       if (variantInputs.length > 0) {
@@ -110,7 +112,7 @@ export default function NewItemPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-40 overflow-y-auto h-full">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-8">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="p-2 rounded-xl text-muted hover:text-foreground hover:bg-primary/10 transition-all">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,6 +211,12 @@ export default function NewItemPage() {
                 {v.isOffer && (
                   <>
                     <div className="w-20">
+                      <label className="block text-[10px] mb-1" style={{ color: "#b55a5a" }}>{t("Before TL", "قبل TL")}</label>
+                      <input type="number" step="0.01" min="0" value={v.priceBeforeTry} onChange={(e) => updateVariant(v.id, "priceBeforeTry", e.target.value)} placeholder="0.00"
+                        className="w-full px-2 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                        style={{ borderColor: "#e8b4b4", backgroundColor: "#fef8f8", color: "#b55a5a" }} />
+                    </div>
+                    <div className="w-20">
                       <label className="block text-[10px] mb-1" style={{ color: "#b55a5a" }}>{t("Before USD", "قبل USD")}</label>
                       <input type="number" step="0.01" min="0" value={v.priceBeforeUsd} onChange={(e) => updateVariant(v.id, "priceBeforeUsd", e.target.value)} placeholder="0.00"
                         className="w-full px-2 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-red-400/30"
@@ -234,12 +242,9 @@ export default function NewItemPage() {
             ))}
           </div>
         </div>
-      </form>
 
-      {/* ── Sticky Form Footer ── */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-[72px] rtl:md:right-[72px] rtl:md:left-0 z-40 p-4 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-black/5" style={{ backgroundColor: "rgba(253,251,247,0.95)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button type="submit" disabled={saving} onClick={handleSubmit}
+        <div className="flex items-center gap-3 pt-2">
+          <button type="submit" disabled={saving}
             className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
             {saving && (
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -254,7 +259,7 @@ export default function NewItemPage() {
             {t("Cancel", "إلغاء")}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

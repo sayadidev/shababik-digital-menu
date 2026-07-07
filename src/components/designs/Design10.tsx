@@ -14,7 +14,7 @@ import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
 import { GlobeIcon } from "@/components/admin/icons";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
-import { formatCurrency, getPriceForCurrency } from "@/lib/format-currency";
+import { formatCurrency, getPriceForCurrency, getBeforePriceForCurrency } from "@/lib/format-currency";
 import type { Currency } from "@/types/database";
 
 /* ── Design 10: Rose Petal ─────────────────
@@ -346,7 +346,24 @@ export default function Design10({ data }: { data: MenuData }) {
                                 {item.item_variants.length > 1 && sizeName && (
                                   <span className="opacity-70">{sizeName}</span>
                                 )}
-                                {formatCurrency(v.price_try ?? 0, activeCurrency, locale)}
+                                {(() => {
+                                  const local = getPriceForCurrency(v, activeCurrency);
+                                  const before = v.is_offer ? getBeforePriceForCurrency(v, activeCurrency) : null;
+                                  const hasUsd = enableUsd && v.price_usd != null;
+                                  return (
+                                    <>
+                                      {before != null && (
+                                        <span className="line-through opacity-50">{formatCurrency(before, activeCurrency, locale)}</span>
+                                      )}
+                                      <span>{formatCurrency(local, activeCurrency, locale)}</span>
+                                      {hasUsd && (
+                                        <span style={{ color: "#7a6a56" }}>
+                                          {" · "}{formatCurrency(v.price_usd!, "USD", locale)}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </span>
                             );
                           })}
@@ -536,11 +553,17 @@ export default function Design10({ data }: { data: MenuData }) {
                                     {item.item_variants.length > 1 && sizeName && (
                                       <span className="text-gray-600">{sizeName}</span>
                                     )}
-                                    {v.is_offer && v.price_before_usd != null && (
-                                      <span className="line-through opacity-50">
-                                        {formatCurrency(v.price_before_usd, "USD", locale)}
-                                      </span>
-                                    )}
+                                    {v.is_offer && (() => {
+                                      const before = getBeforePriceForCurrency(v, activeCurrency);
+                                      if (before != null) {
+                                        return (
+                                          <span className="line-through opacity-50">
+                                            {formatCurrency(before, activeCurrency, locale)}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                     <span className="tabular-nums font-semibold text-gray-900">
                                       {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                                     </span>

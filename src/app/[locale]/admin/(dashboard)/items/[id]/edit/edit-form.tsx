@@ -28,6 +28,7 @@ type ItemData = {
     is_offer: boolean;
     price_before_usd?: number | null;
     price_before_syp?: number | null;
+    price_before_try?: number | null;
   }[];
 };
 
@@ -41,11 +42,12 @@ type Variant = {
   isOffer: boolean;
   priceBeforeUsd: string;
   priceBeforeSyp: string;
+  priceBeforeTry: string;
 };
 
 function dataToVariants(item: ItemData): Variant[] {
   if (item.variants.length === 0) {
-    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }];
+    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "" }];
   }
   return item.variants.map((v) => ({
     id: v.id,
@@ -57,6 +59,7 @@ function dataToVariants(item: ItemData): Variant[] {
     isOffer: v.is_offer,
     priceBeforeUsd: v.price_before_usd?.toString() || "",
     priceBeforeSyp: v.price_before_syp?.toString() || "",
+    priceBeforeTry: v.price_before_try?.toString() || "",
   }));
 }
 
@@ -83,7 +86,7 @@ export default function EditItemForm({
   const [error, setError] = useState("");
 
   const addVariant = () =>
-    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }]);
+    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "" }]);
   const removeVariant = (id: string) =>
     setVariantsState((prev) => (prev.length <= 1 ? prev : prev.filter((v) => v.id !== id)));
   const updateVariant = (id: string, field: keyof Variant, value: string) => {
@@ -130,6 +133,7 @@ export default function EditItemForm({
           is_offer: v.isOffer,
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
+          price_before_try: v.isOffer ? (parseFloat(v.priceBeforeTry) || null) : null,
         }));
 
       const varRes = await setVariants(item.id, variantInputs);
@@ -148,7 +152,7 @@ export default function EditItemForm({
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-32 overflow-y-auto h-full">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-8">
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
@@ -331,6 +335,18 @@ export default function EditItemForm({
                 </label>
                 {v.isOffer && (
                   <>
+                    <div className="w-20">
+                      <label className="block text-[10px] text-muted mb-1">{t("Before TL", "قبل TL")}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={v.priceBeforeTry}
+                        onChange={(e) => updateVariant(v.id, "priceBeforeTry", e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-2 py-2 rounded-lg border border-border bg-white text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
                     <div className="w-20">
                       <label className="block text-[10px] text-muted mb-1">{t("Before USD", "قبل USD")}</label>
                       <input

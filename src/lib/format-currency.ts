@@ -42,6 +42,17 @@ export function getPriceForCurrency(
 }
 
 /**
+ * Returns the sale before-price from a variant for the given currency, falling back to null.
+ */
+export function getBeforePriceForCurrency(
+  variant: { price_before_usd: number | null; price_before_syp: number | null; price_before_try: number | null },
+  currency: Currency,
+): number | null {
+  if (currency === "TRY") return variant.price_before_try;
+  return variant.price_before_syp;
+}
+
+/**
  * @deprecated Use `formatCurrency(price, "SYP", locale)` instead.
  */
 export function formatSyp(priceSyp: number, locale: string): string {

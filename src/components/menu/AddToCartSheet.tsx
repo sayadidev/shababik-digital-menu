@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import type { ItemWithVariants } from "@/lib/menu";
 import type { ItemVariant } from "@/types/database";
-import { formatCurrency, getPriceForCurrency } from "@/lib/format-currency";
+import { formatCurrency, getPriceForCurrency, getBeforePriceForCurrency } from "@/lib/format-currency";
 import type { Currency } from "@/types/database";
 
 type Props = {
@@ -239,11 +239,22 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
               </div>
 
               <div className="flex flex-col items-end">
-                {isOffer && (
+                {isOffer && selectedVariant.price_before_usd != null && (
                   <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                    {formatCurrency(selectedVariant.price_before_usd! * quantity, "USD", locale)}
+                    {formatCurrency(selectedVariant.price_before_usd * quantity, "USD", locale)}
                   </span>
                 )}
+                {isOffer && (() => {
+                  const before = getBeforePriceForCurrency(selectedVariant, activeCurrency);
+                  if (before != null) {
+                    return (
+                      <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
+                        {formatCurrency(before * quantity, activeCurrency, locale)}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
                 <span className="text-xl font-bold text-gray-900 tabular-nums">
                   {formatCurrency(getPriceForCurrency(selectedVariant, activeCurrency) * quantity, activeCurrency, locale)}
                 </span>

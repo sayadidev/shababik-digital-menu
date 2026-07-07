@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/actions/analytics";
 import type { ItemWithVariants } from "@/lib/menu";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, getBeforePriceForCurrency } from "@/lib/format-currency";
 import type { Currency } from "@/types/database";
 
 const P = {
@@ -241,6 +241,17 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                             {formatCurrency(v.price_before_usd, "USD", locale)}
                           </span>
                         )}
+                        {v.is_offer && (() => {
+                          const before = getBeforePriceForCurrency(v, activeCurrency);
+                          if (before != null) {
+                            return (
+                              <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
+                                {formatCurrency(before, activeCurrency, locale)}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                         <span className="text-base font-bold tabular-nums" style={{ color: v.is_offer ? P.accent : P.deep }}>
                           {formatCurrency(
                             activeCurrency === "TRY" ? (v.price_try ?? 0) : (v.price_syp ?? 0),

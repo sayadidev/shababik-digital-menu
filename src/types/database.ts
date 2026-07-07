@@ -33,6 +33,7 @@ export interface ItemVariant {
   is_offer: boolean;
   price_before_usd: number | null;
   price_before_syp: number | null;
+  price_before_try: number | null;
   created_at?: string;
 }
 

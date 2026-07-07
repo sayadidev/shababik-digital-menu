@@ -73,6 +73,7 @@ export const itemVariantSchema = z.object({
   is_offer: z.boolean().default(false),
   price_before_usd: z.coerce.number().optional().nullable(),
   price_before_syp: z.coerce.number().int().optional().nullable(),
+  price_before_try: z.coerce.number().optional().nullable(),
 });
 
 export const itemVariantUpdateSchema = z.object({
@@ -85,6 +86,7 @@ export const itemVariantUpdateSchema = z.object({
   is_offer: z.boolean().optional(),
   price_before_usd: z.coerce.number().optional().nullable(),
   price_before_syp: z.coerce.number().int().optional().nullable(),
+  price_before_try: z.coerce.number().optional().nullable(),
 });
 
 export const itemVariantRowSchema = itemVariantSchema.extend({

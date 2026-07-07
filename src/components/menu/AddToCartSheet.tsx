@@ -145,10 +145,10 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
             <button
               type="button"
               onClick={handleClose}
-              className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/60 active:scale-90 transition-all"
+              className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-black/60 active:scale-90 transition-all flex items-center justify-center"
               aria-label="Close"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -173,7 +173,7 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                         key={v.id}
                         type="button"
                         onClick={() => { setSelectedVariant(v); setQuantity(1); }}
-                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
+                        className={`min-h-[44px] px-4 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-95 inline-flex items-center ${
                           isActive
                             ? "bg-[#8C6B4A] text-white"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -193,10 +193,11 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
               )}
 
               <div className="mt-5">
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                <label htmlFor="order-notes" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                   {locale === "ar" ? "ملاحظات الطلب" : "Order Notes"}
                 </label>
                 <textarea
+                  id="order-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={locale === "ar" ? "مثلاً: بدون سكر، ثلج إضافي..." : "e.g. No sugar, extra ice..."}
@@ -214,9 +215,9 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-90"
+                  className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-90"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
                   </svg>
                 </button>
@@ -226,9 +227,9 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center bg-[#8C6B4A] text-white hover:bg-[#6B4A3A] transition-all active:scale-90"
+                  className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-[#8C6B4A] text-white hover:bg-[#6B4A3A] transition-all active:scale-90"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>

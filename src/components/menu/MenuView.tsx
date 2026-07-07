@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocale } from "next-intl";
-import { trackEvent } from "@/lib/actions/analytics";
+import { trackMenuLoad } from "@/lib/track-menu-load";
 import LanguageToggle from "./LanguageToggle";
 import CategorySection from "./CategorySection";
 import ItemDetailSheet from "./ItemDetailSheet";
@@ -25,7 +25,7 @@ export default function MenuView({ data }: Props) {
   const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    trackEvent("menu_load").catch(() => {});
+    trackMenuLoad().catch(() => {});
     const timer = setTimeout(() => setLoaded(true), 120);
     return () => clearTimeout(timer);
   }, []);
@@ -68,6 +68,7 @@ export default function MenuView({ data }: Props) {
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl menu-page-bg">
+    <div className="relative w-full max-w-md mx-auto min-h-screen overflow-hidden">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-3.5">
           <div className="flex items-baseline gap-2">
@@ -83,7 +84,7 @@ export default function MenuView({ data }: Props) {
 
         <nav
           ref={navRef}
-          className="scrollbar-hide overflow-x-auto border-t border-border px-5 py-2.5"
+          className="scrollbar-hide overflow-x-auto border-t border-border px-5 py-2.5 whitespace-nowrap"
           style={{ scrollSnapType: "x mandatory" }}
         >
           <div
@@ -161,6 +162,7 @@ export default function MenuView({ data }: Props) {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
       />
+    </div>
     </div>
   );
 }

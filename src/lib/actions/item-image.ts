@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { revalidateMenuPaths } from "@/lib/revalidate";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export async function setItemImages(
   itemId: string,
   imageUrls: string[],
 ): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   // Delete existing gallery images

@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
 
     try {
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -35,7 +35,12 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
+      const role = data?.user?.app_metadata?.role;
+      if (role === "staff") {
+        router.push("/admin/orders");
+      } else {
+        router.push("/admin");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
@@ -56,7 +61,7 @@ export default function AdminLoginPage() {
           <Link
             href="/admin/login"
             locale={otherLocale}
-            className="text-xs text-primary font-medium hover:underline text-center block mb-4"
+            className="inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs text-primary font-medium hover:underline text-center mb-4"
           >
             {t("Switch to العربية", "Switch to English")}
           </Link>
@@ -76,7 +81,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@shababik.com"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                className="w-full min-h-[44px] px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               />
             </div>
             <div>
@@ -87,13 +92,13 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                className="w-full min-h-[44px] px-4 py-2.5 rounded-xl border border-border bg-white text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && (
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">

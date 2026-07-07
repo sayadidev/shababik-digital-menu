@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateMenuPaths } from "@/lib/revalidate";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAuth, requireSuperAdmin } from "@/lib/auth";
 import {
   categorySchema,
   categoryUpdateSchema,
@@ -14,6 +15,7 @@ import type {
 } from "@/lib/validations";
 
 export async function getCategories(): Promise<CategoryRow[]> {
+  await requireAuth();
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
@@ -29,6 +31,7 @@ export async function getCategories(): Promise<CategoryRow[]> {
 export async function createCategory(
   data: CategoryInput,
 ): Promise<{ success: boolean; error?: string; data?: CategoryRow }> {
+  await requireSuperAdmin();
   const parsed = categorySchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
@@ -53,6 +56,7 @@ export async function updateCategory(
   id: string,
   data: CategoryUpdate,
 ): Promise<{ success: boolean; error?: string; data?: CategoryRow }> {
+  await requireSuperAdmin();
   const parsed = categoryUpdateSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
@@ -77,6 +81,7 @@ export async function updateCategory(
 export async function deleteCategory(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const { count } = await supabase
@@ -103,6 +108,7 @@ export async function deleteCategory(
 export async function reorderCategories(
   ids: string[],
 ): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   for (let i = 0; i < ids.length; i++) {

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Category, ItemVariant, ItemImage } from "@/types/database";
+import type { Category, ItemVariant, ItemImage, SiteSettings } from "@/types/database";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,6 +26,7 @@ export type MenuCategory = Category & {
 
 export type MenuData = {
   categories: MenuCategory[];
+  settings: SiteSettings | null;
 };
 
 // ─── Data fetching ───────────────────────────────────────────────────────────
@@ -64,7 +65,14 @@ export async function getMenuData(): Promise<MenuData> {
     });
   }
 
-  // 4. Compose: only include categories that have active items
+  // 4. Fetch site settings
+  const { data: settings } = await supabase
+    .from("site_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
+
+  // 5. Compose: only include categories that have active items
   const categoriesWithItems = (categories ?? [])
     .map((cat) => ({
       ...cat,
@@ -72,7 +80,7 @@ export async function getMenuData(): Promise<MenuData> {
     }))
     .filter((cat) => cat.items.length > 0);
 
-  return { categories: categoriesWithItems };
+  return { categories: categoriesWithItems, settings };
 }
 
 // ─── Single item fetch for detail view ───────────────────────────────────────

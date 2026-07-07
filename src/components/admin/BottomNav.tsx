@@ -96,7 +96,7 @@ export default function BottomNav({ role }: { role: UserRole | null }) {
       >
         {links.map(({ href, labelEn, labelAr, icon: Icon }) => (
           <Link key={href} href={href}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1"
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[48px] py-1"
             style={{ color: isActive(href) ? "#9a6a3a" : "#8a7a6a" }}>
             <Icon className="w-5 h-5" />
             <span className="text-[10px] font-semibold whitespace-nowrap leading-none">

@@ -13,7 +13,7 @@ const pageTitles: Record<string, { en: string; ar: string }> = {
   "/admin/orders": { en: "Orders", ar: "الطلبات" },
 };
 
-export default function TopBar() {
+export default function TopBar({ headerLogoUrl }: { headerLogoUrl: string }) {
   const pathname = usePathname();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale || "en";
@@ -31,11 +31,11 @@ export default function TopBar() {
   const otherLocale = locale === "en" ? "ar" : "en";
 
   return (
-    <header className="sticky top-0 z-30 bg-[#FDFBF7] border-b border-border">
-      <div className="flex justify-between items-center px-4 py-3">
+    <header className="sticky top-0 z-30 bg-[#FDFBF7] shadow-sm">
+      <div className="h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Link href="/admin" locale={locale} className="md:hidden shrink-0">
-            <img src="/wooden-trans-logo.webp" alt="S" className="h-10 object-contain" />
+            <img src={headerLogoUrl} alt="S" className="h-8 w-28 object-contain object-right shrink-0" />
           </Link>
           <h1 className="text-sm font-semibold text-foreground">{title}</h1>
         </div>

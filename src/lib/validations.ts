@@ -15,7 +15,11 @@ export const categorySchema = z.object({
   order_index: z.number().int().min(0).default(0),
 });
 
-export const categoryUpdateSchema = categorySchema.partial();
+export const categoryUpdateSchema = z.object({
+  name_en: nonEmptyEnglish.optional(),
+  name_ar: nonEmptyArabic.optional(),
+  order_index: z.number().int().min(0).optional(),
+});
 
 export const categoryRowSchema = categorySchema.extend({
   id: uuidField,
@@ -38,7 +42,19 @@ export const itemSchema = z.object({
   view_count: z.number().int().min(0).default(0),
 });
 
-export const itemUpdateSchema = itemSchema.partial();
+export const itemUpdateSchema = z.object({
+  category_id: uuidField.optional(),
+  name_en: nonEmptyEnglish.optional(),
+  name_ar: nonEmptyArabic.optional(),
+  description_en: optionalEnglish.optional(),
+  description_ar: optionalArabic.optional(),
+  image_url: z.string().max(2048).optional(),
+  is_active: z.boolean().optional(),
+  is_bestseller: z.boolean().optional(),
+  is_offer: z.boolean().optional(),
+  offer_position: z.number().int().min(1).max(3).nullable().optional(),
+  view_count: z.number().int().min(0).optional(),
+});
 
 export const itemRowSchema = itemSchema.extend({
   id: uuidField,
@@ -56,9 +72,21 @@ export const itemVariantSchema = z.object({
     .number()
     .int("SYP price must be a whole number")
     .min(0, "SYP price cannot be negative"),
+  is_offer: z.boolean().default(false),
+  price_before_usd: z.number().min(0).nullable().default(null),
+  price_before_syp: z.number().int().min(0).nullable().default(null),
 });
 
-export const itemVariantUpdateSchema = itemVariantSchema.partial();
+export const itemVariantUpdateSchema = z.object({
+  item_id: uuidField.optional(),
+  size_name_en: nonEmptyEnglish.optional(),
+  size_name_ar: nonEmptyArabic.optional(),
+  price_usd: z.number().min(0).optional(),
+  price_syp: z.number().int().min(0).optional(),
+  is_offer: z.boolean().optional(),
+  price_before_usd: z.number().min(0).nullable().optional(),
+  price_before_syp: z.number().int().min(0).nullable().optional(),
+});
 
 export const itemVariantRowSchema = itemVariantSchema.extend({
   id: uuidField,
@@ -92,6 +120,26 @@ export type ItemRow = z.infer<typeof itemRowSchema>;
 export type ItemVariantInput = z.infer<typeof itemVariantSchema>;
 export type ItemVariantUpdate = z.infer<typeof itemVariantUpdateSchema>;
 export type ItemVariantRow = z.infer<typeof itemVariantRowSchema>;
+
+// ─── Site Settings ────────────────────────────────────────────────────────────
+
+export const siteSettingsSchema = z.object({
+  hero_image_url: z.string().max(2048).default(""),
+  hero_logo_url: z.string().max(2048).default(""),
+  header_logo_url: z.string().max(2048).default(""),
+  tier: z.enum(["basic", "pro"]).default("basic"),
+  ordering_enabled: z.boolean().default(false),
+  enable_usd: z.boolean().default(true),
+});
+
+export const siteSettingsRowSchema = siteSettingsSchema.extend({
+  id: z.number(),
+  created_at: z.string().datetime().optional(),
+  updated_at: z.string().datetime().optional(),
+});
+
+export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;
+export type SiteSettingsRow = z.infer<typeof siteSettingsRowSchema>;
 
 export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>;
 export type AnalyticsEventRow = z.infer<typeof analyticsEventRowSchema>;

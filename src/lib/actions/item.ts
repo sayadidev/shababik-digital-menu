@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateMenuPaths } from "@/lib/revalidate";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAuth, requireSuperAdmin } from "@/lib/auth";
 import { itemSchema, itemUpdateSchema } from "@/lib/validations";
 import type {
   ItemInput,
@@ -10,6 +11,11 @@ import type {
   ItemRow,
   ItemVariantRow,
 } from "@/lib/validations";
+
+/** Convert Arabic-Indic digits (٠-٩) to Western digits (0-9) */
+function normalizeDigits(s: string): string {
+  return s.replace(/[٠-٩]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x0660 + 0x0030));
+}
 
 type ItemWithCategory = ItemRow & {
   category_name_en: string;
@@ -19,11 +25,13 @@ type ItemWithCategory = ItemRow & {
 export async function getItems(
   categoryId?: string,
 ): Promise<ItemWithCategory[]> {
+  await requireAuth();
   const supabase = createAdminClient();
 
   let query = supabase
     .from("items")
     .select("*, categories(name_en, name_ar)")
+    .order("is_bestseller", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (categoryId) {
@@ -52,6 +60,7 @@ type ItemWithVariantsAndImages = ItemRow & {
 export async function getItem(
   id: string,
 ): Promise<ItemWithVariantsAndImages> {
+  await requireAuth();
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
@@ -79,7 +88,9 @@ export async function getItem(
 export async function createItem(
   data: ItemInput,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
-  const parsed = itemSchema.safeParse(data);
+  await requireSuperAdmin();
+  const normalized: ItemInput = { ...data, name_ar: normalizeDigits(data.name_ar), description_ar: normalizeDigits(data.description_ar) };
+  const parsed = itemSchema.safeParse(normalized);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
   }
@@ -103,7 +114,13 @@ export async function updateItem(
   id: string,
   data: ItemUpdate,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
-  const parsed = itemUpdateSchema.safeParse(data);
+  await requireSuperAdmin();
+  const normalized: ItemUpdate = {
+    ...data,
+    ...(data.name_ar !== undefined ? { name_ar: normalizeDigits(data.name_ar) } : {}),
+    ...(data.description_ar !== undefined ? { description_ar: normalizeDigits(data.description_ar) } : {}),
+  };
+  const parsed = itemUpdateSchema.safeParse(normalized);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
   }
@@ -127,6 +144,7 @@ export async function updateItem(
 export async function deleteItem(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const { error: variantError } = await supabase
@@ -149,6 +167,7 @@ export async function toggleActive(
   id: string,
   newValue: boolean,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const { data: item, error } = await supabase
@@ -170,6 +189,7 @@ export async function setOfferPosition(
   id: string,
   position: number | null,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   // Clear this position from any other item first
@@ -202,6 +222,7 @@ export async function toggleBestseller(
   id: string,
   newValue: boolean,
 ): Promise<{ success: boolean; error?: string; data?: ItemRow }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const { data: item, error } = await supabase

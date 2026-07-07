@@ -41,7 +41,8 @@ function LangToggle({ locale }: { locale: string }) {
   return (
     <button
       onClick={() => { window.location.href = href; }}
-      className="p-2 rounded-full text-[#8C6B4A] hover:bg-black/5 transition-colors"
+      className="min-w-[44px] min-h-[44px] p-2.5 rounded-full text-[#8C6B4A] hover:bg-black/5 transition-colors inline-flex items-center justify-center"
+      aria-label={locale === "en" ? "Switch to Arabic" : "التبديل إلى الإنجليزية"}
       title={locale === "en" ? "العربية" : "English"}
     >
       <GlobeIcon className="w-5 h-5" />
@@ -336,7 +337,7 @@ export default function Design10({ data }: { data: MenuData }) {
                             const sizeName = locale === "ar" ? v.size_name_ar : v.size_name_en;
                             return (
                               <span key={v.id}
-                                className={`inline-flex items-center gap-0.5 font-semibold whitespace-nowrap rounded-md ${isCenter ? "px-1.5 py-0.5 text-[10px] sm:text-xs" : "px-1 py-0.5 text-[7px]"}`}
+                                className={`inline-flex items-center gap-0.5 font-semibold whitespace-nowrap rounded-md ${isCenter ? "px-1.5 py-0.5 text-[10px] sm:text-xs" : "px-1 py-0.5 text-[10px]"}`}
                                 style={{ backgroundColor: `${P.warm}60`, color: P.deep }}>
                                 {item.item_variants.length > 1 && sizeName && (
                                   <span className="opacity-70">{sizeName}</span>
@@ -353,7 +354,7 @@ export default function Design10({ data }: { data: MenuData }) {
                             );
                           })}
                           {item.item_variants.length > 2 && (
-                            <span className="opacity-60 text-[7px] sm:text-[9px]" style={{ color: P.muted }}>+{item.item_variants.length - 2}</span>
+                            <span className="opacity-60 text-[10px] sm:text-[11px]" style={{ color: P.muted }}>+{item.item_variants.length - 2}</span>
                           )}
                         </div>
                       </div>
@@ -437,14 +438,14 @@ export default function Design10({ data }: { data: MenuData }) {
         </div>
 
         {/* ── Categories Nav ───────────────────────── */}
-        <nav className="scrollbar-hide overflow-x-auto px-4 pb-2.5">
+        <nav className="scrollbar-hide overflow-x-auto px-4 pb-2.5 relative">
           <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
             {data.categories.map((cat) => {
               const name = locale === "ar" ? cat.name_ar : cat.name_en;
               const isActive = activeCatId === cat.id;
               return (
                 <button key={cat.id} ref={captureButton} data-cat-id={cat.id} type="button" onClick={() => scrollTo(cat.id)}
-                  className="shrink-0 whitespace-nowrap px-3.5 py-2.5 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0"
+                  className="shrink-0 whitespace-nowrap min-h-[44px] px-4 py-3 text-[11px] sm:text-xs font-semibold transition-all duration-200 rounded-lg relative border-0 inline-flex items-center"
                   style={{
                     color: isActive ? P.accent : P.muted,
                     backgroundColor: isActive ? `${P.accent}15` : "transparent",
@@ -454,6 +455,8 @@ export default function Design10({ data }: { data: MenuData }) {
               );
             })}
           </div>
+          <div className="pointer-events-none absolute top-0 bottom-0 w-10 bg-gradient-to-r from-transparent to-[#f5efdf]" style={{ [isRtl ? "left" : "right"]: 0 }} />
+          <div className="pointer-events-none absolute top-0 bottom-0 w-10 bg-gradient-to-l from-transparent to-[#f5efdf]" style={{ [isRtl ? "right" : "left"]: 0 }} />
         </nav>
       </header>
 
@@ -575,7 +578,7 @@ export default function Design10({ data }: { data: MenuData }) {
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center gap-3 w-full max-w-xs mb-1">
                 <div className="flex-1 h-px" style={{ background: `linear-gradient(to right, transparent, ${P.border})` }} />
-                <span style={{ color: P.accent, fontSize: "6px" }}>✦</span>
+                <span style={{ color: P.accent, fontSize: "10px" }}>✦</span>
                 <div className="flex-1 h-px" style={{ background: `linear-gradient(to left, transparent, ${P.border})` }} />
               </div>
               <p className="text-xs font-bold uppercase" style={{ color: P.muted }}>

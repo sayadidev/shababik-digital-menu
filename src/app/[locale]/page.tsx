@@ -4,6 +4,9 @@ import { getTranslations } from "next-intl/server";
 import { getMenuData } from "@/lib/menu";
 import Design10 from "@/components/designs/Design10";
 import SkeletonMenu from "@/components/menu/SkeletonMenu";
+import { CartProvider } from "@/context/CartContext";
+import { ActiveOrderProvider } from "@/context/ActiveOrderContext";
+import { ToastProvider } from "@/components/menu/Toast";
 
 export const revalidate = 60;
 
@@ -32,7 +35,13 @@ export default async function HomePage() {
 
   return (
     <Suspense fallback={<SkeletonMenu />}>
-      <Design10 data={data} />
+      <CartProvider>
+        <ActiveOrderProvider>
+          <ToastProvider>
+            <Design10 data={data} />
+          </ToastProvider>
+        </ActiveOrderProvider>
+      </CartProvider>
     </Suspense>
   );
 }

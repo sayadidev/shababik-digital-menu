@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { revalidateMenuPaths } from "@/lib/revalidate";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAuth, requireSuperAdmin } from "@/lib/auth";
 import {
   itemVariantSchema,
   itemVariantUpdateSchema,
@@ -17,6 +18,7 @@ import type {
 export async function getVariants(
   itemId: string,
 ): Promise<ItemVariantRow[]> {
+  await requireAuth();
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
@@ -33,6 +35,7 @@ export async function getVariants(
 export async function createVariant(
   data: ItemVariantInput,
 ): Promise<{ success: boolean; error?: string; data?: ItemVariantRow }> {
+  await requireSuperAdmin();
   const parsed = itemVariantSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
@@ -57,6 +60,7 @@ export async function updateVariant(
   id: string,
   data: ItemVariantUpdate,
 ): Promise<{ success: boolean; error?: string; data?: ItemVariantRow }> {
+  await requireSuperAdmin();
   const parsed = itemVariantUpdateSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.message };
@@ -81,6 +85,7 @@ export async function updateVariant(
 export async function deleteVariant(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const { error } = await supabase.from("item_variants").delete().eq("id", id);
@@ -96,6 +101,7 @@ export async function setVariants(
   itemId: string,
   variants: ItemVariantInput[],
 ): Promise<{ success: boolean; error?: string; data?: ItemVariantRow[] }> {
+  await requireSuperAdmin();
   const supabase = createAdminClient();
 
   const results = variants.map((v) => itemVariantSchema.safeParse(v));

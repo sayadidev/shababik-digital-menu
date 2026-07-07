@@ -83,7 +83,7 @@ export default function FloatingCart({
           </div>
 
           {/* CTA */}
-          <span className="shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide border-0" style={{ backgroundColor: P.accent, color: "#fff", boxShadow: `0 4px 12px ${P.accent}50` }}>
+          <span className="shrink-0 px-5 py-3 rounded-xl text-sm font-bold tracking-wide border-0" style={{ backgroundColor: P.accent, color: "#fff", boxShadow: `0 4px 12px ${P.accent}50` }}>
             {locale === "ar" ? "مراجعة" : "Review"}
           </span>
         </button>

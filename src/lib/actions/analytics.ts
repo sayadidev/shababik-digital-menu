@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAuth } from "@/lib/auth";
 import type { AnalyticsEventType } from "@/types/database";
 
 /**
@@ -49,6 +50,11 @@ export type TrendingItem = {
   view_count: number;
 };
 
+export type TopOrderedItem = {
+  item_name: string;
+  order_count: number;
+};
+
 export type DailyView = {
   date: string;
   count: number;
@@ -68,6 +74,7 @@ export type AnalyticsSummary = {
  * Uses service-role client to bypass RLS.
  */
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  await requireAuth();
   const admin = createAdminClient();
 
   const now = new Date();
@@ -130,4 +137,30 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     trendingItems: (trendingRes.data ?? []) as TrendingItem[],
     dailyViews: dailyRes,
   };
+}
+
+export async function getTopOrderedItems(): Promise<TopOrderedItem[]> {
+  await requireAuth();
+  const admin = createAdminClient();
+
+  const { data: orderItems, error } = await admin
+    .from("order_items")
+    .select("item_name, quantity")
+    .not("order_id", "is", null);
+
+  if (error || !orderItems) return [];
+
+  const aggregated: Record<string, number> = {};
+  for (const row of orderItems as { item_name: string; quantity: number }[]) {
+    const name = row.item_name?.trim();
+    if (!name) continue;
+    aggregated[name] = (aggregated[name] ?? 0) + (row.quantity ?? 0);
+  }
+
+  const sorted = Object.entries(aggregated)
+    .map(([item_name, order_count]) => ({ item_name, order_count }))
+    .sort((a, b) => b.order_count - a.order_count)
+    .slice(0, 5);
+
+  return sorted;
 }

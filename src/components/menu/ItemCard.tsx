@@ -91,7 +91,7 @@ export default function ItemCard({ item, onSelect }: Props) {
       </div>
 
       <span className="sr-only">
-        {locale === "ar" ? "اضغط للتسجيل" : "Tap to record view"}
+        {locale === "ar" ? "اضغط للتفاصيل" : "Tap for details"}
       </span>
     </article>
   );

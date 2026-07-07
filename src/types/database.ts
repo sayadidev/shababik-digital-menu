@@ -29,6 +29,9 @@ export interface ItemVariant {
   size_name_ar: string;
   price_usd: number;
   price_syp: number;
+  is_offer: boolean;
+  price_before_usd: number | null;
+  price_before_syp: number | null;
   created_at?: string;
 }
 
@@ -47,6 +50,18 @@ export interface ItemImage {
   image_url: string;
   sort_order: number;
   created_at?: string;
+}
+
+export interface SiteSettings {
+  id: number;
+  hero_image_url: string;
+  hero_logo_url: string;
+  header_logo_url: string;
+  tier: "basic" | "pro";
+  ordering_enabled: boolean;
+  enable_usd: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type Locale = "en" | "ar";

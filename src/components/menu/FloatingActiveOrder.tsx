@@ -134,6 +134,11 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
         <div
           className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
           onClick={() => setShowModal(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowModal(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={locale === "ar" ? "حالة الطلب" : "Order Status"}
+          tabIndex={-1}
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -175,7 +180,8 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
-                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                      aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                     >
                       <svg
                         className="w-9 h-9"
@@ -205,7 +211,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                     type="button"
                     onClick={handleSkip}
                     disabled={submitting}
-                    className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all disabled:opacity-50 hover:bg-gray-200"
+                    className="flex-1 min-h-[48px] py-3.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all disabled:opacity-50 hover:bg-gray-200"
                   >
                     {locale === "ar" ? "تخطي" : "Skip"}
                   </button>
@@ -213,7 +219,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                     type="button"
                     onClick={handleSubmit}
                     disabled={rating === 0 || submitting}
-                    className="flex-1 py-3.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 min-h-[48px] py-3.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     style={{
                       backgroundColor: rating > 0 ? "#1a1a1a" : "#d1d5db",
                       color: "#fff",
@@ -291,7 +297,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="w-full mt-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all"
+                  className="w-full min-h-[44px] mt-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all"
                 >
                   {locale === "ar" ? "إغلاق" : "Close"}
                 </button>

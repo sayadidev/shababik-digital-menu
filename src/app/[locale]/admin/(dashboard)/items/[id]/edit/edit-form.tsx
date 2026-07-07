@@ -24,6 +24,9 @@ type ItemData = {
     size_name_ar: string;
     price_usd: number;
     price_syp: number;
+    is_offer: boolean;
+    price_before_usd: number | null;
+    price_before_syp: number | null;
   }[];
 };
 
@@ -33,11 +36,14 @@ type Variant = {
   sizeAr: string;
   priceUsd: string;
   priceSyp: string;
+  isOffer: boolean;
+  priceBeforeUsd: string;
+  priceBeforeSyp: string;
 };
 
 function dataToVariants(item: ItemData): Variant[] {
   if (item.variants.length === 0) {
-    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "" }];
+    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }];
   }
   return item.variants.map((v) => ({
     id: v.id,
@@ -45,6 +51,9 @@ function dataToVariants(item: ItemData): Variant[] {
     sizeAr: v.size_name_ar,
     priceUsd: v.price_usd.toString(),
     priceSyp: v.price_syp.toString(),
+    isOffer: v.is_offer,
+    priceBeforeUsd: v.price_before_usd?.toString() || "",
+    priceBeforeSyp: v.price_before_syp?.toString() || "",
   }));
 }
 
@@ -71,11 +80,18 @@ export default function EditItemForm({
   const [error, setError] = useState("");
 
   const addVariant = () =>
-    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "" }]);
+    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }]);
   const removeVariant = (id: string) =>
     setVariantsState((prev) => (prev.length <= 1 ? prev : prev.filter((v) => v.id !== id)));
-  const updateVariant = (id: string, field: keyof Variant, value: string) =>
-    setVariantsState((prev) => prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)));
+  const updateVariant = (id: string, field: keyof Variant, value: string) => {
+    setVariantsState((prev) =>
+      prev.map((v) => {
+        if (v.id !== id) return v;
+        if (field === "isOffer") return { ...v, isOffer: value === "true" };
+        return { ...v, [field]: value };
+      })
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +123,9 @@ export default function EditItemForm({
           size_name_ar: v.sizeAr,
           price_usd: parseFloat(v.priceUsd) || 0,
           price_syp: parseInt(v.priceSyp, 10) || 0,
+          is_offer: v.isOffer,
+          price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
+          price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
         }));
 
       const varRes = await setVariants(item.id, variantInputs);
@@ -270,7 +289,7 @@ export default function EditItemForm({
                     min="0"
                     value={v.priceUsd}
                     onChange={(e) => updateVariant(v.id, "priceUsd", e.target.value)}
-                    required
+                    placeholder="0.00"
                     className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
@@ -281,10 +300,46 @@ export default function EditItemForm({
                     min="0"
                     value={v.priceSyp}
                     onChange={(e) => updateVariant(v.id, "priceSyp", e.target.value)}
-                    required
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
+                <label className="flex items-center gap-1.5 mb-0.5 cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={v.isOffer}
+                    onChange={(e) => updateVariant(v.id, "isOffer", e.target.checked ? "true" : "false")}
+                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/30"
+                  />
+                  <span className="text-[10px] text-muted whitespace-nowrap">{t("Offer", "عرض")}</span>
+                </label>
+                {v.isOffer && (
+                  <>
+                    <div className="w-20">
+                      <label className="block text-[10px] text-muted mb-1">{t("Before USD", "قبل USD")}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={v.priceBeforeUsd}
+                        onChange={(e) => updateVariant(v.id, "priceBeforeUsd", e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-2 py-2 rounded-lg border border-border bg-white text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-[10px] text-muted mb-1">{t("Before SYP", "قبل SYP")}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={v.priceBeforeSyp}
+                        onChange={(e) => updateVariant(v.id, "priceBeforeSyp", e.target.value)}
+                        placeholder="0"
+                        className="w-full px-2 py-2 rounded-lg border border-border bg-white text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </>
+                )}
                 {variants.length > 1 && (
                   <button
                     type="button"

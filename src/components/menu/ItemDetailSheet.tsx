@@ -126,10 +126,10 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="absolute top-3 end-3 z-10 w-8 h-8 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-black/50 active:scale-90 transition-all flex items-center justify-center border-0"
-                    aria-label="Close"
+                    className="absolute top-3 end-3 z-10 min-w-[44px] min-h-[44px] rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-black/50 active:scale-90 transition-all flex items-center justify-center border-0"
+                    aria-label="Close detail view"
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -143,11 +143,11 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                             i === 0 ? allImages.length - 1 : i - 1,
                           )
                         }
-                        className="absolute top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 text-white backdrop-blur-md hover:bg-black/45 active:scale-90 transition-all flex items-center justify-center border-0"
+                        className="absolute top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] rounded-full bg-black/25 text-white backdrop-blur-md hover:bg-black/45 active:scale-90 transition-all flex items-center justify-center border-0"
                         style={isRtl ? { right: "0.75rem" } : { left: "0.75rem" }}
                         aria-label="Previous image"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isRtl ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
                         </svg>
                       </button>
@@ -158,27 +158,32 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                             i === allImages.length - 1 ? 0 : i + 1,
                           )
                         }
-                        className="absolute top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 text-white backdrop-blur-md hover:bg-black/45 active:scale-90 transition-all flex items-center justify-center border-0"
+                        className="absolute top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] rounded-full bg-black/25 text-white backdrop-blur-md hover:bg-black/45 active:scale-90 transition-all flex items-center justify-center border-0"
                         style={isRtl ? { left: "0.75rem" } : { right: "0.75rem" }}
                         aria-label="Next image"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isRtl ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
                         </svg>
                       </button>
-                      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
                         {allImages.map((_, i) => (
                           <button
                             key={i}
                             type="button"
                             onClick={() => setImageIndex(i)}
-                            className="h-1.5 rounded-full transition-all duration-300 border-0"
-                            style={{
-                              width: i === imageIndex ? "1.5rem" : "0.375rem",
-                              backgroundColor: i === imageIndex ? "#fff" : "rgba(255,255,255,0.5)",
-                            }}
-                            aria-label={`Image ${i + 1}`}
-                          />
+                            className="min-h-[44px] flex items-center justify-center border-0 bg-transparent p-0"
+                            aria-label={`Image ${i + 1} of ${allImages.length}`}
+                          >
+                            <span
+                              className="rounded-full transition-all duration-300 block"
+                              style={{
+                                width: i === imageIndex ? "1.5rem" : "0.5rem",
+                                height: "0.5rem",
+                                backgroundColor: i === imageIndex ? "#fff" : "rgba(255,255,255,0.5)",
+                              }}
+                            />
+                          </button>
                         ))}
                       </div>
                     </>

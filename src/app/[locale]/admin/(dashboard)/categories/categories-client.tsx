@@ -224,10 +224,12 @@ function CategoryList({ categories, locale: l }: { categories: Category[]; local
   const [reordering, setReordering] = useState(false);
   const [dragging, setDragging] = useState(-1);
   const [error, setError] = useState("");
+  const liveListRef = useRef(list);
 
   // Sync with server data after refresh/revalidation
   useEffect(() => {
     setList(categories);
+    liveListRef.current = categories;
   }, [categories]);
 
   // ── HTML5 DnD (desktop) ────────────────────
@@ -236,23 +238,25 @@ function CategoryList({ categories, locale: l }: { categories: Category[]; local
   const handleDragEnter = (idx: number) => {
     const from = dragIdx.current;
     if (from === null || from === idx) return;
-    const updated = [...list];
+    const updated = [...liveListRef.current];
     const [moved] = updated.splice(from, 1);
     updated.splice(idx, 0, moved);
     dragIdx.current = idx;
+    liveListRef.current = updated;
     setList(updated);
   };
   const handleDrop = async () => {
     dragIdx.current = null;
     setReordering(true);
     setError("");
-    const res = await reorderCategories(list.map((c) => c.id));
+    const res = await reorderCategories(liveListRef.current.map((c) => c.id));
     setReordering(false);
     if (res.success) {
       router.refresh();
     } else {
       setError(res.error ?? t(l, "Reorder failed", "فشل إعادة الترتيب"));
       setList(categories);
+      liveListRef.current = categories;
     }
   };
 
@@ -273,10 +277,11 @@ function CategoryList({ categories, locale: l }: { categories: Category[]; local
     if (isNaN(to)) return;
     const from = dragIdx.current;
     if (from === to || from === null) return;
-    const updated = [...list];
+    const updated = [...liveListRef.current];
     const [moved] = updated.splice(from, 1);
     updated.splice(to, 0, moved);
     dragIdx.current = to;
+    liveListRef.current = updated;
     setList(updated);
   };
   const handleTouchEnd = async () => {
@@ -284,13 +289,14 @@ function CategoryList({ categories, locale: l }: { categories: Category[]; local
     dragIdx.current = null;
     setReordering(true);
     setError("");
-    const res = await reorderCategories(list.map((c) => c.id));
+    const res = await reorderCategories(liveListRef.current.map((c) => c.id));
     setReordering(false);
     if (res.success) {
       router.refresh();
     } else {
       setError(res.error ?? t(l, "Reorder failed", "فشل إعادة الترتيب"));
       setList(categories);
+      liveListRef.current = categories;
     }
   };
 

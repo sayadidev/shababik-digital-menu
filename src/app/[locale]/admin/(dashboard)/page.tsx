@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { getAnalyticsSummary } from "@/lib/actions/analytics";
-import { getItems } from "@/lib/actions/item";
+import { getAnalyticsSummary, getTopOrderedItems } from "@/lib/actions/analytics";
 import DashboardMetrics from "@/components/admin/DashboardMetrics";
 import SparklineChart from "@/components/admin/SparklineChart";
 import TrendingItems from "@/components/admin/TrendingItems";
 import QuickActions from "@/components/admin/QuickActions";
-import RecentItems from "@/components/admin/RecentItems";
+import ActiveOrders from "@/components/admin/ActiveOrders";
+import QuickFeedbackSummary from "@/components/admin/QuickFeedbackSummary";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -37,22 +37,14 @@ async function SparklineSection({ locale }: { locale: string }) {
   return <SparklineChart data={sparklineData} totalLabel={locale === "ar" ? "آخر 7 أيام" : "Last 7 days"} locale={locale} />;
 }
 
-async function TrendingSection({ locale }: { locale: string }) {
-  const analytics = await getAnalyticsSummary().catch(() => ({
-    menuViewsToday: 0, menuViewsThisWeek: 0, totalItems: 0, totalCategories: 0, trendingItems: [], dailyViews: [],
-  }));
-  return <TrendingItems items={analytics.trendingItems} locale={locale} />;
-}
-
-async function RecentSection({ locale }: { locale: string }) {
-  const items = await getItems().catch(() => []);
-  const recentItems = items.map((i) => ({ id: i.id, name_en: i.name_en, name_ar: i.name_ar, is_active: i.is_active }));
-  return <RecentItems items={recentItems} locale={locale} />;
+async function TopOrderedSection({ locale }: { locale: string }) {
+  const items = await getTopOrderedItems().catch(() => []);
+  return <TrendingItems items={items} locale={locale} />;
 }
 
 function KpiSkeleton() {
   return (
-    <div className="grid grid-cols-3 gap-3 md:gap-5 animate-pulse">
+    <div className="grid grid-cols-3 gap-4 md:gap-6 animate-pulse">
       {[1, 2, 3].map((i) => (
         <div key={i} className="bg-surface rounded-xl p-4 md:p-5 shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
           <div className="h-3 w-20 bg-muted/30 rounded-full mb-3" />
@@ -71,7 +63,7 @@ function SparklineSkeleton() {
       <div className="flex items-end gap-2 h-32">
         {[1, 2, 3, 4, 5, 6, 7].map((i) => (
           <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full bg-muted/20 rounded-t-sm" style={{ height: `${Math.random() * 60 + 20}%` }} />
+            <div className="w-full bg-muted/20 rounded-t-sm" style={{ height: `${(i + 1) * 10 + 12}%` }} />
             <div className="h-2 w-6 bg-muted/20 rounded-full" />
           </div>
         ))}
@@ -97,22 +89,17 @@ function TrendingSkeleton() {
   );
 }
 
-function RecentSkeleton() {
+function FeedbackSkeleton() {
   return (
     <div className="bg-surface rounded-xl p-5 shadow-[0_1px_3px_rgba(212,196,176,0.25)] animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="h-3 w-24 bg-muted/30 rounded-full" />
-        <div className="h-3 w-16 bg-muted/20 rounded-full" />
-      </div>
-      <div className="flex gap-3 overflow-hidden">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="min-w-[140px] bg-surface rounded-xl p-3 border border-border/50 space-y-2 shrink-0">
-            <div className="w-12 h-12 rounded-xl bg-muted/20 mx-auto" />
-            <div className="h-3 w-20 bg-muted/30 rounded-full mx-auto" />
-            <div className="h-2 w-12 bg-muted/20 rounded-full mx-auto" />
-          </div>
-        ))}
-      </div>
+      <div className="h-3 w-24 bg-muted/30 rounded-full mb-4" />
+      <div className="h-6 w-28 bg-muted/20 rounded-lg mb-3" />
+      {[1, 2].map((i) => (
+        <div key={i} className="p-2.5 rounded-xl mb-2" style={{ backgroundColor: "#f5efdf" }}>
+          <div className="h-3 w-24 bg-muted/20 rounded-full mb-2" />
+          <div className="h-3 w-40 bg-muted/20 rounded-full" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -121,21 +108,29 @@ export default async function AdminDashboardPage({ params }: Props) {
   const { locale } = await params;
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 md:space-y-5">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5 md:space-y-6">
       <Suspense fallback={<KpiSkeleton />}>
         <MetricsSection locale={locale} />
       </Suspense>
       <Suspense fallback={<SparklineSkeleton />}>
         <SparklineSection locale={locale} />
       </Suspense>
-      <div className="grid md:grid-cols-2 gap-4 md:gap-5">
+      <div className="grid md:grid-cols-2 gap-5 md:gap-6">
         <Suspense fallback={<TrendingSkeleton />}>
-          <TrendingSection locale={locale} />
+          <TopOrderedSection locale={locale} />
         </Suspense>
-        <QuickActions locale={locale} />
+        <Suspense fallback={<FeedbackSkeleton />}>
+          <QuickFeedbackSummary locale={locale} />
+        </Suspense>
       </div>
-      <Suspense fallback={<RecentSkeleton />}>
-        <RecentSection locale={locale} />
+      <QuickActions locale={locale} />
+      <Suspense fallback={
+        <div className="bg-surface rounded-xl p-5 shadow-[0_1px_3px_rgba(212,196,176,0.25)] animate-pulse">
+          <div className="flex justify-between mb-4"><div className="h-3 w-24 bg-muted/30 rounded-full" /><div className="h-3 w-16 bg-muted/20 rounded-full" /></div>
+          {[1,2,3].map(i => (<div key={i} className="flex justify-between p-3 rounded-xl mb-2 bg-background/50"><div className="h-3 w-20 bg-muted/30 rounded" /><div className="h-3 w-16 bg-muted/20 rounded" /></div>))}
+        </div>
+      }>
+        <ActiveOrders locale={locale} />
       </Suspense>
     </div>
   );

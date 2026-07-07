@@ -10,4 +10,5 @@ export function revalidateMenuPaths() {
   revalidatePath("/ar");
   // Also cover root-level redirect (e.g. / -> /en)
   revalidatePath("/", "layout");
+  revalidatePath("/admin/settings");
 }

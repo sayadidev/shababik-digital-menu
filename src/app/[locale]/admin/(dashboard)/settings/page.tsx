@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSettings, updateSettings } from "@/lib/actions/settings";
 import { resetAnalytics } from "@/lib/actions/reset-analytics";
+import { createStaffAccount, listStaffAccounts, deleteStaffAccount, type StaffAccount } from "@/lib/actions/staff";
 import { createClient } from "@/lib/supabase/client";
 import ImageUpload from "@/components/admin/ImageUpload";
 import type { SiteSettingsRow } from "@/lib/validations";
@@ -22,15 +23,25 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const [showResetDialog, setShowResetDialog] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
+  const [showResetWarning, setShowResetWarning] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const [tierStatus, setTierState] = useState<"basic" | "pro">("basic");
   const [orderingEnabled, setOrderingState] = useState(false);
   const [enableUsd, setEnableUsd] = useState(true);
+
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [staffCreating, setStaffCreating] = useState(false);
+  const [staffError, setStaffError] = useState("");
+  const [staffSuccess, setStaffSuccess] = useState("");
+  const [staffUsers, setStaffUsers] = useState<StaffAccount[]>([]);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [staffFetchError, setStaffFetchError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -45,6 +56,75 @@ export default function SettingsPage() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    loadStaffAccounts();
+  }, []);
+
+  const loadStaffAccounts = async () => {
+    setStaffFetchError("");
+    setStaffLoading(true);
+    try {
+      const res = await listStaffAccounts();
+      if (res.success && res.users) {
+        setStaffUsers(res.users);
+      } else {
+        setStaffFetchError(
+          res.error || (locale === "ar" ? "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً." : "Failed to load staff accounts. Please try again later.")
+        );
+      }
+    } catch (err: any) {
+      setStaffFetchError(
+        locale === "ar" ? "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً." : "Failed to load staff accounts. Please try again later."
+      );
+    } finally {
+      setStaffLoading(false);
+    }
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffError("");
+    setStaffSuccess("");
+    setStaffCreating(true);
+    try {
+      const res = await createStaffAccount(staffEmail, staffPassword);
+      if (res.success) {
+        setStaffSuccess(
+          locale === "ar" ? "تم إنشاء حساب الموظف بنجاح" : "Staff account created successfully"
+        );
+        setStaffEmail("");
+        setStaffPassword("");
+        await loadStaffAccounts();
+      } else {
+        setStaffError(res.error || (locale === "ar" ? "فشل إنشاء الحساب" : "Failed to create account"));
+      }
+    } catch (err: any) {
+      setStaffError(err?.message || (locale === "ar" ? "فشل إنشاء الحساب" : "Failed to create account"));
+    }
+    setStaffCreating(false);
+  };
+
+  const handleDeleteStaff = async (userId: string, userEmail: string) => {
+    if (!window.confirm(
+      locale === "ar"
+        ? `هل أنت متأكد من حذف ${userEmail}؟`
+        : `Are you sure you want to delete ${userEmail}?`
+    )) return;
+
+    setDeletingId(userId);
+    try {
+      const res = await deleteStaffAccount(userId);
+      if (res.success) {
+        await loadStaffAccounts();
+      } else {
+        setStaffError(res.error || (locale === "ar" ? "فشل حذف الحساب" : "Failed to delete account"));
+      }
+    } catch (err: any) {
+      setStaffError(err?.message || (locale === "ar" ? "فشل حذف الحساب" : "Failed to delete account"));
+    }
+    setDeletingId(null);
+  };
 
   const handleSave = async () => {
     setError("");
@@ -88,13 +168,12 @@ export default function SettingsPage() {
     setResetError("");
     setResetting(true);
     try {
-      const res = await resetAnalytics(resetEmail, resetPassword);
+      const res = await resetAnalytics();
       if (res.success) {
-        setShowResetDialog(false);
-        setResetEmail("");
+        setShowResetWarning(false);
         setResetPassword("");
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        setResetSuccess(true);
+        setTimeout(() => setResetSuccess(false), 4000);
         router.refresh();
       } else {
         setResetError(res.error ?? t("Reset failed", "فشل إعادة التعيين"));
@@ -137,6 +216,11 @@ export default function SettingsPage() {
       {success && (
         <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
           {t("Settings saved successfully!", "تم حفظ الإعدادات بنجاح!")}
+        </div>
+      )}
+      {resetSuccess && (
+        <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+          {t("System reset successfully", "تم تصفير النظام بنجاح")}
         </div>
       )}
 
@@ -366,6 +450,141 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* ── Section 3.5: Staff Management ── */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t("Staff Management", "إدارة الموظفين")}
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t("Create and manage staff accounts for order taking", "إنشاء وإدارة حسابات الموظفين لاستقبال الطلبات")}
+          </p>
+        </div>
+
+        {/* Create Staff Form */}
+        <div className="px-5 py-4 border-b border-gray-100">
+          <p className="text-sm font-medium text-gray-700 mb-3">
+            {t("Create New Staff Account", "إنشاء حساب موظف جديد")}
+          </p>
+          {staffError && (
+            <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+              {staffError}
+            </div>
+          )}
+          {staffSuccess && (
+            <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+              {staffSuccess}
+            </div>
+          )}
+          <form onSubmit={handleCreateStaff} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {t("Email", "البريد الإلكتروني")}
+                </label>
+                <input
+                  type="email"
+                  value={staffEmail}
+                  onChange={(e) => setStaffEmail(e.target.value)}
+                  required
+                  placeholder="staff@shababik.com"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {t("Password", "كلمة المرور")}
+                </label>
+                <input
+                  type="password"
+                  value={staffPassword}
+                  onChange={(e) => setStaffPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={staffCreating}
+              className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {staffCreating && (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              )}
+              {t("Create Account", "إنشاء حساب")}
+            </button>
+          </form>
+        </div>
+
+        {/* Staff List */}
+        <div className="px-5 py-4">
+          <p className="text-sm font-medium text-gray-700 mb-3">
+            {t("Existing Staff Accounts", "حسابات الموظفين الحالية")}
+          </p>
+          {staffLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted py-2">
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {t("Loading...", "جاري التحميل...")}
+            </div>
+          ) : staffFetchError ? (
+            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+              {staffFetchError}
+            </div>
+          ) : staffUsers.length === 0 ? (
+            <p className="text-sm text-gray-400 py-2">
+              {t("No staff accounts yet", "لا توجد حسابات موظفين بعد")}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {staffUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                    <p className="text-xs text-gray-400">
+                      {t("Created", "تم الإنشاء")}{" "}
+                      {new Date(user.created_at).toLocaleDateString(locale === "ar" ? "ar" : "en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {user.last_sign_in_at && (
+                        <> &middot; {t("Last login:", "آخر دخول:")}{" "}
+                          {new Date(user.last_sign_in_at).toLocaleDateString(locale === "ar" ? "ar" : "en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteStaff(user.id, user.email)}
+                    disabled={deletingId === user.id}
+                    className="shrink-0 px-3 py-1.5 rounded-lg border border-red-200 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {deletingId === user.id
+                      ? t("Deleting...", "جاري الحذف...")
+                      : t("Delete", "حذف")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ── Section 4: Danger Zone ── */}
       <div className="bg-white border border-red-200 rounded-xl shadow-sm overflow-hidden mb-6">
         <div className="px-5 py-4 border-b border-red-100 bg-red-50/50">
@@ -407,17 +626,17 @@ export default function SettingsPage() {
               </p>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                 {t(
-                  "Permanently delete all analytics events and reset view counts to zero",
-                  "حذف جميع أحداث الإحصائيات وإعادة أعداد المشاهدات إلى الصفر"
+                  "Permanently delete all orders, feedback, analytics events, and reset view counts to zero",
+                  "حذف نهائي لجميع الطلبات والتقييمات وإحصائيات المشاهدات وإعادتها إلى الصفر"
                 )}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setShowResetDialog(true)}
+              onClick={() => setShowResetWarning(true)}
               className="shrink-0 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 active:scale-[0.98] transition-all"
             >
-              {t("Reset", "إعادة تعيين")}
+              {t("Reset Data", "تصفير البيانات")}
             </button>
           </div>
         </div>
@@ -448,9 +667,16 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* ── Reset Confirmation Dialog ── */}
-      {showResetDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowResetDialog(false)}>
+      {/* ── Reset Warning Dialog ── */}
+      {showResetWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => { setShowResetWarning(false); setResetError(""); }}
+          onKeyDown={(e) => { if (e.key === "Escape") { setShowResetWarning(false); setResetError(""); }}}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("Confirm Reset Analytics", "تأكيد إعادة تعيين الإحصائيات")}
+          tabIndex={-1}
+        >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             onClick={(e) => e.stopPropagation()}
@@ -458,14 +684,16 @@ export default function SettingsPage() {
             style={{ animation: "scaleIn 0.2s ease-out" }}
           >
             <style>{`@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
-            <h4 className="text-base font-bold text-red-600 mb-1">
-              {t("Confirm Reset", "تأكيد إعادة التعيين")}
-            </h4>
-            <p className="text-sm text-gray-500 mb-5">
-              {t(
-                "Enter your admin credentials to confirm. This action cannot be undone.",
-                "أدخل بيانات المسؤول الخاصة بك للتأكيد. لا يمكن التراجع عن هذا الإجراء."
-              )}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">⚠️</span>
+              <h4 className="text-base font-bold text-red-600">
+                {t("WARNING: Destructive Action", "تحذير خطير: إجراء مدمر")}
+              </h4>
+            </div>
+            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+              {locale === "ar"
+                ? "أنت على وشك حذف جميع الطلبات، الفواتير، التقييمات، وإحصائيات المنتجات بالكامل. لا يمكن التراجع عن هذا الإجراء."
+                : "You are about to delete all orders, invoices, feedback, and product statistics entirely. This action cannot be undone."}
             </p>
 
             {resetError && (
@@ -476,36 +704,29 @@ export default function SettingsPage() {
 
             <form onSubmit={handleResetAnalytics} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {t("Email", "البريد الإلكتروني")}
+                <label htmlFor="reset-password-confirm" className="block text-xs font-medium text-gray-700 mb-1">
+                  {t("Admin Password", "كلمة مرور المسؤول")}
                 </label>
                 <input
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                  placeholder="admin@shababik.com"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {t("Password", "كلمة المرور")}
-                </label>
-                <input
+                  id="reset-password-confirm"
                   type="password"
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition-all"
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400/30 focus:border-red-400 transition-all"
                 />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {locale === "ar"
+                    ? "مطلوب كلمة مرور المسؤول لتأكيد هذا الإجراء المدمر"
+                    : "Admin password required to confirm this destructive action"}
+                </p>
               </div>
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   type="submit"
-                  disabled={resetting}
-                  className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={resetting || !resetPassword}
+                  className="flex-1 min-h-[44px] py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {resetting && (
                     <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -514,16 +735,17 @@ export default function SettingsPage() {
                     </svg>
                   )}
                   {resetting
-                    ? t("Resetting...", "جاري إعادة التعيين...")
-                    : t("Reset Everything", "إعادة تعيين الكل")}
+                    ? t("Resetting...", "جاري الحذف...")
+                    : t("Confirm Final Deletion", "تأكيد الحذف النهائي")}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setShowResetDialog(false);
+                    setShowResetWarning(false);
+                    setResetPassword("");
                     setResetError("");
                   }}
-                  className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
+                  className="min-h-[44px] px-4 py-2.5 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>

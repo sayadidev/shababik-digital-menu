@@ -3,11 +3,11 @@
   <path d="M100 80h160c8 0 15 7 15 15v50c0 45-38 82-85 82h-20c-47 0-85-37-85-82V95c0-8 7-15 15-15z" fill="#3B2818" opacity="0.08"/>
   <rect x="115" y="95" width="130" height="60" rx="6" fill="#3B2818" opacity="0.12"/>
   <ellipse cx="180" cy="95" rx="65" ry="8" fill="#3B2818" opacity="0.06"/>
-  <path d="M245 105c20-5 35-20 35-40 0-22-18-40-40-40-15 0-28 8-35 20" stroke="#C46A6A" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.3"/>
+  <path d="M245 105c20-5 35-20 35-40 0-22-18-40-40-40-15 0-28 8-35 20" stroke="#B8743A" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.3"/>
   <!-- Steam -->
-  <path d="M145 85Q155 70 145 55" stroke="#C46A6A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.25"/>
-  <path d="M180 80Q190 65 180 50" stroke="#C46A6A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.2"/>
-  <path d="M215 85Q225 70 215 55" stroke="#C46A6A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.25"/>
+  <path d="M145 85Q155 70 145 55" stroke="#B8743A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.25"/>
+  <path d="M180 80Q190 65 180 50" stroke="#B8743A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.2"/>
+  <path d="M215 85Q225 70 215 55" stroke="#B8743A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.25"/>
   <!-- Brand name -->
   <text x="200" y="210" text-anchor="middle" font-family="serif" font-size="52" font-weight="700" fill="#3B2818" letter-spacing="4">Shababik</text>
   <text x="200" y="240" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#8a7a6a" letter-spacing="6" text-transform="uppercase">CAFE &amp; DESSERTS</text>

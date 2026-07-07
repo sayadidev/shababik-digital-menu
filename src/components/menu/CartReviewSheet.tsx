@@ -170,10 +170,11 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
               </h2>
               {isStaff ? (
                 <div className="flex items-center gap-2 mt-0.5">
-                  <label className="text-xs text-gray-500">
+                  <label htmlFor="table-number" className="text-xs text-gray-500">
                     {locale === "ar" ? "رقم الطاولة:" : "Table #:"}
                   </label>
                   <input
+                    id="table-number"
                     type="number"
                     min={1}
                     value={editableTable}
@@ -196,9 +197,10 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
             <button
               type="button"
               onClick={handleClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-[#3B2818]/4"
+              className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-[#3B2818]/4"
+              aria-label="Close review"
             >
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -253,13 +255,13 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                     </div>
                     </div>
 
-                  <div className="flex items-center gap-3 bg-[#F0EBE1] px-2 py-1 rounded-full text-sm font-medium shrink-0">
+                  <div className="flex items-center gap-2 bg-[#F0EBE1] px-2 py-1 rounded-full text-sm font-medium shrink-0">
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.variantId, -1)}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] transition-all active:scale-90"
+                      className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] transition-all active:scale-90"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
                       </svg>
                     </button>
@@ -269,9 +271,9 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                     <button
                       type="button"
                       onClick={() => updateQuantity(item.variantId, 1)}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] transition-all active:scale-90"
+                      className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-gray-600 hover:bg-[#E5DFD5] transition-all active:scale-90"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                       </svg>
                     </button>
@@ -309,7 +311,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full bg-[#5A4A3A] text-white py-3.5 rounded-xl font-semibold mb-2 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full min-h-[48px] bg-[#5A4A3A] text-white py-3.5 rounded-xl font-semibold mb-2 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting && (
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -322,7 +324,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
             <button
               type="button"
               onClick={handleClose}
-              className="w-full text-gray-500 py-2 text-sm font-medium hover:bg-black/5 rounded-xl transition-colors"
+              className="w-full min-h-[44px] text-gray-500 py-2 text-sm font-medium hover:bg-black/5 rounded-xl transition-colors"
             >
               {locale === "ar" ? "إضافة المزيد" : "Add More"}
             </button>

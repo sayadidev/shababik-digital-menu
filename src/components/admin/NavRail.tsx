@@ -39,7 +39,7 @@ export default function NavRail({ headerLogoUrl, role }: { headerLogoUrl: string
               key={href}
               href={href}
               prefetch={true}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              className={`min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all ${
                 active
                   ? "text-primary bg-primary/10"
                   : "text-muted hover:text-foreground hover:bg-primary/10"

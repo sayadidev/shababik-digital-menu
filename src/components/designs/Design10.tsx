@@ -438,7 +438,7 @@ export default function Design10({ data }: { data: MenuData }) {
         </div>
 
         {/* ── Categories Nav ───────────────────────── */}
-        <nav className="scrollbar-hide overflow-x-auto px-4 pb-2.5 relative">
+        <nav className="scrollbar-hide overflow-x-auto px-4 pb-2.5">
           <div className="flex gap-1" dir={isRtl ? "rtl" : "ltr"}>
             {data.categories.map((cat) => {
               const name = locale === "ar" ? cat.name_ar : cat.name_en;
@@ -455,8 +455,6 @@ export default function Design10({ data }: { data: MenuData }) {
               );
             })}
           </div>
-          <div className="pointer-events-none absolute top-0 bottom-0 w-10 bg-gradient-to-r from-transparent to-[#f5efdf]" style={{ [isRtl ? "left" : "right"]: 0 }} />
-          <div className="pointer-events-none absolute top-0 bottom-0 w-10 bg-gradient-to-l from-transparent to-[#f5efdf]" style={{ [isRtl ? "right" : "left"]: 0 }} />
         </nav>
       </header>
 

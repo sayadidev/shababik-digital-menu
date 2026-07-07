@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getSettings, updateSettings } from "@/lib/actions/settings";
+import { getSettings, updateSettings, updateSingleSetting } from "@/lib/actions/settings";
 import { resetAnalytics } from "@/lib/actions/reset-analytics";
 import { createStaffAccount, listStaffAccounts, deleteStaffAccount, type StaffAccount } from "@/lib/actions/staff";
 import { createClient } from "@/lib/supabase/client";
@@ -41,6 +41,8 @@ export default function SettingsPage() {
   const [orderingEnabled, setOrderingState] = useState(false);
   const [enableUsd, setEnableUsd] = useState(true);
   const [activeCurrency, setActiveCurrency] = useState<"TRY" | "SYP">("TRY");
+  const [currencyPending, startCurrencyTransition] = useTransition();
+  const [currencyMessage, setCurrencyMessage] = useState("");
 
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
@@ -248,6 +250,14 @@ export default function SettingsPage() {
         <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
           {t("Settings saved successfully!", "تم حفظ الإعدادات بنجاح!")}
         </div>
+      )}
+      {currencyMessage && !currencyMessage.includes("Failed") && (
+        <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+          {currencyMessage}
+        </div>
+      )}
+      {currencyMessage && currencyMessage.includes("Failed") && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">{currencyMessage}</div>
       )}
       {resetSuccess && (
         <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
@@ -457,6 +467,15 @@ export default function SettingsPage() {
         </div>
 
         <div className="px-5 py-4">
+          {currencyPending && (
+            <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {t("Saving...", "جاري الحفظ...")}
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(["TRY", "SYP"] as const).map((currency) => {
               const labels: Record<string, string> = {
@@ -472,25 +491,32 @@ export default function SettingsPage() {
                 <button
                   key={currency}
                   type="button"
-                  onClick={async () => {
-                    setActiveCurrency(currency);
-                    await updateSettings({
-                      hero_image_url: heroImageUrl,
-                      hero_logo_url: heroLogoUrl,
-                      header_logo_url: headerLogoUrl,
-                      tier: tierStatus,
-                      ordering_enabled: orderingEnabled,
-                      enable_usd: enableUsd,
-                      active_currency: currency,
+                  disabled={currencyPending}
+                  onClick={() => {
+                    startCurrencyTransition(async () => {
+                      setActiveCurrency(currency);
+                      setCurrencyMessage("");
+                      const res = await updateSingleSetting("active_currency", currency);
+                      if (res.success) {
+                        setCurrencyMessage(
+                          locale === "ar"
+                            ? "تم تحديث العملة بنجاح"
+                            : "Currency updated successfully",
+                        );
+                        setTimeout(() => setCurrencyMessage(""), 3000);
+                      } else {
+                        setCurrencyMessage(res.error ?? "Failed to save");
+                        // Revert on failure
+                        const prev = activeCurrency;
+                        setActiveCurrency(prev);
+                      }
                     });
-                    setSuccess(true);
-                    setTimeout(() => setSuccess(false), 3000);
                   }}
                   className={`relative p-4 rounded-xl border-2 transition-all text-left ${
                     isActive
                       ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
+                  }${currencyPending ? " opacity-60 pointer-events-none" : ""}`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span

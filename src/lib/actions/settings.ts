@@ -21,6 +21,28 @@ export async function getSettings(): Promise<SiteSettingsRow | null> {
   return data;
 }
 
+/**
+ * Update a single setting. Used by radio groups and toggles for instant saves.
+ */
+export async function updateSingleSetting(
+  field: string,
+  value: unknown,
+): Promise<{ success: boolean; error?: string }> {
+  await requireSuperAdmin();
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("site_settings")
+    .update({ [field]: value })
+    .eq("id", 1);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidateMenuPaths();
+  return { success: true };
+}
+
 export async function updateSettings(
   data: SiteSettingsInput,
 ): Promise<{ success: boolean; error?: string }> {
@@ -31,46 +53,14 @@ export async function updateSettings(
   }
 
   const supabase = createAdminClient();
+  const payload = { ...parsed.data, id: 1 };
 
-  // Build payload — omit newer columns if they may not exist yet
-  const payload: Record<string, unknown> = { ...parsed.data };
-
-  const tryUpdate = async (p: Record<string, unknown>): Promise<boolean> => {
-    const { error } = await supabase
-      .from("site_settings")
-      .update(p)
-      .eq("id", 1);
-    return !error;
-  };
-
-  if (await tryUpdate(payload)) {
-    revalidatePath("/admin");
-    revalidateMenuPaths();
-    return { success: true };
-  }
-
-  // Column fallbacks — remove newer columns and retry
-  delete payload.active_currency;
-  if (await tryUpdate(payload)) {
-    revalidatePath("/admin");
-    revalidateMenuPaths();
-    return { success: true };
-  }
-
-  delete payload.enable_usd;
-  if (await tryUpdate(payload)) {
-    revalidatePath("/admin");
-    revalidateMenuPaths();
-    return { success: true };
-  }
-
-  delete payload.tier;
-  delete payload.ordering_enabled;
-  const { error: retry3 } = await supabase
+  // Use upsert so the row always exists; never silently drops columns
+  const { error } = await supabase
     .from("site_settings")
-    .update(payload)
-    .eq("id", 1);
-  if (retry3) return { success: false, error: retry3.message };
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) return { success: false, error: error.message };
 
   revalidatePath("/admin");
   revalidateMenuPaths();

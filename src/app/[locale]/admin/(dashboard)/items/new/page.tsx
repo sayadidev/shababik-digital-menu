@@ -110,7 +110,7 @@ export default function NewItemPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-32">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto pb-40 overflow-y-auto h-full">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="p-2 rounded-xl text-muted hover:text-foreground hover:bg-primary/10 transition-all">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +237,7 @@ export default function NewItemPage() {
       </form>
 
       {/* ── Sticky Form Footer ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-black/5 md:pl-[72px]" style={{ backgroundColor: "rgba(253,251,247,0.95)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+      <div className="fixed bottom-0 left-0 right-0 md:left-[72px] rtl:md:right-[72px] rtl:md:left-0 z-40 p-4 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-black/5" style={{ backgroundColor: "rgba(253,251,247,0.95)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button type="submit" disabled={saving} onClick={handleSubmit}
             className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2">

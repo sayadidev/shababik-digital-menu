@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [tierStatus, setTierState] = useState<"basic" | "pro">("basic");
   const [orderingEnabled, setOrderingState] = useState(false);
   const [enableUsd, setEnableUsd] = useState(true);
+  const [activeCurrency, setActiveCurrency] = useState<"TRY" | "USD" | "SYP">("TRY");
 
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
@@ -61,6 +62,7 @@ export default function SettingsPage() {
         setTierState((s as any).tier ?? "basic");
         setOrderingState((s as any).ordering_enabled ?? false);
         setEnableUsd((s as any).enable_usd ?? true);
+        setActiveCurrency((s as any).active_currency ?? "TRY");
       }
     });
   }, []);
@@ -166,6 +168,7 @@ export default function SettingsPage() {
         tier: tierStatus,
         ordering_enabled: orderingEnabled,
         enable_usd: enableUsd,
+        active_currency: activeCurrency,
       });
       if (res.success) {
         setSuccess(true);
@@ -343,6 +346,7 @@ export default function SettingsPage() {
                       tier: "pro",
                       ordering_enabled: true,
                       enable_usd: enableUsd,
+                      active_currency: activeCurrency,
                     });
                     setTierState("pro");
                     setOrderingState(true);
@@ -372,6 +376,7 @@ export default function SettingsPage() {
                         tier: "pro",
                         ordering_enabled: next,
                         enable_usd: enableUsd,
+                        active_currency: activeCurrency,
                       });
                     }}
                     className={`relative w-11 h-6 rounded-full transition-colors duration-200 border-0 shrink-0 ${
@@ -419,6 +424,7 @@ export default function SettingsPage() {
                   tier: tierStatus,
                   ordering_enabled: orderingEnabled,
                   enable_usd: next,
+                  active_currency: activeCurrency,
                 });
                 setSuccess(true);
                 setTimeout(() => setSuccess(false), 3000);
@@ -435,6 +441,80 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section: Currency Settings ── */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t("Currency Settings", "إعدادات العملة")}
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t("Select which currency customers see across the menu, cart, and checkout", "اختر العملة التي يراها العملاء في القائمة والسلة والدفع")}
+          </p>
+        </div>
+
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(["TRY", "USD", "SYP"] as const).map((currency) => {
+              const labels: Record<string, string> = {
+                TRY: t("Turkish Lira (TL)", "الليرة التركية (TL)"),
+                USD: t("US Dollar ($)", "الدولار الأمريكي ($)"),
+                SYP: t("Syrian Pound (SYP)", "الليرة السورية (ل.س)"),
+              };
+              const descriptions: Record<string, string> = {
+                TRY: t("Prices shown in TL", "الأسعار بالليرة التركية"),
+                USD: t("Prices shown in USD", "الأسعار بالدولار"),
+                SYP: t("Prices shown in SYP", "الأسعار بالليرة السورية"),
+              };
+              const isActive = activeCurrency === currency;
+              return (
+                <button
+                  key={currency}
+                  type="button"
+                  onClick={async () => {
+                    setActiveCurrency(currency);
+                    await updateSettings({
+                      hero_image_url: heroImageUrl,
+                      hero_logo_url: heroLogoUrl,
+                      header_logo_url: headerLogoUrl,
+                      tier: tierStatus,
+                      ordering_enabled: orderingEnabled,
+                      enable_usd: enableUsd,
+                      active_currency: currency,
+                    });
+                    setSuccess(true);
+                    setTimeout(() => setSuccess(false), 3000);
+                  }}
+                  className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+                    isActive
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        isActive ? "border-gray-900" : "border-gray-300"
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="w-2 h-2 rounded-full bg-gray-900" />
+                      )}
+                    </span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {currency}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600">{labels[currency]}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {descriptions[currency]}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -3,17 +3,20 @@
 import { useLocale } from "next-intl";
 import ItemCard from "./ItemCard";
 import type { MenuCategory, ItemWithVariants } from "@/lib/menu";
+import type { Currency } from "@/types/database";
 
 type Props = {
   category: MenuCategory;
   sectionRef: React.RefCallback<HTMLDivElement>;
   onSelectItem: (item: ItemWithVariants) => void;
+  activeCurrency: Currency;
 };
 
 export default function CategorySection({
   category,
   sectionRef,
   onSelectItem,
+  activeCurrency,
 }: Props) {
   const locale = useLocale();
   const name = locale === "ar" ? category.name_ar : category.name_en;
@@ -34,7 +37,7 @@ export default function CategorySection({
 
       <div className="space-y-3.5">
         {category.items.map((item) => (
-          <ItemCard key={item.id} item={item} onSelect={onSelectItem} />
+          <ItemCard key={item.id} item={item} onSelect={onSelectItem} activeCurrency={activeCurrency} />
         ))}
       </div>
     </section>

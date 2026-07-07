@@ -27,8 +27,9 @@ export interface ItemVariant {
   item_id: string;
   size_name_en: string;
   size_name_ar: string;
-  price_usd: number;
-  price_syp: number;
+  price_usd: number | null;
+  price_syp: number | null;
+  price_try: number | null;
   is_offer: boolean;
   price_before_usd: number | null;
   price_before_syp: number | null;
@@ -52,6 +53,8 @@ export interface ItemImage {
   created_at?: string;
 }
 
+export type Currency = "TRY" | "USD" | "SYP";
+
 export interface SiteSettings {
   id: number;
   hero_image_url: string;
@@ -60,6 +63,7 @@ export interface SiteSettings {
   tier: "basic" | "pro";
   ordering_enabled: boolean;
   enable_usd: boolean;
+  active_currency: Currency;
   created_at?: string;
   updated_at?: string;
 }

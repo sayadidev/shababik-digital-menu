@@ -15,6 +15,7 @@ type Variant = {
   sizeAr: string;
   priceUsd: string;
   priceSyp: string;
+  priceTry: string;
   isOffer: boolean;
   priceBeforeUsd: string;
   priceBeforeSyp: string;
@@ -22,7 +23,7 @@ type Variant = {
 };
 
 function emptyVariant(): Variant {
-  return { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", imageUrl: "" };
+  return { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", imageUrl: "" };
 }
 
 async function loadCategories(): Promise<CategoryRow[]> {
@@ -84,11 +85,13 @@ export default function NewItemPage() {
       }
 
       const variantInputs = variants
-        .filter((v) => v.sizeEn.trim() && v.sizeAr.trim() && v.priceUsd && v.priceSyp)
+        .filter((v) => v.sizeEn.trim() && v.sizeAr.trim())
         .map((v) => ({
           item_id: itemRes.data!.id,
           size_name_en: v.sizeEn, size_name_ar: v.sizeAr,
-          price_usd: parseFloat(v.priceUsd) || 0, price_syp: parseInt(v.priceSyp, 10) || 0,
+          price_usd: v.priceUsd ? parseFloat(v.priceUsd) : null,
+          price_syp: v.priceSyp ? parseInt(v.priceSyp, 10) : null,
+          price_try: v.priceTry ? parseFloat(v.priceTry) : null,
           is_offer: v.isOffer,
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
@@ -186,6 +189,10 @@ export default function NewItemPage() {
                 <div className="flex-1 min-w-[100px]">
                   <label className="block text-xs text-muted mb-1">{t("Size (AR)", "المقاس (عربي)")}</label>
                   <input type="text" value={v.sizeAr} onChange={(e) => updateVariant(v.id, "sizeAr", e.target.value)} placeholder="صغير / وسط / كبير" dir="rtl" className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs text-muted mb-1">{t("Price (TL)", "السعر (TL)")}</label>
+                  <input type="number" step="0.01" min="0" value={v.priceTry} onChange={(e) => updateVariant(v.id, "priceTry", e.target.value)} placeholder="0.00" className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="w-24">
                   <label className="block text-xs text-muted mb-1">{t("Price (USD)", "السعر (USD)")}</label>

@@ -14,7 +14,8 @@ import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
 import { GlobeIcon } from "@/components/admin/icons";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency, getPriceForCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 /* ── Design 10: Rose Petal ─────────────────
    Dark coffeehouse (#3B2818) + warm beige (#D4B895)
@@ -183,6 +184,7 @@ export default function Design10({ data }: { data: MenuData }) {
 
   const orderingEnabled = data.settings?.tier === "pro" && data.settings?.ordering_enabled;
   const enableUsd = data.settings?.enable_usd ?? true;
+  const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
 
   const handleItemClick = useCallback((item: ItemWithVariants) => {
     if (orderingEnabled) {
@@ -344,14 +346,7 @@ export default function Design10({ data }: { data: MenuData }) {
                                 {item.item_variants.length > 1 && sizeName && (
                                   <span className="opacity-70">{sizeName}</span>
                                 )}
-                                {enableUsd ? (
-                                  <>
-                                    <span style={{ color: "#4A2C17" }}>${v.price_usd.toFixed(2)}</span>
-                                    <span style={{ color: "#4A2C17" }}>/ {formatSyp(v.price_syp, locale)}</span>
-                                  </>
-                                ) : (
-                                  <span style={{ color: "#4A2C17" }}>{formatSyp(v.price_syp, locale)}</span>
-                                )}
+                                {formatCurrency(v.price_try ?? 0, activeCurrency, locale)}
                               </span>
                             );
                           })}
@@ -541,23 +536,13 @@ export default function Design10({ data }: { data: MenuData }) {
                                     {item.item_variants.length > 1 && sizeName && (
                                       <span className="text-gray-600">{sizeName}</span>
                                     )}
-                                    {v.is_offer && v.price_before_usd != null && enableUsd && (
+                                    {v.is_offer && v.price_before_usd != null && (
                                       <span className="line-through opacity-50">
-                                        ${v.price_before_usd.toFixed(2)}
+                                        {formatCurrency(v.price_before_usd, "USD", locale)}
                                       </span>
                                     )}
-                                    {enableUsd ? (
-                                      <span className="tabular-nums font-semibold text-gray-900">
-                                        ${v.price_usd.toFixed(2)}
-                                      </span>
-                                    ) : null}
-                                    {v.is_offer && v.price_before_syp != null && (
-                                      <span className="line-through opacity-50">
-                                        {formatSyp(v.price_before_syp, locale)}
-                                      </span>
-                                    )}
-                                    <span className={`tabular-nums ${enableUsd ? "text-[10px] text-gray-400" : "font-semibold text-gray-900"}`}>
-                                      {enableUsd ? formatSyp(v.price_syp, locale) : formatSyp(v.price_syp, locale)}
+                                    <span className="tabular-nums font-semibold text-gray-900">
+                                {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                                     </span>
                                   </div>
                                 );
@@ -597,17 +582,17 @@ export default function Design10({ data }: { data: MenuData }) {
             item={addToCartItem?.item ?? null}
             variant={addToCartItem?.variant ?? null}
             locale={locale}
-            enableUsd={enableUsd}
+            activeCurrency={activeCurrency}
             onClose={() => setAddToCartItem(null)}
           />
-          <FloatingActiveOrder locale={locale} />
-          <FloatingCart locale={locale} tableNumber={tableNumber} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
+          <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} />
+          <FloatingCart locale={locale} tableNumber={tableNumber} activeCurrency={activeCurrency} onReview={() => setReviewOpen(true)} />
           {reviewOpen && (
-            <CartReviewSheet tableNumber={tableNumber} locale={locale} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
+            <CartReviewSheet tableNumber={tableNumber} locale={locale} activeCurrency={activeCurrency} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
           )}
         </>
       ) : (
-        <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} />
+        <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} activeCurrency={activeCurrency} />
       )}
     </div>
   );

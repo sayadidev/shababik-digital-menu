@@ -1,7 +1,8 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 const P = {
   deep: "#3B2818",
@@ -12,15 +13,15 @@ const P = {
 export default function FloatingCart({
   locale,
   tableNumber,
-  enableUsd,
+  activeCurrency,
   onReview,
 }: {
   locale: string;
   tableNumber: number | null;
-  enableUsd: boolean;
+  activeCurrency: Currency;
   onReview: () => void;
 }) {
-  const { totalItems, totalPriceUsd, totalPriceSyp } = useCart();
+  const { totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry } = useCart();
 
   if (totalItems === 0) return null;
 
@@ -66,20 +67,15 @@ export default function FloatingCart({
             <p className="text-xs text-white/60" style={{ fontVariantNumeric: "tabular-nums" }}>
               {locale === "ar" ? "المجموع" : "Total"}
             </p>
-            {enableUsd ? (
-              <>
-                <p className="text-sm font-bold text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  ${totalPriceUsd.toFixed(2)}
-                </p>
-                <p className="text-[11px] text-white/70" style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {formatSyp(totalPriceSyp, locale)}
-                </p>
-              </>
-            ) : (
-              <p className="text-sm font-bold text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-                {formatSyp(totalPriceSyp, locale)}
-              </p>
-            )}
+            <p className="text-sm font-bold text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
+              {(() => {
+                const price =
+                  activeCurrency === "TRY" ? totalPriceTry :
+                  activeCurrency === "USD" ? totalPriceUsd :
+                  totalPriceSyp;
+                return formatCurrency(price, activeCurrency, locale);
+              })()}
+            </p>
           </div>
 
           {/* CTA */}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { MenuData } from "@/lib/menu";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 type Props = {
   data: MenuData;
@@ -25,7 +26,7 @@ export default function PrintableMenu({ data, locale }: Props) {
   const dir = isRtl ? "rtl" : "ltr";
 
   const settings = data.settings;
-  const enableUsd = settings?.enable_usd ?? true;
+  const activeCurrency: Currency = settings?.active_currency ?? "TRY";
   const logoUrl =
     settings?.hero_logo_url ||
     settings?.header_logo_url ||
@@ -285,9 +286,13 @@ export default function PrintableMenu({ data, locale }: Props) {
                                   : v.size_name_en
                                 : null;
 
-                            const priceText = enableUsd
-                              ? `$${v.price_usd.toFixed(2)} · ${formatSyp(v.price_syp, locale)}`
-                              : formatSyp(v.price_syp, locale);
+                            const priceText = formatCurrency(
+                              activeCurrency === "TRY" ? (v.price_try ?? 0) :
+                              activeCurrency === "USD" ? (v.price_usd ?? 0) :
+                              (v.price_syp ?? 0),
+                              activeCurrency,
+                              locale,
+                            );
 
                             return (
                               <span key={v.id} className="inline-flex items-baseline">

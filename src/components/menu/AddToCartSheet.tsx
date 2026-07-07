@@ -4,17 +4,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import type { ItemWithVariants } from "@/lib/menu";
 import type { ItemVariant } from "@/types/database";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency, getPriceForCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 type Props = {
   item: ItemWithVariants | null;
   variant: ItemVariant | null;
   locale: string;
-  enableUsd: boolean;
+  activeCurrency: Currency;
   onClose: () => void;
 };
 
-export default function AddToCartSheet({ item, variant, locale, enableUsd, onClose }: Props) {
+export default function AddToCartSheet({ item, variant, locale, activeCurrency, onClose }: Props) {
   const { addItem } = useCart();
   const [visible, setVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -60,8 +61,9 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
         imageUrl: item.image_url,
         variantNameEn: selectedVariant.size_name_en,
         variantNameAr: selectedVariant.size_name_ar,
-        priceUsd: selectedVariant.price_usd,
-        priceSyp: selectedVariant.price_syp,
+        priceUsd: selectedVariant.price_usd ?? 0,
+        priceSyp: selectedVariant.price_syp ?? 0,
+        priceTry: selectedVariant.price_try ?? 0,
       },
       quantity,
       notes.trim() || undefined,
@@ -73,13 +75,10 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
 
   const name = locale === "ar" ? item.name_ar : item.name_en;
   const description = locale === "ar" ? item.description_ar : item.description_en;
-  const totalPriceUsd = (selectedVariant.price_usd * quantity).toFixed(2);
-  const totalPriceSyp = selectedVariant.price_syp * quantity;
+  const totalPriceUsd = (selectedVariant.price_usd ?? 0) * quantity;
+  const totalPriceSyp = (selectedVariant.price_syp ?? 0) * quantity;
+  const totalPriceTry = (selectedVariant.price_try ?? 0) * quantity;
   const isOffer = selectedVariant.is_offer && selectedVariant.price_before_usd != null;
-  const beforePriceUsd = isOffer ? (selectedVariant.price_before_usd! * quantity).toFixed(2) : null;
-  const beforePriceSyp = isOffer && selectedVariant.price_before_syp != null
-    ? selectedVariant.price_before_syp! * quantity
-    : null;
 
   return (
     <div
@@ -182,9 +181,7 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                         <span className="font-medium">{vName}</span>
                         <span className={`mx-1 ${isActive ? "opacity-60" : "opacity-30"}`}>-</span>
                         <span className="font-semibold">
-                          {enableUsd
-                            ? `$${v.price_usd.toFixed(2)}`
-                            : formatSyp(v.price_syp, locale)}
+                          {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                         </span>
                       </button>
                     );
@@ -236,30 +233,14 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
               </div>
 
               <div className="flex flex-col items-end">
-                {isOffer && enableUsd && beforePriceUsd && (
+                {isOffer && (
                   <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                    ${beforePriceUsd} / {formatSyp(beforePriceSyp!, locale)}
+                    {formatCurrency(selectedVariant.price_before_usd! * quantity, "USD", locale)}
                   </span>
                 )}
-                {isOffer && !enableUsd && beforePriceSyp && (
-                  <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                    {formatSyp(beforePriceSyp, locale)}
-                  </span>
-                )}
-                {enableUsd ? (
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-bold text-gray-900 tabular-nums">
-                      ${totalPriceUsd}
-                    </span>
-                    <span className="text-xs font-medium text-gray-500 tabular-nums">
-                      / {formatSyp(totalPriceSyp, locale)}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-xl font-bold text-gray-900 tabular-nums">
-                    {formatSyp(totalPriceSyp, locale)}
-                  </span>
-                )}
+                <span className="text-xl font-bold text-gray-900 tabular-nums">
+                  {formatCurrency(getPriceForCurrency(selectedVariant, activeCurrency) * quantity, activeCurrency, locale)}
+                </span>
               </div>
             </div>
 

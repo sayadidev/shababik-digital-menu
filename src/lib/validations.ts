@@ -67,25 +67,24 @@ export const itemVariantSchema = z.object({
   item_id: uuidField,
   size_name_en: nonEmptyEnglish,
   size_name_ar: nonEmptyArabic,
-  price_usd: z.number().min(0, "USD price cannot be negative"),
-  price_syp: z
-    .number()
-    .int("SYP price must be a whole number")
-    .min(0, "SYP price cannot be negative"),
+  price_usd: z.coerce.number().optional().nullable(),
+  price_syp: z.coerce.number().int().optional().nullable(),
+  price_try: z.coerce.number().optional().nullable(),
   is_offer: z.boolean().default(false),
-  price_before_usd: z.number().min(0).nullable().default(null),
-  price_before_syp: z.number().int().min(0).nullable().default(null),
+  price_before_usd: z.coerce.number().optional().nullable(),
+  price_before_syp: z.coerce.number().int().optional().nullable(),
 });
 
 export const itemVariantUpdateSchema = z.object({
   item_id: uuidField.optional(),
   size_name_en: nonEmptyEnglish.optional(),
   size_name_ar: nonEmptyArabic.optional(),
-  price_usd: z.number().min(0).optional(),
-  price_syp: z.number().int().min(0).optional(),
+  price_usd: z.coerce.number().optional().nullable(),
+  price_syp: z.coerce.number().int().optional().nullable(),
+  price_try: z.coerce.number().optional().nullable(),
   is_offer: z.boolean().optional(),
-  price_before_usd: z.number().min(0).nullable().optional(),
-  price_before_syp: z.number().int().min(0).nullable().optional(),
+  price_before_usd: z.coerce.number().optional().nullable(),
+  price_before_syp: z.coerce.number().int().optional().nullable(),
 });
 
 export const itemVariantRowSchema = itemVariantSchema.extend({
@@ -130,6 +129,7 @@ export const siteSettingsSchema = z.object({
   tier: z.enum(["basic", "pro"]).default("basic"),
   ordering_enabled: z.boolean().default(false),
   enable_usd: z.boolean().default(true),
+  active_currency: z.enum(["TRY", "USD", "SYP"]).default("TRY"),
 });
 
 export const siteSettingsRowSchema = siteSettingsSchema.extend({

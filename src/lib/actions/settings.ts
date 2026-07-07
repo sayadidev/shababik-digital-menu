@@ -32,43 +32,45 @@ export async function updateSettings(
 
   const supabase = createAdminClient();
 
-  // Build payload — omit enable_usd if column may not exist yet
+  // Build payload — omit newer columns if they may not exist yet
   const payload: Record<string, unknown> = { ...parsed.data };
-  const hasUsdColumn = "enable_usd" in parsed.data;
 
-  // Try update with enable_usd first
-  const { error } = await supabase
+  const tryUpdate = async (p: Record<string, unknown>): Promise<boolean> => {
+    const { error } = await supabase
+      .from("site_settings")
+      .update(p)
+      .eq("id", 1);
+    return !error;
+  };
+
+  if (await tryUpdate(payload)) {
+    revalidatePath("/admin");
+    revalidateMenuPaths();
+    return { success: true };
+  }
+
+  // Column fallbacks — remove newer columns and retry
+  delete payload.active_currency;
+  if (await tryUpdate(payload)) {
+    revalidatePath("/admin");
+    revalidateMenuPaths();
+    return { success: true };
+  }
+
+  delete payload.enable_usd;
+  if (await tryUpdate(payload)) {
+    revalidatePath("/admin");
+    revalidateMenuPaths();
+    return { success: true };
+  }
+
+  delete payload.tier;
+  delete payload.ordering_enabled;
+  const { error: retry3 } = await supabase
     .from("site_settings")
     .update(payload)
     .eq("id", 1);
-
-  if (error) {
-    if (hasUsdColumn) {
-      // enable_usd column may not exist yet — retry without it
-      delete payload.enable_usd;
-      const { error: retry1 } = await supabase
-        .from("site_settings")
-        .update(payload)
-        .eq("id", 1);
-      if (retry1) {
-        delete payload.tier;
-        delete payload.ordering_enabled;
-        const { error: retry2 } = await supabase
-          .from("site_settings")
-          .update(payload)
-          .eq("id", 1);
-        if (retry2) return { success: false, error: retry2.message };
-      }
-    } else {
-      delete payload.tier;
-      delete payload.ordering_enabled;
-      const { error: retry2 } = await supabase
-        .from("site_settings")
-        .update(payload)
-        .eq("id", 1);
-      if (retry2) return { success: false, error: retry2.message };
-    }
-  }
+  if (retry3) return { success: false, error: retry3.message };
 
   revalidatePath("/admin");
   revalidateMenuPaths();

@@ -7,6 +7,7 @@ import LanguageToggle from "./LanguageToggle";
 import CategorySection from "./CategorySection";
 import ItemDetailSheet from "./ItemDetailSheet";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
+import type { Currency } from "@/types/database";
 
 type Props = {
   data: MenuData;
@@ -14,6 +15,7 @@ type Props = {
 
 export default function MenuView({ data }: Props) {
   const locale = useLocale();
+  const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
   const [activeCatId, setActiveCatId] = useState<string | null>(
     data.categories[0]?.id ?? null,
   );
@@ -147,6 +149,7 @@ export default function MenuView({ data }: Props) {
               category={cat}
               sectionRef={observeSections}
               onSelectItem={setSelectedItem}
+              activeCurrency={activeCurrency}
             />
           ))
         )}
@@ -161,6 +164,7 @@ export default function MenuView({ data }: Props) {
       <ItemDetailSheet
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+        activeCurrency={activeCurrency}
       />
     </div>
     </div>

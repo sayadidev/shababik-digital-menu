@@ -21,6 +21,7 @@ export interface OrderRow {
   status: OrderStatus;
   total_usd: number;
   total_syp: number;
+  total_try: number;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -115,6 +116,7 @@ export async function createOrder(input: {
   items: { name: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
   total_syp: number;
+  total_try: number;
 }): Promise<{ success: boolean; orderId?: string; error?: string }> {
   try {
     const supabase = createAdminClient();
@@ -141,14 +143,24 @@ export async function createOrder(input: {
       }
     }
 
+    // ── Determine active currency from settings ──
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("active_currency")
+      .eq("id", 1)
+      .single();
+
+    const activeCurrency = (settings?.active_currency as string) ?? "TRY";
+
     // ── Server-side price verification ──
     let computedUsd = 0;
     let computedSyp = 0;
+    let computedTry = 0;
 
     for (const item of input.items) {
       let query = supabase
         .from("item_variants")
-        .select("price_usd, price_syp, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
+        .select("price_usd, price_syp, price_try, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
         .eq("items.name_en", item.name)
         .eq("items.is_active", true);
 
@@ -158,12 +170,16 @@ export async function createOrder(input: {
 
       const { data: variants } = await query;
 
-      let matchedVariant: { price_usd: number | null; price_syp: number | null } | null = null;
+      let matchedVariant: {
+        price_usd: number | null;
+        price_syp: number | null;
+        price_try: number | null;
+      } | null = null;
 
       if (!variants || variants.length === 0) {
         let fallbackQuery = supabase
           .from("item_variants")
-          .select("price_usd, price_syp, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
+          .select("price_usd, price_syp, price_try, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
           .eq("items.name_ar", item.name)
           .eq("items.is_active", true);
 
@@ -203,25 +219,29 @@ export async function createOrder(input: {
         matchedVariant = v;
       }
 
-      // ── Guard against null / undefined prices from the database ──
-      if (matchedVariant.price_usd === null || matchedVariant.price_usd === undefined || typeof matchedVariant.price_usd !== "number") {
-        throw new Error(`Missing USD price for "${item.name}" — please contact the restaurant`);
-      }
-      if (matchedVariant.price_syp === null || matchedVariant.price_syp === undefined || typeof matchedVariant.price_syp !== "number") {
-        throw new Error(`Missing SYP price for "${item.name}" — please contact the restaurant`);
-      }
-
-      computedUsd += matchedVariant.price_usd * item.quantity;
-      computedSyp += matchedVariant.price_syp * item.quantity;
+      // Safely fall back to 0 for any missing prices
+      computedUsd += (matchedVariant.price_usd ?? 0) * item.quantity;
+      computedSyp += (matchedVariant.price_syp ?? 0) * item.quantity;
+      computedTry += (matchedVariant.price_try ?? 0) * item.quantity;
     }
 
     computedUsd = Math.round(computedUsd * 100) / 100;
 
-    if (Math.abs(input.total_usd - computedUsd) > 0.01) {
-      throw new Error("Price mismatch — order total does not match menu prices");
-    }
-    if (input.total_syp !== undefined && input.total_syp !== computedSyp) {
-      throw new Error("Price mismatch — order total does not match menu prices");
+    // ── Verify totals against client-submitted values ──
+    // Only verify the active currency total; others are best-effort.
+    if (activeCurrency === "TRY") {
+      if (Math.abs(input.total_try - computedTry) > 0.01) {
+        throw new Error("Price mismatch — order total does not match menu prices");
+      }
+    } else if (activeCurrency === "USD") {
+      if (Math.abs(input.total_usd - computedUsd) > 0.01) {
+        throw new Error("Price mismatch — order total does not match menu prices");
+      }
+    } else {
+      // SYP
+      if (input.total_syp !== computedSyp) {
+        throw new Error("Price mismatch — order total does not match menu prices");
+      }
     }
 
     // ── Server-side cooldown check (per-table-number) ──
@@ -248,6 +268,7 @@ export async function createOrder(input: {
         status: "pending",
         total_usd: computedUsd,
         total_syp: computedSyp,
+        total_try: computedTry,
       })
       .select("id")
       .single();

@@ -22,11 +22,12 @@ type ItemData = {
     id: string;
     size_name_en: string;
     size_name_ar: string;
-    price_usd: number;
-    price_syp: number;
+    price_usd?: number | null;
+    price_syp?: number | null;
+    price_try?: number | null;
     is_offer: boolean;
-    price_before_usd: number | null;
-    price_before_syp: number | null;
+    price_before_usd?: number | null;
+    price_before_syp?: number | null;
   }[];
 };
 
@@ -36,6 +37,7 @@ type Variant = {
   sizeAr: string;
   priceUsd: string;
   priceSyp: string;
+  priceTry: string;
   isOffer: boolean;
   priceBeforeUsd: string;
   priceBeforeSyp: string;
@@ -43,14 +45,15 @@ type Variant = {
 
 function dataToVariants(item: ItemData): Variant[] {
   if (item.variants.length === 0) {
-    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }];
+    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }];
   }
   return item.variants.map((v) => ({
     id: v.id,
     sizeEn: v.size_name_en,
     sizeAr: v.size_name_ar,
-    priceUsd: v.price_usd.toString(),
-    priceSyp: v.price_syp.toString(),
+    priceUsd: v.price_usd != null ? v.price_usd.toString() : "",
+    priceSyp: v.price_syp != null ? v.price_syp.toString() : "",
+    priceTry: v.price_try != null ? v.price_try.toString() : "",
     isOffer: v.is_offer,
     priceBeforeUsd: v.price_before_usd?.toString() || "",
     priceBeforeSyp: v.price_before_syp?.toString() || "",
@@ -80,7 +83,7 @@ export default function EditItemForm({
   const [error, setError] = useState("");
 
   const addVariant = () =>
-    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }]);
+    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "" }]);
   const removeVariant = (id: string) =>
     setVariantsState((prev) => (prev.length <= 1 ? prev : prev.filter((v) => v.id !== id)));
   const updateVariant = (id: string, field: keyof Variant, value: string) => {
@@ -116,13 +119,14 @@ export default function EditItemForm({
       }
 
       const variantInputs = variants
-        .filter((v) => v.sizeEn.trim() && v.sizeAr.trim() && v.priceUsd && v.priceSyp)
+        .filter((v) => v.sizeEn.trim() && v.sizeAr.trim())
         .map((v) => ({
           item_id: item.id,
           size_name_en: v.sizeEn,
           size_name_ar: v.sizeAr,
-          price_usd: parseFloat(v.priceUsd) || 0,
-          price_syp: parseInt(v.priceSyp, 10) || 0,
+          price_usd: v.priceUsd ? parseFloat(v.priceUsd) : null,
+          price_syp: v.priceSyp ? parseInt(v.priceSyp, 10) : null,
+          price_try: v.priceTry ? parseFloat(v.priceTry) : null,
           is_offer: v.isOffer,
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
@@ -278,6 +282,18 @@ export default function EditItemForm({
                     onChange={(e) => updateVariant(v.id, "sizeAr", e.target.value)}
                     placeholder="صغير / وسط / كبير"
                     dir="rtl"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs text-muted mb-1">{t("Price (TL)", "السعر (TL)")}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={v.priceTry}
+                    onChange={(e) => updateVariant(v.id, "priceTry", e.target.value)}
+                    placeholder="0.00"
                     className="w-full px-3 py-2 rounded-lg border border-border bg-white text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>

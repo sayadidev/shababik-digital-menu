@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateOrderStatus } from "@/lib/actions/orders";
 import type { OrderRow, OrderItemRow } from "@/lib/actions/orders";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 type Tab = "pending" | "kds" | "history";
@@ -17,6 +18,7 @@ interface Order {
   items: { name: string; variant?: string; quantity: number; notes?: string }[];
   totalUsd: number;
   totalSyp: number;
+  totalTry: number;
   createdAt: string;
   acceptedBy: string | null;
   completedBy: string | null;
@@ -39,6 +41,7 @@ function toOrder(row: OrderRow): Order {
     })),
     totalUsd: row.total_usd,
     totalSyp: row.total_syp,
+    totalTry: row.total_try ?? 0,
     createdAt: row.created_at,
     acceptedBy: row.accepted_by ?? null,
     completedBy: row.completed_by ?? null,
@@ -142,7 +145,7 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, enableUsd, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; enableUsd: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
+function OrderCard({ order, locale, activeCurrency, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; activeCurrency: Currency; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
@@ -192,14 +195,15 @@ function OrderCard({ order, locale, enableUsd, showAudit = false, showFeedback =
           {t(locale, "Total", "المجموع")}
         </span>
         <div className="text-right">
-          {enableUsd ? (
-            <>
-              <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>${order.totalUsd.toFixed(2)}</p>
-              <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>{formatSyp(order.totalSyp, locale)}</p>
-            </>
-          ) : (
-            <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>{formatSyp(order.totalSyp, locale)}</p>
-          )}
+          <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>
+            {formatCurrency(
+              activeCurrency === "TRY" ? order.totalTry :
+              activeCurrency === "USD" ? order.totalUsd :
+              order.totalSyp,
+              activeCurrency,
+              locale,
+            )}
+          </p>
         </div>
       </div>
 
@@ -273,6 +277,7 @@ export default function OrdersPage() {
   const [tab, setTab] = useState<Tab>("pending");
   const [tier, setTier] = useState<"basic" | "pro">("basic");
   const [enableUsd, setEnableUsd] = useState(true);
+  const [activeCurrency, setActiveCurrency] = useState<Currency>("TRY");
   const [tierLoading, setTierLoading] = useState(true);
   const [isStaff, setIsStaff] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -349,10 +354,11 @@ export default function OrdersPage() {
   // ── Tier check ──
   useEffect(() => {
     const supabase = createClient();
-    supabase.from("site_settings").select("tier, enable_usd").eq("id", 1).single().then(({ data }) => {
+    supabase.from("site_settings").select("tier, enable_usd, active_currency").eq("id", 1).single().then(({ data }) => {
       if (data) {
         setTier(data.tier as "basic" | "pro");
         setEnableUsd(data.enable_usd ?? true);
+        setActiveCurrency(data.active_currency ?? "TRY");
       }
       setTierLoading(false);
     }, () => {
@@ -612,7 +618,7 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {pendingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} actions={[
+                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} actions={[
                     {
                       label: t(locale, "Accept", "قبول"),
                       onClick: () => handleStatusUpdate(order.id, "processing"),
@@ -642,7 +648,7 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {processingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} actions={[
+                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} actions={[
                     {
                       label: t(locale, "Ready", "جاهز"),
                       onClick: () => handleStatusUpdate(order.id, "completed"),
@@ -738,7 +744,7 @@ export default function OrdersPage() {
                             </span>
                           </div>
                           {history.completed.map((order) => (
-                            <OrderCard key={order.id} order={order} locale={locale} enableUsd={enableUsd} showAudit showFeedback />
+                            <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} showAudit showFeedback />
                           ))}
                         </>
                       )}

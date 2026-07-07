@@ -8,6 +8,7 @@ export interface ActiveOrder {
   tableNumber: number;
   totalUsd: number;
   totalSyp: number;
+  totalTry: number;
   items: { name: string; variant?: string; quantity: number; notes?: string }[];
   status: string;
   createdAt: string;

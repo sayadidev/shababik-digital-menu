@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { trackEvent } from "@/lib/actions/analytics";
 import type { ItemWithVariants } from "@/lib/menu";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 const P = {
   deep: "#3B2818",
@@ -21,9 +22,10 @@ const P = {
 type Props = {
   item: ItemWithVariants | null;
   onClose: () => void;
+  activeCurrency: Currency;
 };
 
-export default function ItemDetailSheet({ item, onClose }: Props) {
+export default function ItemDetailSheet({ item, onClose, activeCurrency }: Props) {
   const locale = useLocale();
   const t = useTranslations("common");
   const [imageIndex, setImageIndex] = useState(0);
@@ -234,17 +236,16 @@ export default function ItemDetailSheet({ item, onClose }: Props) {
                       </span>
                       <div className="flex items-baseline gap-2">
                         {v.is_offer && v.price_before_usd != null && (
-                          <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>${v.price_before_usd.toFixed(2)}</span>
+                          <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
+                            {formatCurrency(v.price_before_usd, "USD", locale)}
+                          </span>
                         )}
                         <span className="text-base font-bold tabular-nums" style={{ color: v.is_offer ? P.accent : P.deep }}>
-                          ${v.price_usd.toFixed(2)}
-                        </span>
-                        <span className="text-xs" style={{ color: `${P.muted}80` }}>/</span>
-                        {v.is_offer && v.price_before_syp != null && (
-                          <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>{formatSyp(v.price_before_syp, locale)}</span>
-                        )}
-                        <span className="text-sm font-medium tabular-nums" style={{ color: P.muted }}>
-                          {formatSyp(v.price_syp, locale)}
+                          {formatCurrency(
+                            activeCurrency === "TRY" ? (v.price_try ?? 0) : activeCurrency === "USD" ? (v.price_usd ?? 0) : (v.price_syp ?? 0),
+                            activeCurrency,
+                            locale,
+                          )}
                         </span>
                       </div>
                     </div>

@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { submitOrderFeedback } from "@/lib/actions/orders";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 type StatusConfig = {
   bg: string;
@@ -53,7 +54,7 @@ function getStatusConfig(status: string): StatusConfig {
   }
 }
 
-export default function FloatingActiveOrder({ locale }: { locale: string }) {
+export default function FloatingActiveOrder({ locale, activeCurrency }: { locale: string; activeCurrency: Currency }) {
   const { activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted } = useActiveOrder();
   const [showModal, setShowModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -287,10 +288,13 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                   </span>
                   <div className="text-right">
                     <p className="text-sm font-bold text-gray-900">
-                      ${activeOrder.totalUsd.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {formatSyp(activeOrder.totalSyp, locale)}
+                      {formatCurrency(
+                        activeCurrency === "TRY" ? activeOrder.totalTry :
+                        activeCurrency === "USD" ? activeOrder.totalUsd :
+                        activeOrder.totalSyp,
+                        activeCurrency,
+                        locale,
+                      )}
                     </p>
                   </div>
                 </div>

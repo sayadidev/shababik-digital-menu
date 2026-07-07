@@ -20,6 +20,7 @@ export interface CartItem {
   variantNameAr: string;
   priceUsd: number;
   priceSyp: number;
+  priceTry: number;
   quantity: number;
   notes: string;
 }
@@ -34,6 +35,7 @@ interface CartContextType {
   totalItems: number;
   totalPriceUsd: number;
   totalPriceSyp: number;
+  totalPriceTry: number;
 }
 
 const CART_KEY = "shababik_cart";
@@ -109,20 +111,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     saveAndSet(() => []);
   }, [saveAndSet]);
 
-  const { totalItems, totalPriceUsd, totalPriceSyp } = useMemo(() => {
-    let ti = 0, tu = 0, ts = 0;
+  const { totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry } = useMemo(() => {
+    let ti = 0, tu = 0, ts = 0, tt = 0;
     for (const item of items) {
       ti += item.quantity;
       tu += item.priceUsd * item.quantity;
       ts += item.priceSyp * item.quantity;
+      tt += item.priceTry * item.quantity;
     }
-    return { totalItems: ti, totalPriceUsd: tu, totalPriceSyp: ts };
+    return { totalItems: ti, totalPriceUsd: tu, totalPriceSyp: ts, totalPriceTry: tt };
   }, [items]);
 
   if (!hydrated) {
     return (
       <CartContext.Provider
-        value={{ items: [], addItem: (() => {}) as CartContextType["addItem"], updateQuantity, updateNotes, removeItem, clearCart, totalItems: 0, totalPriceUsd: 0, totalPriceSyp: 0 }}
+        value={{ items: [], addItem: (() => {}) as CartContextType["addItem"], updateQuantity, updateNotes, removeItem, clearCart, totalItems: 0, totalPriceUsd: 0, totalPriceSyp: 0, totalPriceTry: 0 }}
       >
         {children}
       </CartContext.Provider>
@@ -131,7 +134,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, updateQuantity, updateNotes, removeItem, clearCart, totalItems, totalPriceUsd, totalPriceSyp }}
+      value={{ items, addItem, updateQuantity, updateNotes, removeItem, clearCart, totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry }}
     >
       {children}
     </CartContext.Provider>

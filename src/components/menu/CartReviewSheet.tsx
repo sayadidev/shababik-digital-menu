@@ -5,21 +5,22 @@ import { useCart } from "@/context/CartContext";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { useToast } from "./Toast";
 import { createOrder } from "@/lib/actions/orders";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
 
 type Props = {
   tableNumber: number | null;
   locale: string;
-  enableUsd: boolean;
+  activeCurrency: Currency;
   onClose: () => void;
   isStaff: boolean;
   onTableNumberChange?: (n: number) => void;
 };
 
-export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClose, isStaff, onTableNumberChange }: Props) {
-  const { items, updateQuantity, removeItem, totalItems, totalPriceUsd, totalPriceSyp, clearCart } = useCart();
+export default function CartReviewSheet({ tableNumber, locale, activeCurrency, onClose, isStaff, onTableNumberChange }: Props) {
+  const { items, updateQuantity, removeItem, totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry, clearCart } = useCart();
   const { setActiveOrder } = useActiveOrder();
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -96,6 +97,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
       })),
       total_usd: totalPriceUsd,
       total_syp: totalPriceSyp,
+      total_try: totalPriceTry,
     });
 
     if (res.success) {
@@ -108,6 +110,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
           tableNumber: effectiveTable ?? 1,
           totalUsd: totalPriceUsd,
           totalSyp: totalPriceSyp,
+          totalTry: totalPriceTry,
           status: "pending",
           items: items.map((item) => ({
             name: locale === "ar" ? item.nameAr : item.nameEn,
@@ -238,20 +241,13 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                       </p>
                     )}
                     <div className="flex items-baseline gap-1 mt-1">
-                      {enableUsd ? (
-                        <>
-                          <span className="text-sm font-semibold text-[#8C6B4A] tabular-nums">
-                            ${(item.priceUsd * item.quantity).toFixed(2)}
-                          </span>
-                          <span className="text-[10px] text-gray-400 tabular-nums">
-                            / {formatSyp(item.priceSyp * item.quantity, locale)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-sm font-semibold text-[#8C6B4A] tabular-nums">
-                          {formatSyp(item.priceSyp * item.quantity, locale)}
-                        </span>
-                      )}
+                      <span className="text-sm font-semibold text-[#8C6B4A] tabular-nums">
+                        {formatCurrency(
+                          ((activeCurrency === "TRY" ? item.priceTry : activeCurrency === "USD" ? item.priceUsd : item.priceSyp) * item.quantity),
+                          activeCurrency,
+                          locale,
+                        )}
+                      </span>
                     </div>
                     </div>
 
@@ -290,20 +286,13 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                 {locale === "ar" ? "المجموع" : "Total"}
               </span>
               <div className="text-right">
-                {enableUsd ? (
-                  <>
-                    <p className="text-lg font-bold tabular-nums text-gray-900">
-                      ${totalPriceUsd.toFixed(2)}
-                    </p>
-                    <p className="text-xs tabular-nums text-gray-400">
-                      {formatSyp(totalPriceSyp, locale)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-lg font-bold tabular-nums text-gray-900">
-                    {formatSyp(totalPriceSyp, locale)}
-                  </p>
-                )}
+                <p className="text-lg font-bold tabular-nums text-gray-900">
+                  {formatCurrency(
+                    activeCurrency === "TRY" ? totalPriceTry : activeCurrency === "USD" ? totalPriceUsd : totalPriceSyp,
+                    activeCurrency,
+                    locale,
+                  )}
+                </p>
               </div>
             </div>
 

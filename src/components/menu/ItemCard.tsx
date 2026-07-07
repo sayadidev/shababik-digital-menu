@@ -3,14 +3,16 @@
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import type { ItemWithVariants } from "@/lib/menu";
-import { formatSyp } from "@/lib/format-currency";
+import { formatCurrency, getPriceForCurrency } from "@/lib/format-currency";
+import type { Currency } from "@/types/database";
 
 type Props = {
   item: ItemWithVariants;
   onSelect: (item: ItemWithVariants) => void;
+  activeCurrency: Currency;
 };
 
-export default function ItemCard({ item, onSelect }: Props) {
+export default function ItemCard({ item, onSelect, activeCurrency }: Props) {
   const locale = useLocale();
   const t = useTranslations("common");
 
@@ -79,10 +81,7 @@ export default function ItemCard({ item, onSelect }: Props) {
                   <span>{sizeName}</span>
                 )}
                 <span className="tabular-nums font-bold">
-                  ${v.price_usd.toFixed(2)}
-                </span>
-                <span className="tabular-nums text-xs opacity-60">
-                  {formatSyp(v.price_syp, locale)}
+                  {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                 </span>
               </div>
             );

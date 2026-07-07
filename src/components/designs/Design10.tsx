@@ -37,7 +37,9 @@ function LangToggle({ locale }: { locale: string }) {
   const [mounted, setMounted] = useState(false);
   const [other, setOther] = useState(locale === "en" ? "ar" : "en");
   useEffect(() => { setMounted(true); }, []);
-  const href = mounted ? `/${other}${typeof window !== "undefined" ? window.location.pathname.replace(/^\/(en|ar)/, "/") : "/"}` : "#";
+  const href = mounted
+    ? `/${other}${typeof window !== "undefined" ? window.location.pathname.replace(/^\/(en|ar)/, "/") + window.location.search : "/"}`
+    : "#";
   return (
     <button
       onClick={() => { window.location.href = href; }}

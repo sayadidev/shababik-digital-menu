@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { submitOrderFeedback } from "@/lib/actions/orders";
 import { formatSyp } from "@/lib/format-currency";
@@ -35,7 +35,7 @@ function getStatusConfig(status: string): StatusConfig {
     case "completed":
       return {
         bg: "bg-emerald-600",
-        text: { ar: "طلبك جاهز!", en: "Order is ready!" },
+        text: { ar: "طلبك جاهز!", en: "Your Order is Ready!" },
         icon: (
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -54,13 +54,43 @@ function getStatusConfig(status: string): StatusConfig {
 }
 
 export default function FloatingActiveOrder({ locale }: { locale: string }) {
-  const { activeOrder, setActiveOrder } = useActiveOrder();
+  const { activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted } = useActiveOrder();
   const [showModal, setShowModal] = useState(false);
-  const [exiting, setExiting] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const prevOrderIdRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!activeOrder) {
+      setShowModal(false);
+      prevOrderIdRef.current = null;
+      prevStatusRef.current = null;
+      return;
+    }
+
+    const orderId = activeOrder.orderId;
+    const status = activeOrder.status;
+    const isNewOrder = prevOrderIdRef.current !== orderId;
+    const prevStatus = prevStatusRef.current;
+
+    const isCompleted = status === "completed";
+    const alreadyPrompted = feedbackPrompted.includes(orderId);
+
+    if (isCompleted) {
+      if (!alreadyPrompted) {
+        setShowModal(true);
+      }
+    } else if (isNewOrder || (prevStatus && prevStatus !== status)) {
+      setShowModal(true);
+    }
+
+    prevOrderIdRef.current = orderId;
+    prevStatusRef.current = status;
+  }, [activeOrder?.orderId, activeOrder?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!activeOrder) return null;
 
@@ -70,13 +100,15 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
   const isReady = activeOrder.status === "completed";
 
   const handleDismiss = () => {
-    setExiting(true);
-    setTimeout(() => {
-      setActiveOrder(null);
-      setShowModal(false);
-      setRating(0);
-      setFeedbackText("");
-    }, 300);
+    setShowModal(false);
+  };
+
+  const handleFinalDismiss = () => {
+    markOrderPrompted(activeOrder.orderId);
+    setActiveOrder(null);
+    setShowModal(false);
+    setRating(0);
+    setFeedbackText("");
   };
 
   const handleSubmit = async () => {
@@ -90,51 +122,22 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
       );
     } catch {}
     setSubmitting(false);
-    handleDismiss();
+    handleFinalDismiss();
   };
 
   const handleSkip = () => {
-    handleDismiss();
+    handleFinalDismiss();
   };
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setShowModal(true)}
-        className={`fixed bottom-4 left-4 right-4 ${config.bg} text-white p-3 rounded-2xl shadow-xl flex justify-between items-center z-40 active:scale-[0.98] transition-all duration-300`}
-        style={{
-          maxWidth: "min(calc(100vw - 2rem), 36rem)",
-          margin: "0 auto",
-          opacity: exiting ? 0 : 1,
-          transform: exiting ? "translateY(20px)" : "translateY(0)",
-          animation: isReady ? "orderReadyBounce 0.6s ease-out" : undefined,
-        }}
-      >
-        <div className="flex items-center gap-3">
-          {config.icon}
-          <span className="text-sm font-medium text-left rtl:text-right">
-            {locale === "ar" ? config.text.ar : config.text.en}
-          </span>
-        </div>
-        <span className="text-sm font-bold opacity-80 font-mono">
-          #{shortId}
-        </span>
-      </button>
-
-      <style>{`
-        @keyframes orderReadyBounce {
-          0% { transform: scale(0.95); }
-          50% { transform: scale(1.02); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
-
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-          onClick={() => setShowModal(false)}
-          onKeyDown={(e) => { if (e.key === "Escape") setShowModal(false); }}
+          onClick={isReady ? undefined : () => setShowModal(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !isReady) setShowModal(false);
+          }}
           role="dialog"
           aria-modal="true"
           aria-label={locale === "ar" ? "حالة الطلب" : "Order Status"}
@@ -142,11 +145,11 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
+            onClick={isReady ? undefined : () => setShowModal(false)}
           />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg mx-4 bg-[#f5efdf] rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-lg mx-4 bg-[#f5efdf] rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300"
             style={{ maxHeight: "80dvh" }}
           >
             <div className="shrink-0 flex justify-center pt-3 pb-1">
@@ -156,22 +159,21 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
             {isReady ? (
               <div className="p-7" dir={isRtl ? "rtl" : "ltr"}>
                 <div className="text-center mb-8">
-                  <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-gray-100 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
-                    {locale === "ar" ? "رأيك يهمنا" : "Your Opinion Matters"}
+                  <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                    {locale === "ar" ? "طلبك جاهز!" : "Your Order is Ready!"}
                   </h2>
-                  <p className="text-sm text-gray-500 leading-relaxed max-w-[280px] mx-auto mt-2">
+                  <p className="text-sm text-gray-500 leading-relaxed max-w-[300px] mx-auto mt-2">
                     {locale === "ar"
-                      ? "نأمل أنك استمتعت بطلبك. شاركنا بتجربتك لنستمر بتقديم الأفضل لك."
-                      : "We hope you enjoyed your order. Share your experience to help us serve you better."}
+                      ? "نتمنى أن تستمتع بطلبك. رأيك يهمنا جداً لنستمر بتقديم الأفضل لك."
+                      : "We hope you enjoy your order. Your opinion matters to help us serve you better."}
                   </p>
                 </div>
 
-                {/* Star Rating */}
                 <div className="flex justify-center gap-2 mb-8" dir="ltr">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -253,7 +255,6 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                   </div>
                 </div>
 
-                {/* Status badge */}
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-white ${config.bg} mb-4`}>
                   {config.icon}
                   {locale === "ar" ? config.text.ar : config.text.en}
@@ -296,7 +297,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
 
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleDismiss}
                   className="w-full min-h-[44px] mt-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all"
                 >
                   {locale === "ar" ? "إغلاق" : "Close"}

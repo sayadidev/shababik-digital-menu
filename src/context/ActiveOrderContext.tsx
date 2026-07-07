@@ -16,9 +16,12 @@ export interface ActiveOrder {
 interface ActiveOrderContextType {
   activeOrder: ActiveOrder | null;
   setActiveOrder: (order: ActiveOrder | null) => void;
+  feedbackPrompted: string[];
+  markOrderPrompted: (orderId: string) => void;
 }
 
 const ORDER_KEY = "shababik_active_order";
+const FEEDBACK_PROMPTED_KEY = "shababik_feedback_prompted";
 
 const ActiveOrderContext = createContext<ActiveOrderContextType | null>(null);
 
@@ -47,15 +50,31 @@ function saveOrder(order: ActiveOrder | null) {
 export function ActiveOrderProvider({ children }: { children: ReactNode }) {
   const [activeOrder, setActiveOrderState] = useState<ActiveOrder | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [feedbackPrompted, setFeedbackPrompted] = useState<string[]>([]);
 
   useEffect(() => {
     setActiveOrderState(loadOrder());
+    try {
+      const raw = localStorage.getItem(FEEDBACK_PROMPTED_KEY);
+      if (raw) setFeedbackPrompted(JSON.parse(raw));
+    } catch {}
     setHydrated(true);
   }, []);
 
   const setActiveOrder = useCallback((order: ActiveOrder | null) => {
     setActiveOrderState(order);
     saveOrder(order);
+  }, []);
+
+  const markOrderPrompted = useCallback((orderId: string) => {
+    setFeedbackPrompted((prev) => {
+      if (prev.includes(orderId)) return prev;
+      const next = [...prev, orderId];
+      try {
+        localStorage.setItem(FEEDBACK_PROMPTED_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   }, []);
 
   // Supabase Realtime subscription
@@ -124,14 +143,14 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
 
   if (!hydrated) {
     return (
-      <ActiveOrderContext.Provider value={{ activeOrder: null, setActiveOrder }}>
+      <ActiveOrderContext.Provider value={{ activeOrder: null, setActiveOrder, feedbackPrompted: [], markOrderPrompted }}>
         {children}
       </ActiveOrderContext.Provider>
     );
   }
 
   return (
-    <ActiveOrderContext.Provider value={{ activeOrder, setActiveOrder }}>
+    <ActiveOrderContext.Provider value={{ activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted }}>
       {children}
     </ActiveOrderContext.Provider>
   );

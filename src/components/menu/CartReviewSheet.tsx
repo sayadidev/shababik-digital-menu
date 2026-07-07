@@ -126,7 +126,7 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
       handleClose();
     } else {
       showToast(
-        locale === "ar" ? "حدث خطأ، حاول مرة أخرى" : "Something went wrong, try again",
+        res.error ?? (locale === "ar" ? "حدث خطأ، حاول مرة أخرى" : "Something went wrong, try again"),
         "error",
       );
     }

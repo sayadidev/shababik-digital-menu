@@ -49,3 +49,4 @@ screenshots/trace.json
 *.tsbuildinfo
 next-env.d.ts
 tmp/
+.env*

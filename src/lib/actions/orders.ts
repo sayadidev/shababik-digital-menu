@@ -106,6 +106,7 @@ export async function getActiveOrders(): Promise<OrderRow[]> {
 }
 
 // ── Create order (from customer cart) ──
+// No auth required — customers are anonymous.
 
 const COOLDOWN_MS = 15 * 60 * 1000;
 
@@ -115,160 +116,169 @@ export async function createOrder(input: {
   total_usd: number;
   total_syp: number;
 }): Promise<{ success: boolean; orderId?: string; error?: string }> {
-  const supabase = createAdminClient();
+  try {
+    const supabase = createAdminClient();
 
-  // ── Validate table_number ──
-  if (input.table_number != null && input.table_number < 1) {
-    return { success: false, error: "Invalid table number" };
-  }
-
-  // ── Validate items ──
-  if (!input.items || input.items.length === 0) {
-    return { success: false, error: "Order must contain at least one item" };
-  }
-
-  for (const item of input.items) {
-    if (!item.name || item.name.trim().length === 0) {
-      return { success: false, error: "Item name is required" };
-    }
-    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
-      return { success: false, error: `Invalid quantity for "${item.name}"` };
-    }
-    if (item.notes && item.notes.length > 1000) {
-      return { success: false, error: "Notes too long" };
-    }
-  }
-
-  // ── Server-side price verification ──
-  // Fetch the current prices from the database for every (item, variant) pair
-  // and recompute the expected total. Reject if the client total does not match.
-  let computedUsd = 0;
-  let computedSyp = 0;
-
-  for (const item of input.items) {
-    // Look up the item by name + variant to get the real price
-    let query = supabase
-      .from("item_variants")
-      .select("price_usd, price_syp, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
-      .eq("items.name_en", item.name)
-      .eq("items.is_active", true);
-
-    // If a variant is specified, filter by it (check both en and ar names)
-    if (item.variant) {
-      query = query.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
+    // ── Validate table_number ──
+    if (input.table_number != null && input.table_number < 1) {
+      throw new Error("Invalid table number");
     }
 
-    const { data: variants } = await query;
+    // ── Validate items ──
+    if (!input.items || input.items.length === 0) {
+      throw new Error("Order must contain at least one item");
+    }
 
-    if (!variants || variants.length === 0) {
-      // Fallback: try matching by Arabic name
-      let fallbackQuery = supabase
+    for (const item of input.items) {
+      if (!item.name || item.name.trim().length === 0) {
+        throw new Error("Item name is required");
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        throw new Error(`Invalid quantity for "${item.name}"`);
+      }
+      if (item.notes && item.notes.length > 1000) {
+        throw new Error("Notes too long");
+      }
+    }
+
+    // ── Server-side price verification ──
+    let computedUsd = 0;
+    let computedSyp = 0;
+
+    for (const item of input.items) {
+      let query = supabase
         .from("item_variants")
         .select("price_usd, price_syp, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
-        .eq("items.name_ar", item.name)
+        .eq("items.name_en", item.name)
         .eq("items.is_active", true);
 
       if (item.variant) {
-        fallbackQuery = fallbackQuery.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
+        query = query.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
       }
 
-      const { data: fallback } = await fallbackQuery;
-      if (!fallback || fallback.length === 0) {
-        return { success: false, error: `Item "${item.name}" not found in menu` };
+      const { data: variants } = await query;
+
+      let matchedVariant: { price_usd: number | null; price_syp: number | null } | null = null;
+
+      if (!variants || variants.length === 0) {
+        let fallbackQuery = supabase
+          .from("item_variants")
+          .select("price_usd, price_syp, size_name_en, size_name_ar, items!inner(name_en, name_ar, category_id)")
+          .eq("items.name_ar", item.name)
+          .eq("items.is_active", true);
+
+        if (item.variant) {
+          fallbackQuery = fallbackQuery.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
+        }
+
+        const { data: fallback } = await fallbackQuery;
+        if (!fallback || fallback.length === 0) {
+          throw new Error(`Item "${item.name}" not found in menu`);
+        }
+
+        const v = item.variant
+          ? fallback.find(
+            (r: { size_name_en: string; size_name_ar: string }) =>
+              r.size_name_en === item.variant || r.size_name_ar === item.variant,
+          )
+          : fallback[0];
+
+        if (!v) {
+          throw new Error(`Variant "${item.variant}" not found for "${item.name}"`);
+        }
+
+        matchedVariant = v;
+      } else {
+        const v = item.variant
+          ? variants.find(
+            (r: { size_name_en: string; size_name_ar: string }) =>
+              r.size_name_en === item.variant || r.size_name_ar === item.variant,
+          )
+          : variants[0];
+
+        if (!v) {
+          throw new Error(`Variant "${item.variant}" not found for "${item.name}"`);
+        }
+
+        matchedVariant = v;
       }
 
-      const v = item.variant
-        ? fallback.find(
-          (r: { size_name_en: string; size_name_ar: string }) =>
-            r.size_name_en === item.variant || r.size_name_ar === item.variant,
-        )
-        : fallback[0];
-
-      if (!v) {
-        return { success: false, error: `Variant "${item.variant}" not found for "${item.name}"` };
+      // ── Guard against null / undefined prices from the database ──
+      if (matchedVariant.price_usd === null || matchedVariant.price_usd === undefined || typeof matchedVariant.price_usd !== "number") {
+        throw new Error(`Missing USD price for "${item.name}" — please contact the restaurant`);
+      }
+      if (matchedVariant.price_syp === null || matchedVariant.price_syp === undefined || typeof matchedVariant.price_syp !== "number") {
+        throw new Error(`Missing SYP price for "${item.name}" — please contact the restaurant`);
       }
 
-      computedUsd += v.price_usd * item.quantity;
-      computedSyp += v.price_syp * item.quantity;
-    } else {
-      const v = item.variant
-        ? variants.find(
-          (r: { size_name_en: string; size_name_ar: string }) =>
-            r.size_name_en === item.variant || r.size_name_ar === item.variant,
-        )
-        : variants[0];
-
-      if (!v) {
-        return { success: false, error: `Variant "${item.variant}" not found for "${item.name}"` };
-      }
-
-      computedUsd += v.price_usd * item.quantity;
-      computedSyp += v.price_syp * item.quantity;
+      computedUsd += matchedVariant.price_usd * item.quantity;
+      computedSyp += matchedVariant.price_syp * item.quantity;
     }
-  }
 
-  // Round computed values to 2 decimal places for comparison
-  computedUsd = Math.round(computedUsd * 100) / 100;
+    computedUsd = Math.round(computedUsd * 100) / 100;
 
-  if (Math.abs(input.total_usd - computedUsd) > 0.01) {
-    return { success: false, error: "Price mismatch — order total does not match menu prices" };
-  }
-  if (input.total_syp !== undefined && input.total_syp !== computedSyp) {
-    return { success: false, error: "Price mismatch — order total does not match menu prices" };
-  }
-
-  // ── Server-side cooldown check (IP-based) ──
-  // This is a best-effort check using the last order from the same table.
-  // For anonymous users, we use table_number as a proxy.
-  const tableNum = input.table_number ?? 1;
-  const { data: recentOrders } = await supabase
-    .from("orders")
-    .select("created_at")
-    .eq("table_number", tableNum)
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (recentOrders && recentOrders.length > 0) {
-    const lastOrderTime = new Date(recentOrders[0].created_at).getTime();
-    if (Date.now() - lastOrderTime < COOLDOWN_MS) {
-      return { success: false, error: "Please wait before placing another order from this table" };
+    if (Math.abs(input.total_usd - computedUsd) > 0.01) {
+      throw new Error("Price mismatch — order total does not match menu prices");
     }
+    if (input.total_syp !== undefined && input.total_syp !== computedSyp) {
+      throw new Error("Price mismatch — order total does not match menu prices");
+    }
+
+    // ── Server-side cooldown check (per-table-number) ──
+    const tableNum = input.table_number ?? 1;
+    const { data: recentOrders } = await supabase
+      .from("orders")
+      .select("created_at")
+      .eq("table_number", tableNum)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (recentOrders && recentOrders.length > 0) {
+      const lastOrderTime = new Date(recentOrders[0].created_at).getTime();
+      if (Date.now() - lastOrderTime < COOLDOWN_MS) {
+        throw new Error("يرجى الانتظار 15 دقيقة قبل إرسال طلب جديد لنفس الطاولة.");
+      }
+    }
+
+    // ── Insert order ──
+    const { data: order, error: orderErr } = await supabase
+      .from("orders")
+      .insert({
+        table_number: tableNum,
+        status: "pending",
+        total_usd: computedUsd,
+        total_syp: computedSyp,
+      })
+      .select("id")
+      .single();
+
+    if (orderErr || !order) {
+      throw new Error(orderErr?.message ?? "Failed to create order");
+    }
+
+    const orderItems = input.items.map((item) => ({
+      order_id: order.id,
+      item_name: item.name,
+      variant_name: item.variant || null,
+      quantity: item.quantity,
+      notes: item.notes || null,
+    }));
+
+    const { error: itemsErr } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (itemsErr) {
+      throw new Error(itemsErr.message);
+    }
+
+    revalidatePath("/admin/orders");
+    return { success: true, orderId: order.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error occurred";
+    console.error("CREATE_ORDER_ERROR:", message);
+    return { success: false, error: message };
   }
-
-  // ── Insert order ──
-  const { data: order, error: orderErr } = await supabase
-    .from("orders")
-    .insert({
-      table_number: tableNum,
-      status: "pending",
-      total_usd: computedUsd,
-      total_syp: computedSyp,
-    })
-    .select("id")
-    .single();
-
-  if (orderErr || !order) {
-    return { success: false, error: orderErr?.message ?? "Failed to create order" };
-  }
-
-  const orderItems = input.items.map((item) => ({
-    order_id: order.id,
-    item_name: item.name,
-    variant_name: item.variant || null,
-    quantity: item.quantity,
-    notes: item.notes || null,
-  }));
-
-  const { error: itemsErr } = await supabase
-    .from("order_items")
-    .insert(orderItems);
-
-  if (itemsErr) {
-    return { success: false, error: itemsErr.message };
-  }
-
-  revalidatePath("/admin/orders");
-  return { success: true, orderId: order.id };
 }
 
 // ── Update order status (accept / reject / ready) ──

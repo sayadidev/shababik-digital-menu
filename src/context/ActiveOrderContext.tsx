@@ -77,67 +77,76 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Supabase Realtime subscription
+  // Supabase Realtime subscription + polling fallback
   const supabaseRef = useRef(createClient());
-  const orderIdRef = useRef<string | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!activeOrder) return;
 
     const supabase = supabaseRef.current;
-    orderIdRef.current = activeOrder.orderId;
+    const orderId = activeOrder.orderId;
+    let isSubscribed = false;
 
+    const updateStatus = (newStatus: string) => {
+      setActiveOrderState((prev) => {
+        if (!prev) return null;
+        if (prev.status === newStatus) return prev;
+        const updated = { ...prev, status: newStatus };
+        saveOrder(updated);
+        return updated;
+      });
+    };
+
+    // ── Realtime subscription ──────────────────────────────────────────
     const channel = supabase
-      .channel(`order-${activeOrder.orderId}`)
+      .channel(`order-${orderId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "orders",
-          filter: `id=eq.${activeOrder.orderId}`,
+          filter: `id=eq.${orderId}`,
         },
         (payload) => {
           const newRow = payload.new as Record<string, unknown>;
           const newStatus = newRow.status as string | undefined;
-          if (!newStatus) return;
-
-          setActiveOrderState((prev) => {
-            if (!prev) return null;
-            const updated = { ...prev, status: newStatus };
-            saveOrder(updated);
-            return updated;
-          });
+          if (newStatus) updateStatus(newStatus);
         },
       )
       .subscribe((status) => {
-        if (status !== "SUBSCRIBED") {
-          console.warn("Realtime channel subscribe status:", status);
+        if (status === "SUBSCRIBED") {
+          isSubscribed = true;
         }
       });
 
-    // On mount, fetch current status — bypass Next.js cache
-    (async () => {
+    // ── Polling fallback (every 10s) ───────────────────────────────────
+    const poll = async () => {
       try {
-        const res = await fetch(`/api/order-status?orderId=${activeOrder.orderId}`, {
+        const res = await fetch(`/api/order-status?orderId=${orderId}`, {
           cache: "no-store",
         });
         if (!res.ok) return;
         const data = await res.json();
-        setActiveOrderState((prev) => {
-          if (!prev || prev.orderId !== activeOrder.orderId) return prev;
-          if (data.status !== prev.status) {
-            const updated = { ...prev, status: data.status as string };
-            saveOrder(updated);
-            return updated;
-          }
-          return prev;
-        });
+        if (data?.status) updateStatus(data.status);
       } catch {}
-    })();
+    };
 
+    // Initial fetch to catch any changes since order was placed
+    poll();
+
+    // Start polling
+    pollIntervalRef.current = setInterval(poll, 10_000);
+
+    // ── Cleanup ────────────────────────────────────────────────────────
     return () => {
+      channel.unsubscribe();
       supabase.removeChannel(channel);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
     };
   }, [activeOrder?.orderId]); // eslint-disable-line react-hooks/exhaustive-deps
 

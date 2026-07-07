@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
-import { getUserRole } from "@/lib/auth";
+import { getUserRole } from "@/lib/role-utils";
 import { trackMenuLoad } from "@/lib/track-menu-load";
 import ItemDetailSheet from "@/components/menu/ItemDetailSheet";
 import AddToCartSheet from "@/components/menu/AddToCartSheet";

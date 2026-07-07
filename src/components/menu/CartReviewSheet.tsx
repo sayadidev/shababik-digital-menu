@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { useToast } from "./Toast";
 import { createOrder } from "@/lib/actions/orders";
+import { formatSyp } from "@/lib/format-currency";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
 
@@ -241,12 +242,12 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                             ${(item.priceUsd * item.quantity).toFixed(2)}
                           </span>
                           <span className="text-[10px] text-gray-400 tabular-nums">
-                            / {(item.priceSyp * item.quantity).toLocaleString()} SYP
+                            / {formatSyp(item.priceSyp * item.quantity, locale)}
                           </span>
                         </>
                       ) : (
                         <span className="text-sm font-semibold text-[#8C6B4A] tabular-nums">
-                          {(item.priceSyp * item.quantity).toLocaleString()} SYP
+                          {formatSyp(item.priceSyp * item.quantity, locale)}
                         </span>
                       )}
                     </div>
@@ -293,12 +294,12 @@ export default function CartReviewSheet({ tableNumber, locale, enableUsd, onClos
                       ${totalPriceUsd.toFixed(2)}
                     </p>
                     <p className="text-xs tabular-nums text-gray-400">
-                      {totalPriceSyp.toLocaleString()} {locale === "ar" ? "ل.س" : "SYP"}
+                      {formatSyp(totalPriceSyp, locale)}
                     </p>
                   </>
                 ) : (
                   <p className="text-lg font-bold tabular-nums text-gray-900">
-                    {totalPriceSyp.toLocaleString()} {locale === "ar" ? "ل.س" : "SYP"}
+                    {formatSyp(totalPriceSyp, locale)}
                   </p>
                 )}
               </div>

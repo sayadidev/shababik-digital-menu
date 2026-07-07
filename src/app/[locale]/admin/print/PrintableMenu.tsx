@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { MenuData } from "@/lib/menu";
+import { formatSyp } from "@/lib/format-currency";
 
 type Props = {
   data: MenuData;
@@ -285,8 +286,8 @@ export default function PrintableMenu({ data, locale }: Props) {
                                 : null;
 
                             const priceText = enableUsd
-                              ? `$${v.price_usd.toFixed(2)} · ${v.price_syp.toLocaleString()} SYP`
-                              : `${v.price_syp.toLocaleString()} SYP`;
+                              ? `$${v.price_usd.toFixed(2)} · ${formatSyp(v.price_syp, locale)}`
+                              : formatSyp(v.price_syp, locale);
 
                             return (
                               <span key={v.id} className="inline-flex items-baseline">

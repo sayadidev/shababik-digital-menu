@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { submitOrderFeedback } from "@/lib/actions/orders";
+import { formatSyp } from "@/lib/format-currency";
 
 type StatusConfig = {
   bg: string;
@@ -282,7 +283,7 @@ export default function FloatingActiveOrder({ locale }: { locale: string }) {
                       ${activeOrder.totalUsd.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {activeOrder.totalSyp.toLocaleString()} {locale === "ar" ? "ل.س" : "SYP"}
+                      {formatSyp(activeOrder.totalSyp, locale)}
                     </p>
                   </div>
                 </div>

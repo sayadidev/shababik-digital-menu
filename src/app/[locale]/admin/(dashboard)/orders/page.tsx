@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateOrderStatus } from "@/lib/actions/orders";
 import type { OrderRow, OrderItemRow } from "@/lib/actions/orders";
+import { formatSyp } from "@/lib/format-currency";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 type Tab = "pending" | "kds" | "history";
@@ -194,10 +195,10 @@ function OrderCard({ order, locale, enableUsd, showAudit = false, showFeedback =
           {enableUsd ? (
             <>
               <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>${order.totalUsd.toFixed(2)}</p>
-              <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>{order.totalSyp.toLocaleString()} {t(locale, "SYP", "ل.س")}</p>
+              <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>{formatSyp(order.totalSyp, locale)}</p>
             </>
           ) : (
-            <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>{order.totalSyp.toLocaleString()} {t(locale, "SYP", "ل.س")}</p>
+            <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>{formatSyp(order.totalSyp, locale)}</p>
           )}
         </div>
       </div>
@@ -462,9 +463,8 @@ export default function OrdersPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders" },
         (payload) => {
-          const oldStatus = (payload.old as Record<string, unknown>)?.status;
           const newStatus = (payload.new as Record<string, unknown>)?.status;
-          if (oldStatus === "pending" && newStatus === "processing") {
+          if (newStatus === "processing") {
             playDing();
           }
           fetchActiveOrders();

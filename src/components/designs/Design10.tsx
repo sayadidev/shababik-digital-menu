@@ -14,6 +14,7 @@ import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
 import { GlobeIcon } from "@/components/admin/icons";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
+import { formatSyp } from "@/lib/format-currency";
 
 /* ── Design 10: Rose Petal ─────────────────
    Dark coffeehouse (#3B2818) + warm beige (#D4B895)
@@ -343,10 +344,10 @@ export default function Design10({ data }: { data: MenuData }) {
                                 {enableUsd ? (
                                   <>
                                     <span style={{ color: "#4A2C17" }}>${v.price_usd.toFixed(2)}</span>
-                                    <span style={{ color: "#4A2C17" }}>/ {v.price_syp.toLocaleString()}</span>
+                                    <span style={{ color: "#4A2C17" }}>/ {formatSyp(v.price_syp, locale)}</span>
                                   </>
                                 ) : (
-                                  <span style={{ color: "#4A2C17" }}>{v.price_syp.toLocaleString()}</span>
+                                  <span style={{ color: "#4A2C17" }}>{formatSyp(v.price_syp, locale)}</span>
                                 )}
                               </span>
                             );
@@ -549,11 +550,11 @@ export default function Design10({ data }: { data: MenuData }) {
                                     ) : null}
                                     {v.is_offer && v.price_before_syp != null && (
                                       <span className="line-through opacity-50">
-                                        {v.price_before_syp.toLocaleString()}
+                                        {formatSyp(v.price_before_syp, locale)}
                                       </span>
                                     )}
                                     <span className={`tabular-nums ${enableUsd ? "text-[10px] text-gray-400" : "font-semibold text-gray-900"}`}>
-                                      {v.price_syp.toLocaleString()}{!enableUsd ? " SYP" : ""}
+                                      {enableUsd ? formatSyp(v.price_syp, locale) : formatSyp(v.price_syp, locale)}
                                     </span>
                                   </div>
                                 );

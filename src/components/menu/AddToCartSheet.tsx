@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import type { ItemWithVariants } from "@/lib/menu";
 import type { ItemVariant } from "@/types/database";
+import { formatSyp } from "@/lib/format-currency";
 
 type Props = {
   item: ItemWithVariants | null;
@@ -73,11 +74,11 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
   const name = locale === "ar" ? item.name_ar : item.name_en;
   const description = locale === "ar" ? item.description_ar : item.description_en;
   const totalPriceUsd = (selectedVariant.price_usd * quantity).toFixed(2);
-  const totalPriceSyp = (selectedVariant.price_syp * quantity).toLocaleString();
+  const totalPriceSyp = selectedVariant.price_syp * quantity;
   const isOffer = selectedVariant.is_offer && selectedVariant.price_before_usd != null;
   const beforePriceUsd = isOffer ? (selectedVariant.price_before_usd! * quantity).toFixed(2) : null;
   const beforePriceSyp = isOffer && selectedVariant.price_before_syp != null
-    ? (selectedVariant.price_before_syp! * quantity).toLocaleString()
+    ? selectedVariant.price_before_syp! * quantity
     : null;
 
   return (
@@ -183,7 +184,7 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                         <span className="font-semibold">
                           {enableUsd
                             ? `$${v.price_usd.toFixed(2)}`
-                            : `${v.price_syp.toLocaleString()} ${locale === "ar" ? "ل.س" : "SYP"}`}
+                            : formatSyp(v.price_syp, locale)}
                         </span>
                       </button>
                     );
@@ -236,12 +237,12 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
               <div className="flex flex-col items-end">
                 {isOffer && enableUsd && beforePriceUsd && (
                   <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                    ${beforePriceUsd} / {beforePriceSyp} {locale === "ar" ? "ل.س" : "SYP"}
+                    ${beforePriceUsd} / {formatSyp(beforePriceSyp!, locale)}
                   </span>
                 )}
                 {isOffer && !enableUsd && beforePriceSyp && (
                   <span className="text-xs font-medium text-gray-400 line-through mb-0.5">
-                    {beforePriceSyp} {locale === "ar" ? "ل.س" : "SYP"}
+                    {formatSyp(beforePriceSyp, locale)}
                   </span>
                 )}
                 {enableUsd ? (
@@ -250,12 +251,12 @@ export default function AddToCartSheet({ item, variant, locale, enableUsd, onClo
                       ${totalPriceUsd}
                     </span>
                     <span className="text-xs font-medium text-gray-500 tabular-nums">
-                      / {totalPriceSyp} {locale === "ar" ? "ل.س" : "SYP"}
+                      / {formatSyp(totalPriceSyp, locale)}
                     </span>
                   </div>
                 ) : (
                   <span className="text-xl font-bold text-gray-900 tabular-nums">
-                    {totalPriceSyp} {locale === "ar" ? "ل.س" : "SYP"}
+                    {formatSyp(totalPriceSyp, locale)}
                   </span>
                 )}
               </div>

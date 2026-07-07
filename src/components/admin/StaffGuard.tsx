@@ -25,6 +25,7 @@ export default function StaffGuard({
   const router = useRouter();
 
   const restricted = role === "staff" && !isStaffAllowedPath(pathname);
+  const unauthenticated = role === null && pathname !== "/admin/login";
 
   useEffect(() => {
     if (restricted) {
@@ -32,7 +33,13 @@ export default function StaffGuard({
     }
   }, [restricted, router]);
 
-  if (restricted) return null;
+  useEffect(() => {
+    if (unauthenticated) {
+      router.replace("/admin/login");
+    }
+  }, [unauthenticated, router]);
+
+  if (restricted || unauthenticated) return null;
 
   return <>{children}</>;
 }

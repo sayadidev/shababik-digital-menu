@@ -36,11 +36,11 @@ export async function requireAuth(): Promise<{
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    throw new Error("UNAUTHORIZED");
+    throw new Error("AUTH_REQUIRED");
   }
 
   const session = (await supabase.auth.getSession()).data.session;
-  if (!session) throw new Error("UNAUTHORIZED");
+  if (!session) throw new Error("AUTH_REQUIRED");
 
   const role = getUserRole(session);
 
@@ -53,7 +53,7 @@ export async function requireAuth(): Promise<{
 
 /**
  * Verify the caller is a super_admin.
- * Otherwise, throw UNAUTHORIZED.
+ * Otherwise, throw AUTH_REQUIRED.
  */
 export async function requireSuperAdmin(): Promise<{
   sesion: Session;
@@ -61,7 +61,7 @@ export async function requireSuperAdmin(): Promise<{
 }> {
   const auth = await requireAuth();
   if (auth.role !== "super_admin") {
-    throw new Error("UNAUTHORIZED");
+    throw new Error("AUTH_REQUIRED");
   }
   return auth;
 }

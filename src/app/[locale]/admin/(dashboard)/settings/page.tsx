@@ -14,6 +14,14 @@ export default function SettingsPage() {
   const params = useParams<{ locale: string }>();
   const locale = params?.locale || "en";
   const t = (en: string, ar: string) => (locale === "ar" ? ar : en);
+  const staffMsg = (errorCode: string | undefined, enFallback: string, arFallback: string) => {
+    if (errorCode === "AUTH_REQUIRED") {
+      return locale === "ar"
+        ? "غير مصرح لك بإدارة حسابات الموظفين. يرجى التأكد من تسجيل الدخول كمشرف رئيسي."
+        : "You are not authorized to manage staff accounts. Please make sure you are logged in as a super admin.";
+    }
+    return errorCode || (locale === "ar" ? arFallback : enFallback);
+  };
 
   const [settings, setSettings] = useState<SiteSettingsRow | null>(null);
   const [heroImageUrl, setHeroImageUrl] = useState("");
@@ -69,14 +77,18 @@ export default function SettingsPage() {
       if (res.success && res.users) {
         setStaffUsers(res.users);
       } else {
-        setStaffFetchError(
-          res.error || (locale === "ar" ? "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً." : "Failed to load staff accounts. Please try again later.")
-        );
+        setStaffFetchError(staffMsg(
+          res.error,
+          "Failed to load staff accounts. Please try again later.",
+          "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً."
+        ));
       }
     } catch (err: any) {
-      setStaffFetchError(
-        locale === "ar" ? "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً." : "Failed to load staff accounts. Please try again later."
-      );
+      setStaffFetchError(staffMsg(
+        undefined,
+        "Failed to load staff accounts. Please try again later.",
+        "فشل تحميل حسابات الموظفين. يرجى المحاولة لاحقاً."
+      ));
     } finally {
       setStaffLoading(false);
     }
@@ -97,10 +109,18 @@ export default function SettingsPage() {
         setStaffPassword("");
         await loadStaffAccounts();
       } else {
-        setStaffError(res.error || (locale === "ar" ? "فشل إنشاء الحساب" : "Failed to create account"));
+        setStaffError(staffMsg(
+          res.error,
+          "Failed to create account",
+          "فشل إنشاء الحساب"
+        ));
       }
     } catch (err: any) {
-      setStaffError(err?.message || (locale === "ar" ? "فشل إنشاء الحساب" : "Failed to create account"));
+      setStaffError(staffMsg(
+        undefined,
+        "Failed to create account",
+        "فشل إنشاء الحساب"
+      ));
     }
     setStaffCreating(false);
   };
@@ -118,10 +138,18 @@ export default function SettingsPage() {
       if (res.success) {
         await loadStaffAccounts();
       } else {
-        setStaffError(res.error || (locale === "ar" ? "فشل حذف الحساب" : "Failed to delete account"));
+        setStaffError(staffMsg(
+          res.error,
+          "Failed to delete account",
+          "فشل حذف الحساب"
+        ));
       }
     } catch (err: any) {
-      setStaffError(err?.message || (locale === "ar" ? "فشل حذف الحساب" : "Failed to delete account"));
+      setStaffError(staffMsg(
+        undefined,
+        "Failed to delete account",
+        "فشل حذف الحساب"
+      ));
     }
     setDeletingId(null);
   };

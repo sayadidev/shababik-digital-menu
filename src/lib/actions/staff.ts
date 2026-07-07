@@ -18,7 +18,7 @@ export async function createStaffAccount(
   try {
     await requireSuperAdmin();
   } catch {
-    return { success: false, error: "UNAUTHORIZED" };
+    return { success: false, error: "AUTH_REQUIRED" };
   }
 
   if (!email || !password) {
@@ -71,7 +71,7 @@ export async function listStaffAccounts(): Promise<{
   try {
     await requireSuperAdmin();
   } catch {
-    return { success: false, error: "UNAUTHORIZED" };
+    return { success: false, error: "AUTH_REQUIRED" };
   }
 
   const admin = createAdminClient();
@@ -110,7 +110,7 @@ export async function deleteStaffAccount(
   try {
     await requireSuperAdmin();
   } catch {
-    return { success: false, error: "UNAUTHORIZED" };
+    return { success: false, error: "AUTH_REQUIRED" };
   }
 
   if (!userId) {

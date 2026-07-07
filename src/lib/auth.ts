@@ -42,7 +42,7 @@ export async function requireAuth(): Promise<{
   const session = (await supabase.auth.getSession()).data.session;
   if (!session) throw new Error("AUTH_REQUIRED");
 
-  const role = getUserRole(session);
+  const role = (data.user.app_metadata?.role as UserRole) ?? getUserRole(session);
 
   return {
     sesion: session,

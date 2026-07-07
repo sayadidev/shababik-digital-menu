@@ -8,6 +8,9 @@
  * Otherwise, ALL users without a role get super_admin assigned.
  */
 
+import { config } from "dotenv";
+config({ quiet: true });
+config({ path: ".env.local", override: true, quiet: true });
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

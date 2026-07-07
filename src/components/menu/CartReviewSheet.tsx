@@ -14,12 +14,13 @@ type Props = {
   tableNumber: number | null;
   locale: string;
   activeCurrency: Currency;
+  enableUsd: boolean;
   onClose: () => void;
   isStaff: boolean;
   onTableNumberChange?: (n: number) => void;
 };
 
-export default function CartReviewSheet({ tableNumber, locale, activeCurrency, onClose, isStaff, onTableNumberChange }: Props) {
+export default function CartReviewSheet({ tableNumber, locale, activeCurrency, enableUsd, onClose, isStaff, onTableNumberChange }: Props) {
   const { items, updateQuantity, removeItem, totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry, clearCart } = useCart();
   const { setActiveOrder } = useActiveOrder();
   const [visible, setVisible] = useState(false);
@@ -243,11 +244,16 @@ export default function CartReviewSheet({ tableNumber, locale, activeCurrency, o
                     <div className="flex items-baseline gap-1 mt-1">
                       <span className="text-sm font-semibold text-[#8C6B4A] tabular-nums">
                         {formatCurrency(
-                          ((activeCurrency === "TRY" ? item.priceTry : activeCurrency === "USD" ? item.priceUsd : item.priceSyp) * item.quantity),
+                          (activeCurrency === "TRY" ? item.priceTry : item.priceSyp) * item.quantity,
                           activeCurrency,
                           locale,
                         )}
                       </span>
+                      {enableUsd && item.priceUsd > 0 && (
+                        <span className="text-[10px] text-gray-400 tabular-nums">
+                          {" · "}{formatCurrency(item.priceUsd * item.quantity, "USD", locale)}
+                        </span>
+                      )}
                     </div>
                     </div>
 
@@ -288,11 +294,16 @@ export default function CartReviewSheet({ tableNumber, locale, activeCurrency, o
               <div className="text-right">
                 <p className="text-lg font-bold tabular-nums text-gray-900">
                   {formatCurrency(
-                    activeCurrency === "TRY" ? totalPriceTry : activeCurrency === "USD" ? totalPriceUsd : totalPriceSyp,
+                    activeCurrency === "TRY" ? totalPriceTry : totalPriceSyp,
                     activeCurrency,
                     locale,
                   )}
                 </p>
+                {enableUsd && totalPriceUsd > 0 && (
+                  <p className="text-xs tabular-nums text-gray-400">
+                    {formatCurrency(totalPriceUsd, "USD", locale)}
+                  </p>
+                )}
               </div>
             </div>
 

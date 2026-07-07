@@ -129,7 +129,7 @@ export const siteSettingsSchema = z.object({
   tier: z.enum(["basic", "pro"]).default("basic"),
   ordering_enabled: z.boolean().default(false),
   enable_usd: z.boolean().default(true),
-  active_currency: z.enum(["TRY", "USD", "SYP"]).default("TRY"),
+  active_currency: z.enum(["TRY", "SYP"]).default("TRY"),
 });
 
 export const siteSettingsRowSchema = siteSettingsSchema.extend({

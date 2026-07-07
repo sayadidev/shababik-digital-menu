@@ -27,6 +27,7 @@ export default function PrintableMenu({ data, locale }: Props) {
 
   const settings = data.settings;
   const activeCurrency: Currency = settings?.active_currency ?? "TRY";
+  const enableUsd = settings?.enable_usd ?? true;
   const logoUrl =
     settings?.hero_logo_url ||
     settings?.header_logo_url ||
@@ -286,13 +287,15 @@ export default function PrintableMenu({ data, locale }: Props) {
                                   : v.size_name_en
                                 : null;
 
-                            const priceText = formatCurrency(
-                              activeCurrency === "TRY" ? (v.price_try ?? 0) :
-                              activeCurrency === "USD" ? (v.price_usd ?? 0) :
-                              (v.price_syp ?? 0),
+                            const localPrice = formatCurrency(
+                              activeCurrency === "TRY" ? (v.price_try ?? 0) : (v.price_syp ?? 0),
                               activeCurrency,
                               locale,
                             );
+                            const usdStr = enableUsd && v.price_usd != null
+                              ? ` · ${formatCurrency(v.price_usd, "USD", locale)}`
+                              : "";
+                            const priceText = `${localPrice}${usdStr}`;
 
                             return (
                               <span key={v.id} className="inline-flex items-baseline">

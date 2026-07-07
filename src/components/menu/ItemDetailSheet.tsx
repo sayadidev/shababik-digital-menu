@@ -23,9 +23,10 @@ type Props = {
   item: ItemWithVariants | null;
   onClose: () => void;
   activeCurrency: Currency;
+  enableUsd?: boolean;
 };
 
-export default function ItemDetailSheet({ item, onClose, activeCurrency }: Props) {
+export default function ItemDetailSheet({ item, onClose, activeCurrency, enableUsd = true }: Props) {
   const locale = useLocale();
   const t = useTranslations("common");
   const [imageIndex, setImageIndex] = useState(0);
@@ -242,11 +243,16 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency }: Props
                         )}
                         <span className="text-base font-bold tabular-nums" style={{ color: v.is_offer ? P.accent : P.deep }}>
                           {formatCurrency(
-                            activeCurrency === "TRY" ? (v.price_try ?? 0) : activeCurrency === "USD" ? (v.price_usd ?? 0) : (v.price_syp ?? 0),
+                            activeCurrency === "TRY" ? (v.price_try ?? 0) : (v.price_syp ?? 0),
                             activeCurrency,
                             locale,
                           )}
                         </span>
+                        {enableUsd && v.price_usd != null && (
+                          <span className="text-xs tabular-nums" style={{ color: P.muted }}>
+                            {" · "}{formatCurrency(v.price_usd, "USD", locale)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

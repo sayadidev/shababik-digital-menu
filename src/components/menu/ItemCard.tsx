@@ -10,9 +10,10 @@ type Props = {
   item: ItemWithVariants;
   onSelect: (item: ItemWithVariants) => void;
   activeCurrency: Currency;
+  enableUsd?: boolean;
 };
 
-export default function ItemCard({ item, onSelect, activeCurrency }: Props) {
+export default function ItemCard({ item, onSelect, activeCurrency, enableUsd = true }: Props) {
   const locale = useLocale();
   const t = useTranslations("common");
 
@@ -83,6 +84,11 @@ export default function ItemCard({ item, onSelect, activeCurrency }: Props) {
                 <span className="tabular-nums font-bold">
                   {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                 </span>
+                {enableUsd && v.price_usd != null && (
+                  <span className="tabular-nums text-xs opacity-60">
+                    {formatCurrency(v.price_usd, "USD", locale)}
+                  </span>
+                )}
               </div>
             );
           })}

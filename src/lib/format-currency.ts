@@ -1,4 +1,4 @@
-import type { Currency, ItemVariant } from "@/types/database";
+import type { Currency, DisplayCurrency } from "@/types/database";
 
 /**
  * Formats a price with the appropriate currency label per locale.
@@ -9,7 +9,7 @@ import type { Currency, ItemVariant } from "@/types/database";
  */
 export function formatCurrency(
   price: number,
-  currency: Currency,
+  currency: DisplayCurrency,
   locale: string,
 ): string {
   switch (currency) {
@@ -31,20 +31,14 @@ export function formatCurrency(
 }
 
 /**
- * Returns the price from a variant for the given currency, falling back to 0.
+ * Returns the price from a variant for the given local currency, falling back to 0.
+ * Only accepts TRY or SYP — USD is a secondary display toggle, not a base currency.
  */
 export function getPriceForCurrency(
   variant: { price_usd: number | null; price_syp: number | null; price_try: number | null },
   currency: Currency,
 ): number {
-  switch (currency) {
-    case "TRY":
-      return variant.price_try ?? 0;
-    case "USD":
-      return variant.price_usd ?? 0;
-    case "SYP":
-      return variant.price_syp ?? 0;
-  }
+  return currency === "TRY" ? (variant.price_try ?? 0) : (variant.price_syp ?? 0);
 }
 
 /**

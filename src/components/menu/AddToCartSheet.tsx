@@ -12,10 +12,11 @@ type Props = {
   variant: ItemVariant | null;
   locale: string;
   activeCurrency: Currency;
+  enableUsd: boolean;
   onClose: () => void;
 };
 
-export default function AddToCartSheet({ item, variant, locale, activeCurrency, onClose }: Props) {
+export default function AddToCartSheet({ item, variant, locale, activeCurrency, enableUsd, onClose }: Props) {
   const { addItem } = useCart();
   const [visible, setVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -182,6 +183,11 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
                         <span className={`mx-1 ${isActive ? "opacity-60" : "opacity-30"}`}>-</span>
                         <span className="font-semibold">
                           {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
+                          {enableUsd && v.price_usd != null && (
+                            <span className="text-[9px] opacity-60">
+                              {" · "}{formatCurrency(v.price_usd, "USD", locale)}
+                            </span>
+                          )}
                         </span>
                       </button>
                     );
@@ -241,6 +247,11 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
                 <span className="text-xl font-bold text-gray-900 tabular-nums">
                   {formatCurrency(getPriceForCurrency(selectedVariant, activeCurrency) * quantity, activeCurrency, locale)}
                 </span>
+                {enableUsd && selectedVariant.price_usd != null && (
+                  <span className="text-xs font-medium text-gray-500 tabular-nums">
+                    {formatCurrency(selectedVariant.price_usd * quantity, "USD", locale)}
+                  </span>
+                )}
               </div>
             </div>
 

@@ -40,7 +40,7 @@ export default function SettingsPage() {
   const [tierStatus, setTierState] = useState<"basic" | "pro">("basic");
   const [orderingEnabled, setOrderingState] = useState(false);
   const [enableUsd, setEnableUsd] = useState(true);
-  const [activeCurrency, setActiveCurrency] = useState<"TRY" | "USD" | "SYP">("TRY");
+  const [activeCurrency, setActiveCurrency] = useState<"TRY" | "SYP">("TRY");
 
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
@@ -457,16 +457,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="px-5 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {(["TRY", "USD", "SYP"] as const).map((currency) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(["TRY", "SYP"] as const).map((currency) => {
               const labels: Record<string, string> = {
                 TRY: t("Turkish Lira (TL)", "الليرة التركية (TL)"),
-                USD: t("US Dollar ($)", "الدولار الأمريكي ($)"),
                 SYP: t("Syrian Pound (SYP)", "الليرة السورية (ل.س)"),
               };
               const descriptions: Record<string, string> = {
                 TRY: t("Prices shown in TL", "الأسعار بالليرة التركية"),
-                USD: t("Prices shown in USD", "الأسعار بالدولار"),
                 SYP: t("Prices shown in SYP", "الأسعار بالليرة السورية"),
               };
               const isActive = activeCurrency === currency;

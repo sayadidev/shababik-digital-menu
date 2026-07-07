@@ -145,7 +145,7 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, activeCurrency, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; activeCurrency: Currency; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
+function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
@@ -197,13 +197,16 @@ function OrderCard({ order, locale, activeCurrency, showAudit = false, showFeedb
         <div className="text-right">
           <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>
             {formatCurrency(
-              activeCurrency === "TRY" ? order.totalTry :
-              activeCurrency === "USD" ? order.totalUsd :
-              order.totalSyp,
+              activeCurrency === "TRY" ? order.totalTry : order.totalSyp,
               activeCurrency,
               locale,
             )}
           </p>
+          {enableUsd && order.totalUsd > 0 && (
+            <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
+              {formatCurrency(order.totalUsd, "USD", locale)}
+            </p>
+          )}
         </div>
       </div>
 

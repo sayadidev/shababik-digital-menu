@@ -542,8 +542,13 @@ export default function Design10({ data }: { data: MenuData }) {
                                       </span>
                                     )}
                                     <span className="tabular-nums font-semibold text-gray-900">
-                                {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
+                                      {formatCurrency(getPriceForCurrency(v, activeCurrency), activeCurrency, locale)}
                                     </span>
+                                    {enableUsd && v.price_usd != null && (
+                                      <span className="tabular-nums text-[10px] text-gray-400">
+                                        {" · "}{formatCurrency(v.price_usd, "USD", locale)}
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -583,16 +588,17 @@ export default function Design10({ data }: { data: MenuData }) {
             variant={addToCartItem?.variant ?? null}
             locale={locale}
             activeCurrency={activeCurrency}
+            enableUsd={enableUsd}
             onClose={() => setAddToCartItem(null)}
           />
-          <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} />
-          <FloatingCart locale={locale} tableNumber={tableNumber} activeCurrency={activeCurrency} onReview={() => setReviewOpen(true)} />
+          <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
+          <FloatingCart locale={locale} tableNumber={tableNumber} activeCurrency={activeCurrency} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
           {reviewOpen && (
-            <CartReviewSheet tableNumber={tableNumber} locale={locale} activeCurrency={activeCurrency} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
+            <CartReviewSheet tableNumber={tableNumber} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
           )}
         </>
       ) : (
-        <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} activeCurrency={activeCurrency} />
+        <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} activeCurrency={activeCurrency} enableUsd={enableUsd} />
       )}
     </div>
   );

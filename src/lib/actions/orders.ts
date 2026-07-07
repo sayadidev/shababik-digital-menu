@@ -233,10 +233,6 @@ export async function createOrder(input: {
       if (Math.abs(input.total_try - computedTry) > 0.01) {
         throw new Error("Price mismatch — order total does not match menu prices");
       }
-    } else if (activeCurrency === "USD") {
-      if (Math.abs(input.total_usd - computedUsd) > 0.01) {
-        throw new Error("Price mismatch — order total does not match menu prices");
-      }
     } else {
       // SYP
       if (input.total_syp !== computedSyp) {

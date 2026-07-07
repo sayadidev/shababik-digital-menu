@@ -16,6 +16,7 @@ type Props = {
 export default function MenuView({ data }: Props) {
   const locale = useLocale();
   const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
+  const enableUsd = data.settings?.enable_usd ?? true;
   const [activeCatId, setActiveCatId] = useState<string | null>(
     data.categories[0]?.id ?? null,
   );
@@ -165,6 +166,7 @@ export default function MenuView({ data }: Props) {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         activeCurrency={activeCurrency}
+        enableUsd={enableUsd}
       />
     </div>
     </div>

@@ -36,9 +36,9 @@ export default async function DashboardLayout({ children, params }: Props) {
   return (
     <>
       <NavRail headerLogoUrl={headerLogoUrl} role={role} />
-      <div className="md:pl-[72px] rtl:md:pr-[72px] rtl:md:pl-0 pb-[80px] md:pb-0 h-screen overflow-y-auto bg-background">
+      <div className="md:pl-[72px] rtl:md:pr-[72px] rtl:md:pl-0 pb-[80px] md:pb-0 h-screen flex flex-col bg-background">
         <TopBar headerLogoUrl={headerLogoUrl} />
-        <main>
+        <main className="flex-1 overflow-y-auto min-h-0">
           <StaffGuard role={role} locale={locale}>
             {children}
           </StaffGuard>

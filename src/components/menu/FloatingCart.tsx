@@ -14,11 +14,13 @@ export default function FloatingCart({
   locale,
   tableNumber,
   activeCurrency,
+  enableUsd,
   onReview,
 }: {
   locale: string;
   tableNumber: number | null;
   activeCurrency: Currency;
+  enableUsd: boolean;
   onReview: () => void;
 }) {
   const { totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry } = useCart();
@@ -68,14 +70,17 @@ export default function FloatingCart({
               {locale === "ar" ? "المجموع" : "Total"}
             </p>
             <p className="text-sm font-bold text-white" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {(() => {
-                const price =
-                  activeCurrency === "TRY" ? totalPriceTry :
-                  activeCurrency === "USD" ? totalPriceUsd :
-                  totalPriceSyp;
-                return formatCurrency(price, activeCurrency, locale);
-              })()}
+              {formatCurrency(
+                activeCurrency === "TRY" ? totalPriceTry : totalPriceSyp,
+                activeCurrency,
+                locale,
+              )}
             </p>
+            {enableUsd && totalPriceUsd > 0 && (
+              <p className="text-[11px] text-white/70" style={{ fontVariantNumeric: "tabular-nums" }}>
+                {formatCurrency(totalPriceUsd, "USD", locale)}
+              </p>
+            )}
           </div>
 
           {/* CTA */}

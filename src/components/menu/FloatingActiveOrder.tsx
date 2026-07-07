@@ -54,7 +54,7 @@ function getStatusConfig(status: string): StatusConfig {
   }
 }
 
-export default function FloatingActiveOrder({ locale, activeCurrency }: { locale: string; activeCurrency: Currency }) {
+export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd = true }: { locale: string; activeCurrency: Currency; enableUsd?: boolean }) {
   const { activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted } = useActiveOrder();
   const [showModal, setShowModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -289,13 +289,16 @@ export default function FloatingActiveOrder({ locale, activeCurrency }: { locale
                   <div className="text-right">
                     <p className="text-sm font-bold text-gray-900">
                       {formatCurrency(
-                        activeCurrency === "TRY" ? activeOrder.totalTry :
-                        activeCurrency === "USD" ? activeOrder.totalUsd :
-                        activeOrder.totalSyp,
+                        activeCurrency === "TRY" ? activeOrder.totalTry : activeOrder.totalSyp,
                         activeCurrency,
                         locale,
                       )}
                     </p>
+                    {enableUsd && activeOrder.totalUsd > 0 && (
+                      <p className="text-xs text-gray-400">
+                        {formatCurrency(activeOrder.totalUsd, "USD", locale)}
+                      </p>
+                    )}
                   </div>
                 </div>
 

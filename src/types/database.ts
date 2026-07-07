@@ -53,7 +53,8 @@ export interface ItemImage {
   created_at?: string;
 }
 
-export type Currency = "TRY" | "USD" | "SYP";
+export type Currency = "TRY" | "SYP";
+export type DisplayCurrency = Currency | "USD";
 
 export interface SiteSettings {
   id: number;

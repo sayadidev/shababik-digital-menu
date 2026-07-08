@@ -132,34 +132,34 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           className="rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col bg-[#f5efdf] overflow-hidden"
           style={{ maxHeight: "90dvh" }}
         >
-          <div className="aspect-square w-full relative min-h-0 overflow-hidden">
-            <span className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/60 backdrop-blur-sm rounded-full z-20" />
-            {displayImage ? (
-              <img
-                src={displayImage}
-                alt={imageAlt}
-                className="w-full h-full object-cover object-bottom"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-[#D4B895]/20">
-                <svg className="h-16 w-16 text-[#3B2818]/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <div className="flex-1 overflow-y-auto pb-6" dir={isRtl ? "rtl" : "ltr"}>
+            <div className="aspect-[4/3] max-h-[35vh] w-full relative shrink-0 overflow-hidden">
+              <span className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/60 backdrop-blur-sm rounded-full z-20" />
+              {displayImage ? (
+                <img
+                  src={displayImage}
+                  alt={imageAlt}
+                  className="w-full h-full object-cover object-bottom"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[#D4B895]/20">
+                  <svg className="h-16 w-16 text-[#3B2818]/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleClose}
+                className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-black/60 active:scale-90 transition-all flex items-center justify-center"
+                aria-label="Close"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleClose}
-              className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-black/60 active:scale-90 transition-all flex items-center justify-center"
-              aria-label="Close"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+              </button>
+            </div>
 
-          <div className="overflow-y-auto flex-1 min-h-0" dir={isRtl ? "rtl" : "ltr"}>
             <div className="p-5">
               <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
               {description && (
@@ -216,7 +216,7 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
             </div>
           </div>
 
-          <div className="sticky bottom-0 w-full bg-[#FDFBF7] border-t border-[#E8E6E1] p-4 flex flex-col gap-4 z-50" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+          <div className="w-full bg-[#FDFBF7] border-t border-[#E8E6E1] p-4 flex flex-col gap-4 shrink-0" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
             <div className={`flex justify-between items-center w-full ${isRtl ? "flex-row-reverse" : ""}`}>
               <div className="flex items-center gap-3 bg-[#F0EBE1] px-3 py-1.5 rounded-full" dir="ltr">
                 <button

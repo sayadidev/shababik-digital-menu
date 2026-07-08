@@ -133,13 +133,13 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           style={{ maxHeight: "90dvh" }}
         >
           <div className="flex-1 overflow-y-auto pb-6" dir={isRtl ? "rtl" : "ltr"}>
-            <div className="aspect-[4/3] max-h-[35vh] w-full relative shrink-0 overflow-hidden">
+            <div className="aspect-square w-full relative shrink-0 overflow-hidden">
               <span className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/60 backdrop-blur-sm rounded-full z-20" />
               {displayImage ? (
                 <img
                   src={displayImage}
                   alt={imageAlt}
-                  className="w-full h-full object-cover object-bottom"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[#D4B895]/20">

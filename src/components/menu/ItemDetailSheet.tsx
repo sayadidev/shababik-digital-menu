@@ -103,7 +103,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
           opacity: visible ? 1 : 0,
         }}
       >
-        <div className="rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: P.bg }}>
+        <div className="rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: P.bg }} key={item.id}>
           <div className="flex justify-center pt-3 pb-1">
             <span className="h-1 w-10 rounded-full" style={{ backgroundColor: `${P.border}99` }} />
           </div>

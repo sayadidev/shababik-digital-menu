@@ -31,6 +31,10 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
   const t = useTranslations("common");
   const [imageIndex, setImageIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  const selectedVariant = item?.item_variants.find((v) => v.id === selectedVariantId) ?? null;
+  const displayImage = selectedVariant?.image_url || item?.image_url || "";
 
   const allImages = item
     ? [
@@ -50,6 +54,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
 
   useEffect(() => {
     if (!item) return;
+    setSelectedVariantId(null);
     trackEvent("item_tap", item.id).catch(() => {});
     document.body.style.overflow = "hidden";
     requestAnimationFrame(() => setVisible(true));
@@ -105,8 +110,17 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
 
           {/* ── Image with padding ────────────── */}
           <div className="px-4">
-            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-white/40">
-              {allImages.length > 0 ? (
+            <div className="aspect-square w-full relative rounded-2xl overflow-hidden bg-white/40">
+              {selectedVariant?.image_url ? (
+                <Image
+                  src={selectedVariant.image_url}
+                  alt={`${name} - ${locale === "ar" ? selectedVariant.size_name_ar : selectedVariant.size_name_en}`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 512px"
+                  className="object-cover"
+                  priority
+                />
+              ) : allImages.length > 0 ? (
                 <>
                   {allImages.map((src, i) => (
                     <div
@@ -220,59 +234,97 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
             )}
 
             <div className="mt-5 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: P.deep }}>
-                {locale === "ar" ? "الأسعار" : "Pricing"}
-              </h3>
-              <div className="divide-y" style={{ borderColor: `${P.border}30` }}>
-                {item.item_variants.map((v) => {
-                  const sizeName =
-                    locale === "ar" ? v.size_name_ar : v.size_name_en;
-                  return (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between py-2.5"
-                    >
-                      <span className="text-sm font-medium" style={{ color: P.deep }}>
-                        {sizeName}
-                      </span>
-                      <div className="flex items-baseline gap-2">
-                        {v.is_offer && v.price_before_usd != null && (
-                          <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
-                            {formatCurrency(v.price_before_usd, "USD", locale)}
-                          </span>
-                        )}
-                        {v.is_offer && (() => {
-                          const before = getBeforePriceForCurrency(v, activeCurrency);
-                          if (before != null) {
-                            return (
-                              <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
-                                {formatCurrency(before, activeCurrency, locale)}
-                              </span>
-                            );
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: P.deep }}>
+                    {locale === "ar" ? "الأسعار" : "Pricing"}
+                  </h3>
+                  <div className="divide-y" style={{ borderColor: `${P.border}30` }}>
+                    {item.item_variants.map((v) => {
+                      const sizeName =
+                        locale === "ar" ? v.size_name_ar : v.size_name_en;
+                      const isSelected = selectedVariantId === v.id;
+                      const hasImage = !!v.image_url;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedVariantId(isSelected ? null : v.id)
                           }
-                          return null;
-                        })()}
-                        <span className="text-base font-bold tabular-nums" style={{ color: v.is_offer ? P.accent : P.deep }}>
-                          {formatCurrency(
-                            activeCurrency === "TRY" ? (v.price_try ?? 0) : (v.price_syp ?? 0),
-                            activeCurrency,
-                            locale,
+                          className="w-full flex items-center justify-between py-2.5 gap-3 hover:bg-[#3B2818]/5 active:bg-[#3B2818]/10 transition-colors rounded-lg px-2 -mx-2 border-0 bg-transparent cursor-pointer"
+                          style={{
+                            outline: isSelected ? `2px solid ${P.accent}60` : "none",
+                            outlineOffset: "-4px",
+                          }}
+                        >
+                          {hasImage && (
+                            <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/40">
+                              <Image
+                                src={v.image_url}
+                                alt={sizeName}
+                                width={40}
+                                height={40}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
                           )}
-                        </span>
-                        {enableUsd && v.price_usd != null && (
-                          <span className="text-xs tabular-nums" style={{ color: P.muted }}>
-                            {" · "}{formatCurrency(v.price_usd, "USD", locale)}
+                          <span className="text-sm font-medium flex-1 text-start" style={{ color: P.deep }}>
+                            {sizeName}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                          <div className="flex items-baseline gap-2">
+                            {v.is_offer && v.price_before_usd != null && (
+                              <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
+                                {formatCurrency(v.price_before_usd, "USD", locale)}
+                              </span>
+                            )}
+                            {v.is_offer && (() => {
+                              const before = getBeforePriceForCurrency(v, activeCurrency);
+                              if (before != null) {
+                                return (
+                                  <span className="text-xs line-through opacity-50 tabular-nums" style={{ color: P.muted }}>
+                                    {formatCurrency(before, activeCurrency, locale)}
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                            <span className="text-base font-bold tabular-nums" style={{ color: v.is_offer ? P.accent : P.deep }}>
+                              {formatCurrency(
+                                activeCurrency === "TRY" ? (v.price_try ?? 0) : (v.price_syp ?? 0),
+                                activeCurrency,
+                                locale,
+                              )}
+                            </span>
+                            {enableUsd && v.price_usd != null && (
+                              <span className="text-xs tabular-nums" style={{ color: P.muted }}>
+                                {" · "}{formatCurrency(v.price_usd, "USD", locale)}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Preload all variant images for instant switching */}
+                <div className="hidden" aria-hidden="true">
+                  {item.item_variants.map((v) =>
+                    v.image_url ? (
+                      <Image
+                        key={v.id}
+                        src={v.image_url}
+                        alt=""
+                        width={512}
+                        height={512}
+                        priority
+                        unoptimized
+                      />
+                    ) : null
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 }

@@ -77,6 +77,11 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
   const name = locale === "ar" ? item.name_ar : item.name_en;
   const description = locale === "ar" ? item.description_ar : item.description_en;
   const totalPriceUsd = (selectedVariant.price_usd ?? 0) * quantity;
+  const displayImage = selectedVariant?.image_url || item.image_url;
+  const imageAlt = selectedVariant?.image_url
+    ? `${name} - ${locale === "ar" ? selectedVariant.size_name_ar : selectedVariant.size_name_en}`
+    : name;
+
   const totalPriceSyp = (selectedVariant.price_syp ?? 0) * quantity;
   const totalPriceTry = (selectedVariant.price_try ?? 0) * quantity;
   const isOffer = selectedVariant.is_offer && selectedVariant.price_before_usd != null;
@@ -127,13 +132,13 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           className="rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col bg-[#f5efdf] overflow-hidden"
           style={{ maxHeight: "90dvh" }}
         >
-          <div className="relative w-full h-64 shrink-0 overflow-hidden">
+          <div className="aspect-square w-full relative shrink-0 overflow-hidden">
             <span className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/60 backdrop-blur-sm rounded-full z-20" />
-            {item.image_url ? (
+            {displayImage ? (
               <img
-                src={item.image_url}
-                alt={name}
-                className="w-full h-full object-cover"
+                src={displayImage}
+                alt={imageAlt}
+                className="w-full h-full object-cover object-bottom"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-[#D4B895]/20">

@@ -57,6 +57,7 @@ function getStatusConfig(status: string): StatusConfig {
 export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd = true }: { locale: string; activeCurrency: Currency; enableUsd?: boolean }) {
   const { activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted } = useActiveOrder();
   const [showModal, setShowModal] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
@@ -64,10 +65,12 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
 
   const prevOrderIdRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string | null>(null);
+  const statusRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeOrder) {
       setShowModal(false);
+      setIsMinimized(false);
       prevOrderIdRef.current = null;
       prevStatusRef.current = null;
       return;
@@ -84,14 +87,24 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
     if (isCompleted) {
       if (!alreadyPrompted) {
         setShowModal(true);
+        setIsMinimized(false);
       }
     } else if (isNewOrder || (prevStatus && prevStatus !== status)) {
       setShowModal(true);
+      setIsMinimized(false);
     }
 
     prevOrderIdRef.current = orderId;
     prevStatusRef.current = status;
   }, [activeOrder?.orderId, activeOrder?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isMinimized && activeOrder && statusRef.current !== activeOrder.status) {
+      setIsMinimized(false);
+      setShowModal(true);
+    }
+    statusRef.current = activeOrder?.status ?? null;
+  }, [activeOrder?.status, isMinimized]);
 
   if (!activeOrder) return null;
 
@@ -102,9 +115,11 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
 
   const handleDismiss = () => {
     setShowModal(false);
+    setIsMinimized(true);
   };
 
   const handleFinalDismiss = () => {
+    setIsMinimized(false);
     markOrderPrompted(activeOrder.orderId);
     setActiveOrder(null);
     setShowModal(false);
@@ -135,9 +150,9 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-          onClick={isReady ? undefined : () => setShowModal(false)}
+          onClick={isReady ? undefined : handleDismiss}
           onKeyDown={(e) => {
-            if (e.key === "Escape" && !isReady) setShowModal(false);
+            if (e.key === "Escape" && !isReady) handleDismiss();
           }}
           role="dialog"
           aria-modal="true"
@@ -146,7 +161,7 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={isReady ? undefined : () => setShowModal(false)}
+            onClick={isReady ? undefined : handleDismiss}
           />
           <div
             onClick={(e) => e.stopPropagation()}
@@ -307,11 +322,49 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
                   onClick={handleDismiss}
                   className="w-full min-h-[44px] mt-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium active:scale-[0.98] transition-all"
                 >
-                  {locale === "ar" ? "إغلاق" : "Close"}
+                  {locale === "ar" ? "تصغير" : "Minimize"}
                 </button>
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {isMinimized && !showModal && (
+        <div
+          onClick={() => {
+            setIsMinimized(false);
+            setShowModal(true);
+          }}
+          className="fixed bottom-6 left-4 right-4 bg-white border border-[#E8E6E1] shadow-xl rounded-2xl p-4 flex items-center justify-between z-50 cursor-pointer active:scale-[0.98] transition-transform max-w-lg mx-auto"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setIsMinimized(false);
+              setShowModal(true);
+            }
+          }}
+        >
+          <div className="flex items-center gap-3" dir={isRtl ? "rtl" : "ltr"}>
+            <div className={`w-8 h-8 rounded-full ${config.bg}/10 flex items-center justify-center shrink-0`}>
+              <div className={config.bg.replace("bg-", "text-")}>
+                {config.icon}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {locale === "ar" ? config.text.ar : config.text.en}
+              </p>
+              <p className="text-xs text-gray-500">
+                #{shortId}
+              </p>
+            </div>
+          </div>
+          <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
         </div>
       )}
     </>

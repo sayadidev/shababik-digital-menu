@@ -42,6 +42,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       className={`${lora.variable} ${amiri.variable} h-full antialiased`}
     >
       <head>
+        <link rel="preconnect" href="https://bfkjimqsznebqhtqwafo.supabase.co" />
         <link rel="preload" href="/shababik-solid-logo.png" as="image" fetchPriority="high" />
       </head>
       <body className="min-h-full flex flex-col w-full">

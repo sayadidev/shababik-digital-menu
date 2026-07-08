@@ -287,6 +287,14 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
               {locale === "ar" ? "إضافة للسلة" : "Add to Cart"}
             </button>
           </div>
+
+          <div className="hidden" aria-hidden="true">
+            {item.item_variants.map((v) =>
+              v.image_url ? (
+                <img key={v.id} src={v.image_url} alt="" fetchPriority="high" />
+              ) : null
+            )}
+          </div>
         </div>
       </div>
     </div>

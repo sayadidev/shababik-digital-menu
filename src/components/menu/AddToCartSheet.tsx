@@ -132,7 +132,7 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           className="rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col bg-[#f5efdf] overflow-hidden"
           style={{ maxHeight: "90dvh" }}
         >
-          <div className="aspect-square w-full relative shrink-0 overflow-hidden">
+          <div className="aspect-square w-full relative min-h-0 overflow-hidden">
             <span className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/60 backdrop-blur-sm rounded-full z-20" />
             {displayImage ? (
               <img

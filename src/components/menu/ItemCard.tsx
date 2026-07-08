@@ -34,7 +34,9 @@ export default function ItemCard({ item, onSelect, activeCurrency, enableUsd = t
             width={96}
             height={96}
             className="w-24 h-24 rounded-xl object-cover"
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
+            unoptimized
           />
         ) : (
           <div className="flex w-24 h-24 items-center justify-center rounded-xl bg-[#F5F0E6]">

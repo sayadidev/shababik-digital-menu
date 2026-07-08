@@ -119,6 +119,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                   sizes="(max-width: 768px) 100vw, 512px"
                   className="object-cover object-bottom"
                   priority
+                  unoptimized
                 />
               ) : allImages.length > 0 ? (
                 <>
@@ -134,6 +135,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                         fill
                         sizes="(max-width: 768px) 100vw, 512px"
                         className="object-cover object-bottom"
+                        unoptimized
                         priority={i === 0}
                       />
                     </div>
@@ -257,15 +259,16 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                           }}
                         >
                           {hasImage && (
-                            <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/40">
-                              <Image
-                                src={v.image_url}
-                                alt={sizeName}
-                                width={40}
-                                height={40}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
+                          <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/40">
+                            <Image
+                              src={v.image_url}
+                              alt={sizeName}
+                              width={40}
+                              height={40}
+                              className="object-cover w-full h-full"
+                              unoptimized
+                            />
+                          </div>
                           )}
                           <span className="text-sm font-medium flex-1 text-start" style={{ color: P.deep }}>
                             {sizeName}

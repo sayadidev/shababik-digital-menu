@@ -117,7 +117,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                   alt={`${name} - ${locale === "ar" ? selectedVariant.size_name_ar : selectedVariant.size_name_en}`}
                   fill
                   sizes="(max-width: 768px) 100vw, 512px"
-                  className="object-cover"
+                  className="object-cover object-bottom"
                   priority
                 />
               ) : allImages.length > 0 ? (
@@ -133,7 +133,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                         alt={name}
                         fill
                         sizes="(max-width: 768px) 100vw, 512px"
-                        className="object-cover"
+                        className="object-cover object-bottom"
                         priority={i === 0}
                       />
                     </div>

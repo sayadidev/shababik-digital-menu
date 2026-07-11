@@ -1,8 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, isStaff, isSuperAdmin } from "@/lib/auth";
+import { requirePro } from "@/lib/actions/settings-public";
 
 export type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 
@@ -18,6 +21,8 @@ export interface OrderItemRow {
 export interface OrderRow {
   id: string;
   table_number: number;
+  secure_token: string | null;
+  customer_name: string | null;
   status: OrderStatus;
   total_usd: number;
   total_syp: number;
@@ -112,14 +117,41 @@ export async function getActiveOrders(): Promise<OrderRow[]> {
 const COOLDOWN_MS = 15 * 60 * 1000;
 
 export async function createOrder(input: {
+  secure_token?: string | null;
   table_number?: number;
+  customer_name?: string | null;
   items: { name: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
   total_syp: number;
   total_try: number;
 }): Promise<{ success: boolean; orderId?: string; error?: string }> {
   try {
+    await requirePro();
+
     const supabase = createAdminClient();
+
+    // ── Validate table via secure_token ──
+    let resolvedTableNumber: number | null = null;
+
+    if (input.secure_token) {
+      const { data: tableRow } = await supabase
+        .from("tables")
+        .select("table_number")
+        .eq("secure_token", input.secure_token)
+        .maybeSingle();
+
+      if (!tableRow) {
+        throw new Error("يرجى مسح رمز الـ QR الموجود على طاولتك لإتمام الطلب.");
+      }
+
+      resolvedTableNumber = Number(tableRow.table_number);
+      if (isNaN(resolvedTableNumber)) {
+        resolvedTableNumber = null;
+      }
+    }
+
+    // ── Fallback to explicit table_number (staff override / backwards compat) ──
+    const tableNum = input.table_number ?? resolvedTableNumber ?? 1;
 
     // ── Validate table_number ──
     if (input.table_number != null && input.table_number < 1) {
@@ -241,18 +273,41 @@ export async function createOrder(input: {
     }
 
     // ── Server-side cooldown check (per-table-number) ──
-    const tableNum = input.table_number ?? 1;
-    const { data: recentOrders } = await supabase
-      .from("orders")
-      .select("created_at")
-      .eq("table_number", tableNum)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    // Bypass for authenticated staff/admin
+    let isAdmin = false;
+    try {
+      const cookieStore = await cookies();
+      const authClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll(); },
+            setAll() {},
+          },
+        },
+      );
+      const { data: { session } } = await authClient.auth.getSession();
+      if (session) {
+        isAdmin = isStaff(session) || isSuperAdmin(session);
+      }
+    } catch {
+      // Not authenticated — proceed with cooldown
+    }
 
-    if (recentOrders && recentOrders.length > 0) {
-      const lastOrderTime = new Date(recentOrders[0].created_at).getTime();
-      if (Date.now() - lastOrderTime < COOLDOWN_MS) {
-        throw new Error("يرجى الانتظار 15 دقيقة قبل إرسال طلب جديد لنفس الطاولة.");
+    if (!isAdmin) {
+      const { data: recentOrders } = await supabase
+        .from("orders")
+        .select("created_at")
+        .eq("table_number", tableNum)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (recentOrders && recentOrders.length > 0) {
+        const lastOrderTime = new Date(recentOrders[0].created_at).getTime();
+        if (Date.now() - lastOrderTime < COOLDOWN_MS) {
+          throw new Error("يرجى الانتظار 15 دقيقة قبل إرسال طلب جديد لنفس الطاولة.");
+        }
       }
     }
 
@@ -261,6 +316,8 @@ export async function createOrder(input: {
       .from("orders")
       .insert({
         table_number: tableNum,
+        secure_token: input.secure_token ?? null,
+        customer_name: input.customer_name?.trim() || null,
         status: "pending",
         total_usd: computedUsd,
         total_syp: computedSyp,
@@ -398,6 +455,47 @@ export async function submitOrderFeedback(
 
   if (error) {
     console.error("submitOrderFeedback error:", error.message);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/orders");
+  return { success: true };
+}
+
+export async function updateOrderTable(
+  orderId: string,
+  newSecureToken: string,
+  newTableNumber: string,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAuth();
+
+  if (!orderId || typeof orderId !== "string") {
+    return { success: false, error: "Invalid order ID" };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: tableRow, error: tableErr } = await supabase
+    .from("tables")
+    .select("table_number, secure_token")
+    .eq("secure_token", newSecureToken)
+    .maybeSingle();
+
+  if (tableErr || !tableRow) {
+    return { success: false, error: "Table not found" };
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      table_number: Number(tableRow.table_number),
+      secure_token: tableRow.secure_token,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+
+  if (error) {
+    console.error("updateOrderTable error:", error.message);
     return { success: false, error: error.message };
   }
 

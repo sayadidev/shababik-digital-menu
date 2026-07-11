@@ -12,6 +12,7 @@ const COOLDOWN_MS = 15 * 60 * 1000;
 
 type Props = {
   tableNumber: number | null;
+  secureToken?: string | null;
   locale: string;
   activeCurrency: Currency;
   enableUsd: boolean;
@@ -20,12 +21,13 @@ type Props = {
   onTableNumberChange?: (n: number) => void;
 };
 
-export default function CartReviewSheet({ tableNumber, locale, activeCurrency, enableUsd, onClose, isStaff, onTableNumberChange }: Props) {
+export default function CartReviewSheet({ tableNumber, secureToken, locale, activeCurrency, enableUsd, onClose, isStaff, onTableNumberChange }: Props) {
   const { items, updateQuantity, removeItem, totalItems, totalPriceUsd, totalPriceSyp, totalPriceTry, clearCart } = useCart();
   const { setActiveOrder } = useActiveOrder();
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editableTable, setEditableTable] = useState(tableNumber ?? 1);
+  const [customerName, setCustomerName] = useState("");
   const isRtl = locale === "ar";
   const { show: showToast } = useToast();
 
@@ -54,12 +56,32 @@ export default function CartReviewSheet({ tableNumber, locale, activeCurrency, e
   const handleSubmit = async () => {
     if (totalItems === 0) return;
 
+    // ── Offline check ──
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      showToast(
+        "أنت غير متصل بالإنترنت حالياً. يرجى التأكد من الشبكة لإرسال طلبك.",
+        "error",
+      );
+      return;
+    }
+
     // ── Table number required ──
-    if (!effectiveTable) {
+    if (!effectiveTable && !secureToken) {
       showToast(
         locale === "ar"
           ? "يرجى مسح رمز الـ QR الموجود على طاولتك لإتمام الطلب"
           : "Please scan the QR code on your table to complete the order",
+        "error",
+      );
+      return;
+    }
+
+    // ── Customer name required ──
+    if (!customerName.trim()) {
+      showToast(
+        locale === "ar"
+          ? "الرجاء إدخال اسمك"
+          : "Please enter your name",
         "error",
       );
       return;
@@ -89,7 +111,9 @@ export default function CartReviewSheet({ tableNumber, locale, activeCurrency, e
 
     // ── Real database submission ──
     const res = await createOrder({
-      table_number: effectiveTable,
+      secure_token: secureToken ?? undefined,
+      table_number: effectiveTable ?? undefined,
+      customer_name: customerName.trim(),
       items: items.map((item) => ({
         name: locale === "ar" ? item.nameAr : item.nameEn,
         quantity: item.quantity,
@@ -287,7 +311,28 @@ export default function CartReviewSheet({ tableNumber, locale, activeCurrency, e
 
           {/* Footer */}
           <div className="shrink-0 border-t border-[#E8E6E1] pt-4 mt-4 px-5 pb-8">
-            <div className="flex items-center justify-between mb-5" dir={isRtl ? "rtl" : "ltr"}>
+            {/* Customer Name */}
+            <div className="mb-4" dir={isRtl ? "rtl" : "ltr"}>
+              <label htmlFor="customer-name" className="block text-sm font-bold text-gray-900 mb-1">
+                {locale === "ar" ? "الاسم" : "Name"}
+              </label>
+              <input
+                id="customer-name"
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder={locale === "ar" ? "أدخل اسمك" : "Enter your name"}
+                className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#059669]/30 transition-all"
+                required
+              />
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {locale === "ar"
+                  ? "لضمان وصول الطلب لك في حال تغيير الطاولة"
+                  : "To ensure your order reaches you if you change tables"}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between mb-5" dir={isRtl ? "rtl" : "ltr"}> 
               <span className="text-lg font-bold text-gray-900">
                 {locale === "ar" ? "المجموع" : "Total"}
               </span>

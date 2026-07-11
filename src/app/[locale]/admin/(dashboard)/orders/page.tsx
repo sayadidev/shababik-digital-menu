@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { updateOrderStatus } from "@/lib/actions/orders";
+import { updateOrderStatus, updateOrderTable } from "@/lib/actions/orders";
+import { getTables } from "@/lib/actions/tables";
 import type { OrderRow, OrderItemRow } from "@/lib/actions/orders";
 import { formatCurrency } from "@/lib/format-currency";
-import type { Currency } from "@/types/database";
+import type { Currency, Table } from "@/types/database";
+import ProLockedScreen from "@/components/admin/ProLockedScreen";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 type Tab = "pending" | "kds" | "history";
@@ -14,6 +16,8 @@ type Tab = "pending" | "kds" | "history";
 interface Order {
   id: string;
   tableNumber: number;
+  secureToken: string | null;
+  customerName: string | null;
   status: OrderStatus;
   items: { name: string; variant?: string; quantity: number; notes?: string }[];
   totalUsd: number;
@@ -32,6 +36,8 @@ function toOrder(row: OrderRow): Order {
   return {
     id: row.id,
     tableNumber: row.table_number,
+    secureToken: row.secure_token ?? null,
+    customerName: row.customer_name ?? null,
     status: row.status as OrderStatus,
     items: (row.order_items ?? []).map((oi: OrderItemRow) => ({
       name: oi.item_name,
@@ -145,11 +151,11 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [] }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[] }) {
+function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string) => void }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-bold text-foreground" style={{ fontFamily: "monospace", fontSize: "11px" }}>#{order.id.slice(0, 8)}</span>
           <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${STATUS_COLORS[order.status]}18`, color: STATUS_COLORS[order.status], border: `1px solid ${STATUS_COLORS[order.status]}30` }}>
             {t(locale, STATUS_LABELS[order.status].en, STATUS_LABELS[order.status].ar)}
@@ -157,10 +163,29 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
           <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "#f5efdf", color: "#8a7a6a" }}>
             {formatTime(order.createdAt)}
           </span>
+          {order.customerName && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium" style={{ backgroundColor: "#eaf5e8", color: "#5a8a3a" }}>
+              {order.customerName}
+            </span>
+          )}
         </div>
-        <span className="text-xs" style={{ color: "#8a7a6a" }}>
-          {t(locale, "Table", "طاولة")} {order.tableNumber}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: "#8a7a6a" }}>
+            {t(locale, "Table", "طاولة")} {order.tableNumber}
+          </span>
+          {onChangeTable && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onChangeTable(order.id); }}
+              className="min-w-[28px] min-h-[28px] rounded-full flex items-center justify-center hover:bg-[#9a6a3a]/10 transition-all border-0"
+              title={t(locale, "Change Table", "تغيير الطاولة")}
+            >
+              <svg className="w-3 h-3" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="divide-y divide-border/30">
@@ -293,6 +318,11 @@ export default function OrdersPage() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  const [changeTableOrderId, setChangeTableOrderId] = useState<string | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [changeTableLoading, setChangeTableLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -402,6 +432,13 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchActiveOrders(); }, [fetchActiveOrders]);
 
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // ── Fetch history orders when date or tab changes ──
   useEffect(() => {
     if (tab !== "history" || tier !== "pro") return;
@@ -485,6 +522,28 @@ export default function OrdersPage() {
       supabase.removeChannel(channel);
     };
   }, [tier, fetchActiveOrders, playDing, loaded]);
+
+  const handleOpenChangeTable = useCallback(async (orderId: string) => {
+    setChangeTableOrderId(orderId);
+    try {
+      const rows = await getTables();
+      setTables(rows);
+    } catch {}
+  }, []);
+
+  const handleChangeTable = useCallback(async (secureToken: string) => {
+    if (!changeTableOrderId) return;
+    setChangeTableLoading(true);
+    const res = await updateOrderTable(changeTableOrderId, secureToken, "");
+    if (res.success) {
+      setToast({ message: t(locale, "Order moved to the new table successfully", "تم نقل الطلب للطاولة الجديدة بنجاح"), type: "success" });
+      setChangeTableOrderId(null);
+      fetchActiveOrders();
+    } else {
+      setToast({ message: res.error ?? t(locale, "Failed to change table", "فشل تغيير الطاولة"), type: "error" });
+    }
+    setChangeTableLoading(false);
+  }, [changeTableOrderId, locale, fetchActiveOrders]);
 
   // ── Action handlers ──
 
@@ -621,7 +680,7 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {pendingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} actions={[
+                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
                     {
                       label: t(locale, "Accept", "قبول"),
                       onClick: () => handleStatusUpdate(order.id, "processing"),
@@ -651,7 +710,7 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {processingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} actions={[
+                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
                     {
                       label: t(locale, "Ready", "جاهز"),
                       onClick: () => handleStatusUpdate(order.id, "completed"),
@@ -757,44 +816,97 @@ export default function OrdersPage() {
               )}
             </div>
           )}
-        </>
-      ) : (
-        /* ── Locked overlay for basic tier ── */
-        <div className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden relative">
-          <div className="p-4 space-y-3 blur-sm select-none pointer-events-none">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-surface/50 rounded-xl p-4 space-y-3 border border-border/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-16 bg-muted/20 rounded" />
-                    <div className="h-4 w-12 bg-muted/20 rounded-full" />
-                  </div>
-                  <div className="h-3 w-14 bg-muted/20 rounded" />
-                </div>
-                <div className="space-y-2"><div className="h-3 w-24 bg-muted/20 rounded" /><div className="h-3 w-20 bg-muted/20 rounded" /></div>
-                <div className="flex items-center justify-between pt-1 border-t border-border/20"><div className="h-3 w-10 bg-muted/20 rounded" /><div className="h-4 w-16 bg-muted/20 rounded" /></div>
-              </div>
-            ))}
-          </div>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6"
-            style={{ backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", backgroundColor: "rgba(255, 252, 248, 0.3)" }}>
-            <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl" style={{ backgroundColor: "#f5efdf" }}>🔒</div>
-            <div className="text-center max-w-xs">
-              <p className="text-sm font-bold mb-1" style={{ color: "#3B2818" }}>
-                {t(locale, "Upgrade to Pro", "ترقية إلى الباقة الاحترافية")}
-              </p>
-              <p className="text-xs leading-relaxed" style={{ color: "#8a7a6a" }}>
-                {t(locale, "The orders system is available exclusively in the Pro plan.", "نظام الطلبات متاح حصرياً في الباقة الاحترافية.")}
-              </p>
-            </div>
-            <a href={`/${locale}/admin/settings`}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border-0"
-              style={{ backgroundColor: "#9a6a3a", color: "#fff" }}>
-              {t(locale, "Go to Settings", "الذهاب إلى الإعدادات")}
-            </a>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 inset-x-0 z-[100] pointer-events-none flex flex-col items-center">
+          <div
+            className="pointer-events-auto px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold flex items-center gap-2"
+            style={{
+              backgroundColor: toast.type === "success" ? "#3B2818" : "#b55a5a",
+              color: "#fff",
+              maxWidth: "90vw",
+            }}
+          >
+            {toast.type === "success" ? (
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            {toast.message}
           </div>
         </div>
+      )}
+
+      {/* Change Table Modal */}
+      {changeTableOrderId && (
+        <div
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          onClick={() => setChangeTableOrderId(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setChangeTableOrderId(null)} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm mx-4 bg-[#f5efdf] rounded-t-3xl md:rounded-3xl shadow-2xl p-5"
+          >
+            <div className="flex justify-center mb-3">
+              <span className="h-1 w-10 rounded-full bg-[#dcc8b4]/60" />
+            </div>
+            <h3 className="text-base font-bold text-center mb-4" style={{ color: "#3B2818" }}>
+              {t(locale, "Select New Table", "اختيار طاولة جديدة")}
+            </h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {tables.map((table) => (
+                <button
+                  key={table.id}
+                  type="button"
+                  onClick={() => handleChangeTable(table.secure_token)}
+                  disabled={changeTableLoading}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border-0 bg-white hover:bg-[#9a6a3a]/5 active:scale-[0.98] disabled:opacity-50"
+                  style={{ color: "#3B2818" }}
+                >
+                  <span>
+                    {t(locale, "Table", "طاولة")} {table.table_number}
+                  </span>
+                  {changeTableLoading && (
+                    <svg className="w-4 h-4 animate-spin" style={{ color: "#9a6a3a" }} viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+              {tables.length === 0 && (
+                <p className="text-center text-sm py-4" style={{ color: "#8a7a6a" }}>
+                  {t(locale, "No tables available", "لا توجد طاولات متاحة")}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setChangeTableOrderId(null)}
+              className="w-full mt-3 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-black/5 transition-all border-0"
+            >
+              {t(locale, "Cancel", "إلغاء")}
+            </button>
+          </div>
+        </div>
+      )}
+        </>
+      ) : (
+        <ProLockedScreen
+          locale={locale}
+          featureNameEn="Order Management"
+          featureNameAr="نظام الطلبات"
+          descriptionEn="The orders system is available exclusively in the Pro plan."
+          descriptionAr="نظام الطلبات متاح حصرياً في الباقة الاحترافية."
+        />
       )}
     </div>
   );

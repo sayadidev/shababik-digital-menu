@@ -141,8 +141,8 @@ export default function AddItemsModal({
     const res = await addItemsToOrder(
       orderId,
       selected.map((s) => ({
-        name: locale === "ar" ? s.nameAr : s.nameEn,
-        variant: locale === "ar" ? s.variantAr : s.variantEn,
+        name: s.nameAr,
+        variant: s.variantAr,
         quantity: s.quantity,
       })),
       additionalUsd,

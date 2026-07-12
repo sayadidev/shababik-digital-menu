@@ -813,7 +813,16 @@ export default function OrdersPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-              ) : billingSearched && billingResults.length === 0 ? (
+              ) : !billingSearched ? (
+                <div className="bg-surface rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
+                  <svg className="w-8 h-8 mx-auto mb-3" style={{ color: "#dcc8b4" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <p className="text-sm" style={{ color: "#8a7a6a" }}>
+                    {t(locale, "Search for a customer name or table to view their invoice", "ابحث عن اسم الزبون أو الطاولة لعرض الفاتورة")}
+                  </p>
+                </div>
+              ) : billingResults.length === 0 ? (
                 <div className="bg-surface rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
                   <p className="text-sm" style={{ color: "#8a7a6a" }}>
                     {t(locale, "No results found", "لم يتم العثور على نتائج")}

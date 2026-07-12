@@ -359,6 +359,14 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
               </div>
             </div>
 
+            {!isStaff && cooldownSeconds <= 0 && (
+              <p className="text-xs text-center text-amber-600 my-2 px-2">
+                {locale === "ar"
+                  ? "تنويه: يرجى العلم أنه بعد تأكيد الطلب، لن تتمكن من إرسال طلب جديد إلا بعد مرور 15 دقيقة."
+                  : "Note: After confirming this order, you will not be able to place a new order for 15 minutes."}
+              </p>
+            )}
+
             {cooldownSeconds > 0 ? (
               <div className="mb-2">
                 <div className="w-full min-h-[48px] bg-amber-50 border border-amber-200 text-amber-800 py-3.5 rounded-xl font-semibold text-sm text-center">

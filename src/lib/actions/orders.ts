@@ -17,6 +17,9 @@ export interface OrderItemRow {
   quantity: number;
   notes?: string | null;
   is_added_later?: boolean | null;
+  price_usd?: number | null;
+  price_syp?: number | null;
+  price_try?: number | null;
 }
 
 export interface OrderRow {
@@ -188,6 +191,7 @@ export async function createOrder(input: {
     let computedUsd = 0;
     let computedSyp = 0;
     let computedTry = 0;
+    const itemPrices: { price_usd: number; price_syp: number; price_try: number }[] = [];
 
     for (const item of input.items) {
       let query = supabase
@@ -251,10 +255,15 @@ export async function createOrder(input: {
         matchedVariant = v;
       }
 
-      // Safely fall back to 0 for any missing prices
       computedUsd += (matchedVariant.price_usd ?? 0) * item.quantity;
       computedSyp += (matchedVariant.price_syp ?? 0) * item.quantity;
       computedTry += (matchedVariant.price_try ?? 0) * item.quantity;
+
+      itemPrices.push({
+        price_usd: matchedVariant.price_usd ?? 0,
+        price_syp: matchedVariant.price_syp ?? 0,
+        price_try: matchedVariant.price_try ?? 0,
+      });
     }
 
     computedUsd = Math.round(computedUsd * 100) / 100;
@@ -331,12 +340,15 @@ export async function createOrder(input: {
       throw new Error(orderErr?.message ?? "Failed to create order");
     }
 
-    const orderItems = input.items.map((item) => ({
+    const orderItems = input.items.map((item, idx) => ({
       order_id: order.id,
       item_name: item.name,
       variant_name: item.variant || null,
       quantity: item.quantity,
       notes: item.notes || null,
+      price_usd: itemPrices[idx]?.price_usd ?? 0,
+      price_syp: itemPrices[idx]?.price_syp ?? 0,
+      price_try: itemPrices[idx]?.price_try ?? 0,
     }));
 
     const { error: itemsErr } = await supabase
@@ -540,6 +552,7 @@ export async function addItemsToOrder(
   let computedUsd = 0;
   let computedSyp = 0;
   let computedTry = 0;
+  const itemPrices: { price_usd: number; price_syp: number; price_try: number }[] = [];
 
   for (const item of newItems) {
     if (!item.name || item.name.trim().length === 0) {
@@ -591,6 +604,12 @@ export async function addItemsToOrder(
       computedUsd += (v.price_usd ?? 0) * item.quantity;
       computedSyp += (v.price_syp ?? 0) * item.quantity;
       computedTry += (v.price_try ?? 0) * item.quantity;
+
+      itemPrices.push({
+        price_usd: v.price_usd ?? 0,
+        price_syp: v.price_syp ?? 0,
+        price_try: v.price_try ?? 0,
+      });
     } else {
       const v = item.variant
         ? variants.find(
@@ -606,18 +625,27 @@ export async function addItemsToOrder(
       computedUsd += (v.price_usd ?? 0) * item.quantity;
       computedSyp += (v.price_syp ?? 0) * item.quantity;
       computedTry += (v.price_try ?? 0) * item.quantity;
+
+      itemPrices.push({
+        price_usd: v.price_usd ?? 0,
+        price_syp: v.price_syp ?? 0,
+        price_try: v.price_try ?? 0,
+      });
     }
   }
 
   computedUsd = Math.round(computedUsd * 100) / 100;
 
-  const orderItems = newItems.map((item) => ({
+  const orderItems = newItems.map((item, idx) => ({
     order_id: orderId,
     item_name: item.name,
     variant_name: item.variant || null,
     quantity: item.quantity,
     notes: item.notes || null,
     is_added_later: true,
+    price_usd: itemPrices[idx]?.price_usd ?? 0,
+    price_syp: itemPrices[idx]?.price_syp ?? 0,
+    price_try: itemPrices[idx]?.price_try ?? 0,
   }));
 
   const { error: itemsErr } = await supabase

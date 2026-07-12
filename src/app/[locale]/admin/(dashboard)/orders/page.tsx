@@ -20,7 +20,7 @@ interface Order {
   secureToken: string | null;
   customerName: string | null;
   status: OrderStatus;
-  items: { name: string; variant?: string; quantity: number; notes?: string; isAddedLater?: boolean }[];
+  items: { name: string; variant?: string; quantity: number; notes?: string; isAddedLater?: boolean; priceUsd?: number; priceSyp?: number; priceTry?: number }[];
   totalUsd: number;
   totalSyp: number;
   totalTry: number;
@@ -46,6 +46,9 @@ function toOrder(row: OrderRow): Order {
       quantity: oi.quantity,
       notes: oi.notes ?? undefined,
       isAddedLater: oi.is_added_later ?? undefined,
+      priceUsd: oi.price_usd ?? undefined,
+      priceSyp: oi.price_syp ?? undefined,
+      priceTry: oi.price_try ?? undefined,
     })),
     totalUsd: row.total_usd,
     totalSyp: row.total_syp,
@@ -224,6 +227,15 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
                 </p>
               )}
             </div>
+            <span className="text-xs font-bold tabular-nums shrink-0 ml-2" style={{ color: "#3B2818" }}>
+              {item.priceTry != null || item.priceSyp != null
+                ? formatCurrency(
+                    (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
+                    activeCurrency,
+                    locale,
+                  )
+                : ""}
+            </span>
           </div>
         ))}
       </div>
@@ -797,7 +809,7 @@ export default function OrdersPage() {
           {/* ── Billing Tab ── */}
           {tab === "billing" && (
             <div className="space-y-4">
-              <div className="sticky top-0 z-10 bg-background pb-3 pt-1">
+              <div className="sticky top-0 z-10 bg-background pb-3 pt-1 no-print">
                 <div className="relative">
                   <input
                     type="text"
@@ -837,7 +849,7 @@ export default function OrdersPage() {
               ) : (
                 <div className="space-y-4">
                   {billingResults.length > 0 && (
-                    <div className="flex items-center justify-between px-1 py-2 border-b border-[#E8E6E1]">
+                    <div className="flex items-center justify-between px-1 py-2 border-b border-[#E8E6E1] no-print">
                       <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
                         {t(locale, "Grand Total", "إجمالي الفاتورة")}
                       </span>
@@ -868,8 +880,21 @@ export default function OrdersPage() {
                       : group.orders;
 
                     return (
-                      <div key={group.sessionId} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
+                      <div key={group.sessionId} id={`billing-group-${group.sessionId}`} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
                         <div className="p-4">
+                          <div className="text-center mb-3 pb-3 border-b border-dashed border-[#dcc8b4]/60">
+                            <p className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                              {locale === "ar" ? "شبابيك كافيه" : "Shababik Cafe"}
+                            </p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "#8a7a6a" }}>
+                              {new Date(group.orders[0].created_at).toLocaleDateString(
+                                locale === "ar" ? "ar-SY" : "en-US",
+                                { year: "numeric", month: "long", day: "numeric" }
+                              )}
+                              {" · "}
+                              {formatTime(group.orders[0].created_at)}
+                            </p>
+                          </div>
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
@@ -943,6 +968,29 @@ export default function OrdersPage() {
                               )}
                             </div>
                           </div>
+
+                          <div className="text-center pt-3 border-t border-dashed border-[#dcc8b4]/60">
+                            <p className="text-[10px] font-medium" style={{ color: "#8a7a6a" }}>
+                              {locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="px-4 pb-4 no-print">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById(`billing-group-${group.sessionId}`);
+                              if (!el) return;
+                              el.classList.add("print-invoice");
+                              window.print();
+                              setTimeout(() => el.classList.remove("print-invoice"), 100);
+                            }}
+                            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border-0 flex items-center justify-center gap-2"
+                            style={{ backgroundColor: "#3B2818", color: "#fff" }}
+                          >
+                            🖨️ {t(locale, "Print Invoice", "طباعة الفاتورة")}
+                          </button>
                         </div>
                       </div>
                     );
@@ -1179,6 +1227,39 @@ export default function OrdersPage() {
         @keyframes pulseAdded {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.85; }
+        }
+
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-invoice,
+          .print-invoice * {
+            visibility: visible;
+          }
+          .print-invoice {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 4mm !important;
+            font-size: 10px !important;
+            line-height: 1.4 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+          .print-invoice .no-print {
+            display: none !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
         }
       `}</style>
     </div>

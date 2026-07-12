@@ -17,11 +17,14 @@ export interface ActiveOrder {
 interface ActiveOrderContextType {
   activeOrder: ActiveOrder | null;
   setActiveOrder: (order: ActiveOrder | null) => void;
+  clearActiveOrder: () => void;
+  completedOrders: ActiveOrder[];
   feedbackPrompted: string[];
   markOrderPrompted: (orderId: string) => void;
 }
 
 const ORDER_KEY = "shababik_active_order";
+const COMPLETED_KEY = "shababik_completed_orders";
 const FEEDBACK_PROMPTED_KEY = "shababik_feedback_prompted";
 
 const ActiveOrderContext = createContext<ActiveOrderContextType | null>(null);
@@ -48,13 +51,37 @@ function saveOrder(order: ActiveOrder | null) {
   } catch {}
 }
 
+function loadCompleted(): ActiveOrder[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(COMPLETED_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveCompleted(orders: ActiveOrder[]) {
+  if (typeof window === "undefined") return;
+  try {
+    if (orders.length === 0) {
+      localStorage.removeItem(COMPLETED_KEY);
+    } else {
+      localStorage.setItem(COMPLETED_KEY, JSON.stringify(orders));
+    }
+  } catch {}
+}
+
 export function ActiveOrderProvider({ children }: { children: ReactNode }) {
   const [activeOrder, setActiveOrderState] = useState<ActiveOrder | null>(null);
+  const [completedOrders, setCompletedOrders] = useState<ActiveOrder[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [feedbackPrompted, setFeedbackPrompted] = useState<string[]>([]);
 
   useEffect(() => {
     setActiveOrderState(loadOrder());
+    setCompletedOrders(loadCompleted());
     try {
       const raw = localStorage.getItem(FEEDBACK_PROMPTED_KEY);
       if (raw) setFeedbackPrompted(JSON.parse(raw));
@@ -67,6 +94,20 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
     saveOrder(order);
   }, []);
 
+  const clearActiveOrder = useCallback(() => {
+    if (activeOrder) {
+      setCompletedOrders((prev) => {
+        const exists = prev.some((o) => o.orderId === activeOrder.orderId);
+        if (exists) return prev;
+        const next = [...prev, { ...activeOrder, status: "completed" }];
+        saveCompleted(next);
+        return next;
+      });
+    }
+    setActiveOrderState(null);
+    saveOrder(null);
+  }, [activeOrder]);
+
   const markOrderPrompted = useCallback((orderId: string) => {
     setFeedbackPrompted((prev) => {
       if (prev.includes(orderId)) return prev;
@@ -78,7 +119,6 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Supabase Realtime subscription + polling fallback
   const supabaseRef = useRef(createClient());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -87,19 +127,31 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
 
     const supabase = supabaseRef.current;
     const orderId = activeOrder.orderId;
-    let isSubscribed = false;
 
-    const updateStatus = (newStatus: string) => {
+    const updateFromPayload = (newRow: Record<string, unknown>) => {
+      const newStatus = newRow.status as string | undefined;
+      const newTableNumber = newRow.table_number as string | undefined;
+
       setActiveOrderState((prev) => {
         if (!prev) return null;
-        if (prev.status === newStatus) return prev;
-        const updated = { ...prev, status: newStatus };
+        let updated = { ...prev };
+        let changed = false;
+
+        if (newStatus && prev.status !== newStatus) {
+          updated.status = newStatus;
+          changed = true;
+        }
+        if (newTableNumber !== undefined && prev.tableNumber !== newTableNumber) {
+          updated.tableNumber = newTableNumber;
+          changed = true;
+        }
+
+        if (!changed) return prev;
         saveOrder(updated);
         return updated;
       });
     };
 
-    // ── Realtime subscription ──────────────────────────────────────────
     const channel = supabase
       .channel(`order-${orderId}`)
       .on(
@@ -111,18 +163,13 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
           filter: `id=eq.${orderId}`,
         },
         (payload) => {
-          const newRow = payload.new as Record<string, unknown>;
-          const newStatus = newRow.status as string | undefined;
-          if (newStatus) updateStatus(newStatus);
+          updateFromPayload(payload.new as Record<string, unknown>);
         },
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          isSubscribed = true;
-        }
+        if (status === "SUBSCRIBED") {}
       });
 
-    // ── Polling fallback (every 10s) ───────────────────────────────────
     const poll = async () => {
       try {
         const res = await fetch(`/api/order-status?orderId=${orderId}`, {
@@ -130,17 +177,16 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.status) updateStatus(data.status);
+        updateFromPayload({
+          status: data?.status,
+          table_number: data?.tableNumber,
+        });
       } catch {}
     };
 
-    // Initial fetch to catch any changes since order was placed
     poll();
-
-    // Start polling
     pollIntervalRef.current = setInterval(poll, 10_000);
 
-    // ── Cleanup ────────────────────────────────────────────────────────
     return () => {
       channel.unsubscribe();
       supabase.removeChannel(channel);
@@ -153,14 +199,14 @@ export function ActiveOrderProvider({ children }: { children: ReactNode }) {
 
   if (!hydrated) {
     return (
-      <ActiveOrderContext.Provider value={{ activeOrder: null, setActiveOrder, feedbackPrompted: [], markOrderPrompted }}>
+      <ActiveOrderContext.Provider value={{ activeOrder: null, setActiveOrder, clearActiveOrder, completedOrders: [], feedbackPrompted: [], markOrderPrompted }}>
         {children}
       </ActiveOrderContext.Provider>
     );
   }
 
   return (
-    <ActiveOrderContext.Provider value={{ activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted }}>
+    <ActiveOrderContext.Provider value={{ activeOrder, setActiveOrder, clearActiveOrder, completedOrders, feedbackPrompted, markOrderPrompted }}>
       {children}
     </ActiveOrderContext.Provider>
   );

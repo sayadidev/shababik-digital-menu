@@ -9,6 +9,7 @@ import type { OrderRow, OrderItemRow } from "@/lib/actions/orders";
 import { formatCurrency } from "@/lib/format-currency";
 import type { Currency, Table } from "@/types/database";
 import ProLockedScreen from "@/components/admin/ProLockedScreen";
+import AddItemsModal from "@/components/admin/AddItemsModal";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 type Tab = "pending" | "kds" | "history";
@@ -324,6 +325,7 @@ export default function OrdersPage() {
   const [tableSearch, setTableSearch] = useState("");
   const [changeTableLoading, setChangeTableLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [addItemsOrderId, setAddItemsOrderId] = useState<string | null>(null);
 
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
@@ -690,7 +692,8 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {pendingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
+                  <div key={order.id} className="space-y-2">
+                  <OrderCard order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
                     {
                       label: t(locale, "Accept", "قبول"),
                       onClick: () => handleStatusUpdate(order.id, "processing"),
@@ -704,6 +707,15 @@ export default function OrdersPage() {
                       style: { backgroundColor: "#fce8e8", color: "#b55a5a" },
                     },
                   ]} />
+                  <button
+                    type="button"
+                    onClick={() => setAddItemsOrderId(order.id)}
+                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] border-0"
+                    style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
+                  >
+                    {t(locale, "Edit / Add Items", "تعديل / إضافة أصناف")}
+                  </button>
+                  </div>
                 ))}
               </div>
             )
@@ -720,7 +732,8 @@ export default function OrdersPage() {
             ) : (
               <div className="space-y-3">
                 {processingOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
+                  <div key={order.id} className="space-y-2">
+                  <OrderCard order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
                     {
                       label: t(locale, "Ready", "جاهز"),
                       onClick: () => handleStatusUpdate(order.id, "completed"),
@@ -728,6 +741,15 @@ export default function OrdersPage() {
                       style: { backgroundColor: "#5a8a3a", color: "#fff" },
                     },
                   ]} />
+                  <button
+                    type="button"
+                    onClick={() => setAddItemsOrderId(order.id)}
+                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] border-0"
+                    style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
+                  >
+                    {t(locale, "Edit / Add Items", "تعديل / إضافة أصناف")}
+                  </button>
+                  </div>
                 ))}
               </div>
             )
@@ -850,6 +872,20 @@ export default function OrdersPage() {
             {toast.message}
           </div>
         </div>
+      )}
+
+      {/* Add Items Modal */}
+      {addItemsOrderId && (
+        <AddItemsModal
+          orderId={addItemsOrderId}
+          locale={locale}
+          onClose={() => setAddItemsOrderId(null)}
+          onSuccess={() => {
+            setAddItemsOrderId(null);
+            fetchActiveOrders();
+            setToast({ message: t(locale, "Items added to order", "تمت إضافة الأصناف للطلب بنجاح"), type: "success" });
+          }}
+        />
       )}
 
       {/* Change Table Bottom Sheet */}

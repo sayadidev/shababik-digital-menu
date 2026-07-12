@@ -10,6 +10,7 @@ import ItemDetailSheet from "@/components/menu/ItemDetailSheet";
 import AddToCartSheet from "@/components/menu/AddToCartSheet";
 import FloatingCart from "@/components/menu/FloatingCart";
 import FloatingActiveOrder from "@/components/menu/FloatingActiveOrder";
+import CompletedOrders from "@/components/menu/CompletedOrders";
 import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
 import { GlobeIcon } from "@/components/admin/icons";
@@ -698,6 +699,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
                 onClose={() => setAddToCartItem(null)}
               />
               <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
+              <CompletedOrders locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
               <FloatingCart locale={locale} tableNumber={tableNumber} secureToken={tParam} activeCurrency={activeCurrency} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
               {reviewOpen && (
                 <CartReviewSheet tableNumber={tableNumber} secureToken={tParam} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />

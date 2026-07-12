@@ -499,3 +499,145 @@ export async function updateOrderTable(
   revalidatePath("/admin/orders");
   return { success: true };
 }
+
+export async function addItemsToOrder(
+  orderId: string,
+  newItems: { name: string; quantity: number; notes?: string; variant?: string }[],
+  additionalUsd: number,
+  additionalSyp: number,
+  additionalTry: number,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAuth();
+
+  if (!orderId || typeof orderId !== "string") {
+    return { success: false, error: "Invalid order ID" };
+  }
+
+  if (!newItems || newItems.length === 0) {
+    return { success: false, error: "No items to add" };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, status, total_usd, total_syp, total_try")
+    .eq("id", orderId)
+    .single();
+
+  if (orderErr || !order) {
+    return { success: false, error: "Order not found" };
+  }
+
+  if (order.status !== "pending" && order.status !== "processing") {
+    return { success: false, error: "Can only modify active orders" };
+  }
+
+  let computedUsd = 0;
+  let computedSyp = 0;
+  let computedTry = 0;
+
+  for (const item of newItems) {
+    if (!item.name || item.name.trim().length === 0) {
+      return { success: false, error: "Item name is required" };
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      return { success: false, error: `Invalid quantity for "${item.name}"` };
+    }
+
+    let query = supabase
+      .from("item_variants")
+      .select("price_usd, price_syp, price_try, size_name_en, size_name_ar, items!inner(name_en, name_ar)")
+      .eq("items.name_en", item.name)
+      .eq("items.is_active", true);
+
+    if (item.variant) {
+      query = query.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
+    }
+
+    const { data: variants } = await query;
+
+    if (!variants || variants.length === 0) {
+      let fallbackQuery = supabase
+        .from("item_variants")
+        .select("price_usd, price_syp, price_try, size_name_en, size_name_ar, items!inner(name_en, name_ar)")
+        .eq("items.name_ar", item.name)
+        .eq("items.is_active", true);
+
+      if (item.variant) {
+        fallbackQuery = fallbackQuery.or(`size_name_en.eq."${item.variant.replace(/"/g, '""')}",size_name_ar.eq."${item.variant.replace(/"/g, '""')}"`);
+      }
+
+      const { data: fallback } = await fallbackQuery;
+      if (!fallback || fallback.length === 0) {
+        return { success: false, error: `Item "${item.name}" not found in menu` };
+      }
+
+      const v = item.variant
+        ? fallback.find(
+          (r: any) =>
+            r.size_name_en === item.variant || r.size_name_ar === item.variant,
+        )
+        : fallback[0];
+
+      if (!v) {
+        return { success: false, error: `Variant "${item.variant}" not found for "${item.name}"` };
+      }
+
+      computedUsd += (v.price_usd ?? 0) * item.quantity;
+      computedSyp += (v.price_syp ?? 0) * item.quantity;
+      computedTry += (v.price_try ?? 0) * item.quantity;
+    } else {
+      const v = item.variant
+        ? variants.find(
+          (r: any) =>
+            r.size_name_en === item.variant || r.size_name_ar === item.variant,
+        )
+        : variants[0];
+
+      if (!v) {
+        return { success: false, error: `Variant "${item.variant}" not found for "${item.name}"` };
+      }
+
+      computedUsd += (v.price_usd ?? 0) * item.quantity;
+      computedSyp += (v.price_syp ?? 0) * item.quantity;
+      computedTry += (v.price_try ?? 0) * item.quantity;
+    }
+  }
+
+  computedUsd = Math.round(computedUsd * 100) / 100;
+
+  const orderItems = newItems.map((item) => ({
+    order_id: orderId,
+    item_name: item.name,
+    variant_name: item.variant || null,
+    quantity: item.quantity,
+    notes: item.notes || null,
+  }));
+
+  const { error: itemsErr } = await supabase
+    .from("order_items")
+    .insert(orderItems);
+
+  if (itemsErr) {
+    return { success: false, error: itemsErr.message };
+  }
+
+  const { error: updateErr } = await supabase
+    .from("orders")
+    .update({
+      total_usd: (order.total_usd ?? 0) + computedUsd,
+      total_syp: (order.total_syp ?? 0) + computedSyp,
+      total_try: (order.total_try ?? 0) + computedTry,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+
+  if (updateErr) {
+    console.error("addItemsToOrder update error:", updateErr.message);
+    return { success: false, error: updateErr.message };
+  }
+
+  revalidatePath("/admin/orders");
+  return { success: true };
+}

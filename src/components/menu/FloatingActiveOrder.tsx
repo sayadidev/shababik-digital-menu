@@ -55,7 +55,7 @@ function getStatusConfig(status: string): StatusConfig {
 }
 
 export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd = true }: { locale: string; activeCurrency: Currency; enableUsd?: boolean }) {
-  const { activeOrder, setActiveOrder, feedbackPrompted, markOrderPrompted } = useActiveOrder();
+  const { activeOrder, setActiveOrder, clearActiveOrder, completedOrders, feedbackPrompted, markOrderPrompted } = useActiveOrder();
   const [showModal, setShowModal] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [rating, setRating] = useState(0);
@@ -121,7 +121,7 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
   const handleFinalDismiss = () => {
     setIsMinimized(false);
     markOrderPrompted(activeOrder.orderId);
-    setActiveOrder(null);
+    clearActiveOrder();
     setShowModal(false);
     setRating(0);
     setFeedbackText("");

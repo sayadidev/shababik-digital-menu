@@ -791,17 +791,14 @@ export default function OrdersPage() {
           {/* ── Billing Tab ── */}
           {tab === "billing" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
+              <div className="sticky top-0 z-10 bg-background pb-3 pt-1">
+                <div className="relative">
                   <input
                     type="text"
                     value={billingQuery}
                     onChange={(e) => handleBillingSearch(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleBillingSearch(billingQuery);
-                    }}
                     placeholder={t(locale, "Search by name or table...", "ابحث باسم الزبون أو الطاولة...")}
-                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all"
+                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all shadow-sm"
                   />
                   <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -823,109 +820,159 @@ export default function OrdersPage() {
                   </p>
                 </div>
               ) : (
-                <>
+                <div className="space-y-4">
                   {billingResults.length > 0 && (
-                    <div className="flex items-center gap-3 px-1">
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#8a7a6a" }}>
+                    <div className="flex items-center justify-between px-1 py-2 border-b border-[#E8E6E1]">
+                      <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
                         {t(locale, "Grand Total", "إجمالي الفاتورة")}
                       </span>
-                      <span className="text-lg font-bold tabular-nums" style={{ color: "#3B2818" }}>
-                        {formatCurrency(
-                          activeCurrency === "TRY"
-                            ? billingResults.reduce((s, g) => s + g.grandTotalTry, 0)
-                            : billingResults.reduce((s, g) => s + g.grandTotalSyp, 0),
-                          activeCurrency,
-                          locale,
+                      <div className="text-right">
+                        <p className="text-lg font-bold tabular-nums" style={{ color: "#3B2818" }}>
+                          {formatCurrency(
+                            activeCurrency === "TRY"
+                              ? billingResults.reduce((s, g) => s + g.grandTotalTry, 0)
+                              : billingResults.reduce((s, g) => s + g.grandTotalSyp, 0),
+                            activeCurrency,
+                            locale,
+                          )}
+                        </p>
+                        {enableUsd && billingResults.reduce((s, g) => s + g.grandTotalUsd, 0) > 0 && (
+                          <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
+                            {formatCurrency(billingResults.reduce((s, g) => s + g.grandTotalUsd, 0), "USD", locale)}
+                          </p>
                         )}
-                      </span>
+                      </div>
                     </div>
                   )}
 
-                  <div className="space-y-4">
-                    {billingResults.map((group) => {
-                      const hasMultiple = group.orders.length > 1;
-                      const latest = group.orders[0];
-                      const older = group.orders.slice(1);
-                      const isExpanded = expandedSessions.has(group.sessionId);
+                  {billingResults.map((group) => {
+                    const hasMultiple = group.orders.length > 1;
+                    const isExpanded = expandedSessions.has(group.sessionId);
 
-                      return (
-                        <div key={group.sessionId} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
-                          <div className="p-4">
-                            {hasMultiple && (
-                              <div className="mb-3">
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                  style={{ backgroundColor: "#fef3c7", color: "#b45309" }}>
-                                  {t(locale, "Multiple orders from this customer", "طلبات متعددة لنفس الزبون")}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between mb-1">
-                              <div>
-                                <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
-                                  {group.customerName || (locale === "ar" ? "بدون اسم" : "No Name")}
-                                </span>
-                                <span className="text-xs ml-2" style={{ color: "#8a7a6a" }}>
-                                  {t(locale, "Table", "الطاولة")} {group.tableNumber}
-                                </span>
-                              </div>
-                              <span className="text-xs font-mono" style={{ color: "#8a7a6a" }}>
-                                {formatTime(latest.created_at)}
+                    return (
+                      <div key={group.sessionId} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
+                        <div className="p-4">
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                                {group.customerName || (locale === "ar" ? "بدون اسم" : "No Name")}
+                              </span>
+                              <span className="text-xs ml-2" style={{ color: "#8a7a6a" }}>
+                                {t(locale, "Table", "الطاولة")} {group.tableNumber}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                              <span className="text-xs font-bold" style={{ color: "#8a7a6a" }}>
-                                {hasMultiple
-                                  ? t(locale, `Session total (${group.orders.length} orders)`, `إجمالي الجلسة (${group.orders.length} طلبات)`)
-                                  : t(locale, "Total", "المجموع")}
-                              </span>
-                              <div className="text-right">
-                                <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>
-                                  {formatCurrency(
-                                    activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
-                                    activeCurrency,
-                                    locale,
-                                  )}
-                                </p>
-                                {enableUsd && group.grandTotalUsd > 0 && (
-                                  <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
-                                    {formatCurrency(group.grandTotalUsd, "USD", locale)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
                             {hasMultiple && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setExpandedSessions((prev) => {
-                                    const next = new Set(prev);
-                                    if (next.has(group.sessionId)) next.delete(group.sessionId);
-                                    else next.add(group.sessionId);
-                                    return next;
-                                  });
-                                }}
-                                className="w-full mt-2 py-1.5 rounded-lg text-xs font-semibold transition-all border-0 flex items-center justify-center gap-1"
-                                style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
-                              >
-                                {isExpanded
-                                  ? t(locale, "Collapse", "إخفاء التفاصيل")
-                                  : t(locale, "Show all orders", "عرض كل الطلبات")}
-                                <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                style={{ backgroundColor: "#fef3c7", color: "#b45309" }}>
+                                {t(locale, "Multiple orders from this customer", "طلبات متعددة لنفس الزبون")}
+                              </span>
                             )}
                           </div>
 
-                          {hasMultiple && isExpanded && older.map((order) => (
-                            <OrderCard key={order.id} order={toOrder(order)} locale={locale} activeCurrency={activeCurrency} />
-                          ))}
+                          {/* All orders (receipt-style) */}
+                          {group.orders.map((order, oi) => {
+                            const displayOrder = toOrder(order);
+                            const showAll = !hasMultiple || oi === 0 || isExpanded;
+
+                            if (!showAll) return null;
+
+                            return (
+                              <div key={order.id}>
+                                {oi > 0 && <hr className="border-dashed border-[#dcc8b4]/40 my-3" />}
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[10px] font-medium" style={{ color: "#8a7a6a" }}>
+                                    {locale === "ar" ? "الطلب" : "Order"} {hasMultiple ? oi + 1 : ""}
+                                    {" · "}
+                                    {formatTime(order.created_at)}
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {displayOrder.items.map((item, ii) => (
+                                    <div key={ii} className="flex items-start justify-between text-xs">
+                                      <div className="min-w-0 flex-1">
+                                        <span style={{ color: "#3B2818" }}>
+                                          <span className="font-bold">{item.quantity}x</span>{" "}
+                                          {item.name}
+                                        </span>
+                                        {item.variant && (
+                                          <span style={{ color: "#8a7a6a" }}>
+                                            {" · "}{item.variant}
+                                          </span>
+                                        )}
+                                        {item.notes && (
+                                          <span className="block text-[10px] italic" style={{ color: "#dc2626" }}>
+                                            {item.notes}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="flex justify-end mt-1.5">
+                                  <span className="text-xs font-bold tabular-nums" style={{ color: "#5a4a3a" }}>
+                                    {formatCurrency(
+                                      activeCurrency === "TRY" ? order.total_try : order.total_syp,
+                                      activeCurrency,
+                                      locale,
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Accordion toggle for older orders */}
+                          {hasMultiple && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandedSessions((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(group.sessionId)) next.delete(group.sessionId);
+                                  else next.add(group.sessionId);
+                                  return next;
+                                });
+                              }}
+                              className="w-full mt-3 py-1.5 rounded-lg text-xs font-semibold transition-all border-0 flex items-center justify-center gap-1"
+                              style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
+                            >
+                              {isExpanded
+                                ? t(locale, "Collapse", "إخفاء التفاصيل")
+                                : t(locale, `Show ${group.orders.length - 1} more orders`, `عرض ${group.orders.length - 1} طلبات إضافية`)}
+                              <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                </>
+
+                        {/* Grand total for this session */}
+                        <div className="px-4 py-3 border-t border-[#E8E6E1]" style={{ backgroundColor: "#faf7f0" }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                              {t(locale, "Session Total", "إجمالي الجلسة")}
+                            </span>
+                            <div className="text-right">
+                              <p className="text-base font-bold tabular-nums" style={{ color: "#3B2818" }}>
+                                {formatCurrency(
+                                  activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
+                                  activeCurrency,
+                                  locale,
+                                )}
+                              </p>
+                              {enableUsd && group.grandTotalUsd > 0 && (
+                                <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
+                                  {formatCurrency(group.grandTotalUsd, "USD", locale)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}

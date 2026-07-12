@@ -6,6 +6,7 @@ import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { useToast } from "./Toast";
 import { createOrder } from "@/lib/actions/orders";
 import { formatCurrency } from "@/lib/format-currency";
+import { getSessionId } from "@/lib/session";
 import type { Currency } from "@/types/database";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
@@ -114,6 +115,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
       secure_token: secureToken ?? undefined,
       table_number: effectiveTable ?? undefined,
       customer_name: customerName.trim(),
+      session_id: getSessionId(),
       items: items.map((item) => ({
         name: locale === "ar" ? item.nameAr : item.nameEn,
         quantity: item.quantity,

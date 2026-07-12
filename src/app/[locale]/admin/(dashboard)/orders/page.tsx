@@ -3,16 +3,16 @@
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { updateOrderStatus, updateOrderTable } from "@/lib/actions/orders";
+import { updateOrderStatus, updateOrderTable, searchAndGroupOrders } from "@/lib/actions/orders";
 import { getTables } from "@/lib/actions/tables";
-import type { OrderRow, OrderItemRow } from "@/lib/actions/orders";
+import type { OrderRow, OrderItemRow, GroupedSession } from "@/lib/actions/orders";
 import { formatCurrency } from "@/lib/format-currency";
 import type { Currency, Table } from "@/types/database";
 import ProLockedScreen from "@/components/admin/ProLockedScreen";
 import AddItemsModal from "@/components/admin/AddItemsModal";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
-type Tab = "pending" | "kds" | "history";
+type Tab = "pending" | "kds" | "billing" | "history";
 
 interface Order {
   id: string;
@@ -335,6 +335,12 @@ export default function OrdersPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [addItemsOrderId, setAddItemsOrderId] = useState<string | null>(null);
 
+  const [billingQuery, setBillingQuery] = useState("");
+  const [billingResults, setBillingResults] = useState<GroupedSession[]>([]);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingSearched, setBillingSearched] = useState(false);
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -545,6 +551,24 @@ export default function OrdersPage() {
     } catch {}
   }, []);
 
+  const handleBillingSearch = useCallback(async (q: string) => {
+    setBillingQuery(q);
+    if (!q.trim()) {
+      setBillingResults([]);
+      setBillingSearched(false);
+      return;
+    }
+    setBillingLoading(true);
+    setBillingSearched(true);
+    try {
+      const res = await searchAndGroupOrders(q);
+      setBillingResults(res.grouped);
+    } catch {
+      setBillingResults([]);
+    }
+    setBillingLoading(false);
+  }, []);
+
   const handleChangeTable = useCallback(async (secureToken: string) => {
     if (!changeTableOrderId) return;
     setChangeTableLoading(true);
@@ -630,6 +654,7 @@ export default function OrdersPage() {
   const TABS: { key: Tab; labelEn: string; labelAr: string; count?: number }[] = [
     { key: "pending", labelEn: "Pending Orders", labelAr: "قيد الانتظار", count: pendingOrders.length },
     { key: "kds", labelEn: "Kitchen Display", labelAr: "شاشة المطبخ", count: processingOrders.length },
+    { key: "billing", labelEn: "Billing", labelAr: "الفاتورة" },
     ...(isStaff ? [] : [{ key: "history" as Tab, labelEn: "Order History", labelAr: "سجل الطلبات" }]),
   ];
 
@@ -761,6 +786,148 @@ export default function OrdersPage() {
                 ))}
               </div>
             )
+          )}
+
+          {/* ── Billing Tab ── */}
+          {tab === "billing" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={billingQuery}
+                    onChange={(e) => handleBillingSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleBillingSearch(billingQuery);
+                    }}
+                    placeholder={t(locale, "Search by name or table...", "ابحث باسم الزبون أو الطاولة...")}
+                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all"
+                  />
+                  <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+
+              {billingLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <svg className="w-6 h-6 animate-spin" style={{ color: "#9a6a3a" }} viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : billingSearched && billingResults.length === 0 ? (
+                <div className="bg-surface rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
+                  <p className="text-sm" style={{ color: "#8a7a6a" }}>
+                    {t(locale, "No results found", "لم يتم العثور على نتائج")}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {billingResults.length > 0 && (
+                    <div className="flex items-center gap-3 px-1">
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#8a7a6a" }}>
+                        {t(locale, "Grand Total", "إجمالي الفاتورة")}
+                      </span>
+                      <span className="text-lg font-bold tabular-nums" style={{ color: "#3B2818" }}>
+                        {formatCurrency(
+                          activeCurrency === "TRY"
+                            ? billingResults.reduce((s, g) => s + g.grandTotalTry, 0)
+                            : billingResults.reduce((s, g) => s + g.grandTotalSyp, 0),
+                          activeCurrency,
+                          locale,
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {billingResults.map((group) => {
+                      const hasMultiple = group.orders.length > 1;
+                      const latest = group.orders[0];
+                      const older = group.orders.slice(1);
+                      const isExpanded = expandedSessions.has(group.sessionId);
+
+                      return (
+                        <div key={group.sessionId} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
+                          <div className="p-4">
+                            {hasMultiple && (
+                              <div className="mb-3">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                  style={{ backgroundColor: "#fef3c7", color: "#b45309" }}>
+                                  {t(locale, "Multiple orders from this customer", "طلبات متعددة لنفس الزبون")}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between mb-1">
+                              <div>
+                                <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+                                  {group.customerName || (locale === "ar" ? "بدون اسم" : "No Name")}
+                                </span>
+                                <span className="text-xs ml-2" style={{ color: "#8a7a6a" }}>
+                                  {t(locale, "Table", "الطاولة")} {group.tableNumber}
+                                </span>
+                              </div>
+                              <span className="text-xs font-mono" style={{ color: "#8a7a6a" }}>
+                                {formatTime(latest.created_at)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                              <span className="text-xs font-bold" style={{ color: "#8a7a6a" }}>
+                                {hasMultiple
+                                  ? t(locale, `Session total (${group.orders.length} orders)`, `إجمالي الجلسة (${group.orders.length} طلبات)`)
+                                  : t(locale, "Total", "المجموع")}
+                              </span>
+                              <div className="text-right">
+                                <p className="text-sm font-bold tabular-nums" style={{ color: "#3B2818" }}>
+                                  {formatCurrency(
+                                    activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
+                                    activeCurrency,
+                                    locale,
+                                  )}
+                                </p>
+                                {enableUsd && group.grandTotalUsd > 0 && (
+                                  <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
+                                    {formatCurrency(group.grandTotalUsd, "USD", locale)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {hasMultiple && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedSessions((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(group.sessionId)) next.delete(group.sessionId);
+                                    else next.add(group.sessionId);
+                                    return next;
+                                  });
+                                }}
+                                className="w-full mt-2 py-1.5 rounded-lg text-xs font-semibold transition-all border-0 flex items-center justify-center gap-1"
+                                style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
+                              >
+                                {isExpanded
+                                  ? t(locale, "Collapse", "إخفاء التفاصيل")
+                                  : t(locale, "Show all orders", "عرض كل الطلبات")}
+                                <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+
+                          {hasMultiple && isExpanded && older.map((order) => (
+                            <OrderCard key={order.id} order={toOrder(order)} locale={locale} activeCurrency={activeCurrency} />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           {/* ── History & Calendar Tab ── */}

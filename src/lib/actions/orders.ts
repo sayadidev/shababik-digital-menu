@@ -24,6 +24,7 @@ export interface OrderRow {
   table_number: string;
   secure_token: string | null;
   customer_name: string | null;
+  session_id: string | null;
   status: OrderStatus;
   total_usd: number;
   total_syp: number;
@@ -121,6 +122,7 @@ export async function createOrder(input: {
   secure_token?: string | null;
   table_number?: string;
   customer_name?: string | null;
+  session_id?: string | null;
   items: { name: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
   total_syp: number;
@@ -316,6 +318,7 @@ export async function createOrder(input: {
         table_number: tableNum,
         secure_token: input.secure_token ?? null,
         customer_name: input.customer_name?.trim() || null,
+        session_id: input.session_id || null,
         status: "pending",
         total_usd: computedUsd,
         total_syp: computedSyp,
@@ -642,4 +645,105 @@ export async function addItemsToOrder(
 
   revalidatePath("/admin/orders");
   return { success: true };
+}
+
+export interface GroupedSession {
+  sessionId: string;
+  customerName: string;
+  tableNumber: string;
+  orders: OrderRow[];
+  grandTotalUsd: number;
+  grandTotalSyp: number;
+  grandTotalTry: number;
+}
+
+export async function searchAndGroupOrders(
+  query: string,
+): Promise<{ grouped: GroupedSession[]; totalOrders: number }> {
+  await requireAuth();
+
+  if (!query || query.trim().length === 0) {
+    return { grouped: [], totalOrders: 0 };
+  }
+
+  const supabase = createAdminClient();
+  const today = new Date().toISOString().split("T")[0];
+  const start = `${today}T00:00:00Z`;
+  const end = `${today}T23:59:59Z`;
+
+  const trimmed = query.trim();
+  const isTableSearch = /^\d+$/.test(trimmed);
+
+  let builder = supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .gte("created_at", start)
+    .lte("created_at", end)
+    .order("created_at", { ascending: false });
+
+  if (isTableSearch) {
+    builder = builder.eq("table_number", trimmed);
+  } else {
+    builder = builder.or(`customer_name.ilike.%${trimmed}%,table_number.ilike.%${trimmed}%`);
+  }
+
+  const { data, error } = await builder;
+
+  if (error || !data) {
+    console.error("searchAndGroupOrders error:", error?.message);
+    return { grouped: [], totalOrders: 0 };
+  }
+
+  const rows = data as OrderRow[];
+
+  const sessionMap = new Map<string, GroupedSession>();
+  const noSessionOrders: GroupedSession[] = [];
+
+  for (const row of rows) {
+    const key = row.session_id || `__nosession__${row.id}`;
+
+    if (!row.session_id) {
+      noSessionOrders.push({
+        sessionId: row.id,
+        customerName: row.customer_name ?? "",
+        tableNumber: row.table_number,
+        orders: [row],
+        grandTotalUsd: row.total_usd,
+        grandTotalSyp: row.total_syp,
+        grandTotalTry: row.total_try ?? 0,
+      });
+      continue;
+    }
+
+    if (sessionMap.has(key)) {
+      const g = sessionMap.get(key)!;
+      g.orders.push(row);
+      g.grandTotalUsd += row.total_usd;
+      g.grandTotalSyp += row.total_syp;
+      g.grandTotalTry += row.total_try ?? 0;
+    } else {
+      sessionMap.set(key, {
+        sessionId: key,
+        customerName: row.customer_name ?? "",
+        tableNumber: row.table_number,
+        orders: [row],
+        grandTotalUsd: row.total_usd,
+        grandTotalSyp: row.total_syp,
+        grandTotalTry: row.total_try ?? 0,
+      });
+    }
+  }
+
+  const grouped = [...sessionMap.values(), ...noSessionOrders]
+    .sort((a, b) => {
+      const aTime = new Date(a.orders[0].created_at).getTime();
+      const bTime = new Date(b.orders[0].created_at).getTime();
+      return bTime - aTime;
+    });
+
+  const grandTotalUsd = Math.round(
+    grouped.reduce((s, g) => s + g.grandTotalUsd, 0) * 100,
+  ) / 100;
+
+  return { grouped, totalOrders: rows.length };
 }

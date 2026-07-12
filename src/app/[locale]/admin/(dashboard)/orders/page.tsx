@@ -20,7 +20,7 @@ interface Order {
   secureToken: string | null;
   customerName: string | null;
   status: OrderStatus;
-  items: { name: string; variant?: string; quantity: number; notes?: string }[];
+  items: { name: string; variant?: string; quantity: number; notes?: string; isAddedLater?: boolean }[];
   totalUsd: number;
   totalSyp: number;
   totalTry: number;
@@ -45,6 +45,7 @@ function toOrder(row: OrderRow): Order {
       variant: oi.variant_name ?? undefined,
       quantity: oi.quantity,
       notes: oi.notes ?? undefined,
+      isAddedLater: oi.is_added_later ?? undefined,
     })),
     totalUsd: row.total_usd,
     totalSyp: row.total_syp,
@@ -191,7 +192,8 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
 
       <div className="divide-y divide-border/30">
         {order.items.map((item, i) => (
-          <div key={i} className="flex items-start justify-between py-1.5">
+          <div key={i} className={`flex items-start justify-between py-1.5 ${item.isAddedLater ? "rounded-lg px-2 -mx-2" : ""}`}
+            style={item.isAddedLater ? { backgroundColor: "#fef3c7", animation: "pulseAdded 2s ease-in-out infinite" } : undefined}>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
@@ -200,6 +202,12 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
                 <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
                   {item.name}
                 </span>
+                {item.isAddedLater && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold shrink-0 flex items-center gap-0.5"
+                    style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+                    🔔 {t(locale, "New Addition", "إضافة جديدة")}
+                  </span>
+                )}
               </div>
               {item.variant && (
                 <p className="text-xs ml-6 mt-0.5" style={{ color: "#8a7a6a" }}>
@@ -841,8 +849,8 @@ export default function OrdersPage() {
                             <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} showAudit showFeedback />
                           ))}
                         </>
-                      )}
-                    </div>
+      )}
+    </div>
                   )}
                 </>
               )}
@@ -977,6 +985,13 @@ export default function OrdersPage() {
           descriptionAr="نظام الطلبات متاح حصرياً في الباقة الاحترافية."
         />
       )}
+
+      <style>{`
+        @keyframes pulseAdded {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.85; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -16,6 +16,7 @@ export interface OrderItemRow {
   variant_name?: string | null;
   quantity: number;
   notes?: string | null;
+  is_added_later?: boolean | null;
 }
 
 export interface OrderRow {
@@ -613,6 +614,7 @@ export async function addItemsToOrder(
     variant_name: item.variant || null,
     quantity: item.quantity,
     notes: item.notes || null,
+    is_added_later: true,
   }));
 
   const { error: itemsErr } = await supabase

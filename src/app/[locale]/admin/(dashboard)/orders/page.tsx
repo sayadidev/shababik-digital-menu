@@ -1042,11 +1042,88 @@ export default function OrdersPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              const el = document.getElementById(`billing-group-${group.sessionId}`);
-                              if (!el) return;
-                              el.classList.add("print-invoice");
-                              window.print();
-                              setTimeout(() => el.classList.remove("print-invoice"), 100);
+                              const logoImg = document.querySelector('img[alt="Shababik"]') as HTMLImageElement | null;
+                              const logoUrl = logoImg?.src || "/shababik-solid-logo.png";
+                              const items = group.orders.flatMap((order) =>
+                                toOrder(order).items.map((item) => ({
+                                  qty: item.quantity,
+                                  name: item.name,
+                                  variant: item.variant || "",
+                                  price: formatCurrency(
+                                    (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
+                                    activeCurrency,
+                                    locale,
+                                  ),
+                                  hasPrice: (activeCurrency === "TRY" ? item.priceTry : item.priceSyp) != null,
+                                }))
+                              );
+                              const dateStr = new Date(group.orders[0].created_at)
+                                .toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" });
+                              const timeStr = formatTime(group.orders[0].created_at);
+                              const totalStr = formatCurrency(
+                                activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
+                                activeCurrency,
+                                locale,
+                              );
+                              const usdStr = group.grandTotalUsd > 0
+                                ? formatCurrency(group.grandTotalUsd, "USD", locale)
+                                : "";
+                              const customerStr = group.customerName || (locale === "ar" ? "—" : "—");
+                              const tableStr = group.tableNumber;
+                              const footerStr = locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit";
+
+                              const receiptHtml = `<!DOCTYPE html><html dir="${locale === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>
+                                * { margin: 0; padding: 0; box-sizing: border-box; }
+                                body { font-family: -apple-system, sans-serif; width: 80mm; margin: 0 auto; padding: 3mm; background: white; color: #1a1a1a; font-size: 10px; line-height: 1.4; }
+                                .logo { text-align: center; margin-bottom: 2mm; }
+                                .logo img { width: 120px; height: auto; filter: grayscale(100%); }
+                                .meta { text-align: center; margin-bottom: 2mm; }
+                                .meta p { font-size: 9px; color: #666; }
+                                .meta .info { font-size: 10px; font-weight: bold; color: #1a1a1a; margin-top: 1mm; }
+                                .divider { border: none; border-top: 1px dashed #999; margin: 2mm 0; }
+                                .item { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 0.5mm; }
+                                .item .desc { flex: 1; }
+                                .item .price { font-weight: bold; white-space: nowrap; }
+                                .total { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-top: 2mm; }
+                                .total .label { font-size: 11px; }
+                                .usd { text-align: right; font-size: 9px; color: #666; }
+                                .footer { text-align: center; font-size: 9px; color: #666; margin-top: 3mm; }
+                              </style></head><body>
+                                <div class="logo"><img src="${logoUrl}" alt="Logo"></div>
+                                <div class="meta">
+                                  <p>${dateStr}  ${timeStr}</p>
+                                  <p class="info">${locale === "ar" ? "الزبون" : "Customer"}: ${customerStr} | ${locale === "ar" ? "الطاولة" : "Table"}: ${tableStr}</p>
+                                </div>
+                                <hr class="divider">
+                                ${items.map((i) => `<div class="item"><span class="desc">${i.qty}x ${i.name}${i.variant ? ` (${i.variant})` : ""}</span>${i.hasPrice ? `<span class="price">${i.price}</span>` : ""}</div>`).join("")}
+                                <hr class="divider">
+                                <div class="total"><span class="label">${locale === "ar" ? "إجمالي الجلسة" : "Session Total"}</span><span>${totalStr}</span></div>
+                                ${usdStr ? `<div class="usd">${usdStr}</div>` : ""}
+                                <p class="footer">${footerStr}</p>
+                              </body></html>`;
+
+                              const iframe = document.createElement("iframe");
+                              iframe.style.position = "fixed";
+                              iframe.style.top = "0";
+                              iframe.style.left = "0";
+                              iframe.style.width = "100%";
+                              iframe.style.height = "100%";
+                              iframe.style.border = "none";
+                              iframe.style.zIndex = "9999";
+                              iframe.style.background = "white";
+                              document.body.appendChild(iframe);
+                              const doc = iframe.contentDocument || iframe.contentWindow!.document;
+                              doc.open();
+                              doc.write(receiptHtml);
+                              doc.close();
+                              iframe.contentWindow!.focus();
+                              iframe.onload = () => {
+                                iframe.contentWindow!.print();
+                              };
+                              setTimeout(() => {
+                                iframe.contentWindow!.print();
+                                setTimeout(() => document.body.removeChild(iframe), 500);
+                              }, 300);
                             }}
                             className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border-0 flex items-center justify-center gap-2"
                             style={{ backgroundColor: "#3B2818", color: "#fff" }}

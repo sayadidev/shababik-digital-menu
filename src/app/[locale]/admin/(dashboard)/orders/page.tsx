@@ -230,15 +230,10 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
             <span className="text-xs font-bold tabular-nums shrink-0 ml-2" style={{ color: "#3B2818" }}>
               {(() => {
                 const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
-                if (unitPrice != null) {
+                if (unitPrice != null && unitPrice > 0) {
                   return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
                 }
-                const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
-                const orderTotal = activeCurrency === "TRY" ? order.totalTry : order.totalSyp;
-                if (totalQty > 0) {
-                  return formatCurrency(Math.round((orderTotal / totalQty) * item.quantity), activeCurrency, locale);
-                }
-                return "";
+                return null;
               })()}
             </span>
           </div>
@@ -1006,27 +1001,14 @@ export default function OrdersPage() {
                                     <span className="shrink-0 font-bold tabular-nums text-gray-800">
                                       {(() => {
                                         const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
-                                        if (unitPrice != null) {
+                                        if (unitPrice != null && unitPrice > 0) {
                                           return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
                                         }
-                                        const displayOrder = toOrder(order);
-                                        const totalQty = displayOrder.items.reduce((s, i) => s + i.quantity, 0);
-                                        const orderTotal = activeCurrency === "TRY" ? order.total_try : order.total_syp;
-                                        if (totalQty > 0) {
-                                          return formatCurrency(Math.round((orderTotal / totalQty) * item.quantity), activeCurrency, locale);
-                                        }
-                                        return "";
+                                        return null;
                                       })()}
                                     </span>
                                   </div>
                                 ))}
-                              </div>
-                              <div className="text-right text-[10px] font-bold tabular-nums text-gray-600 mt-0.5">
-                                {formatCurrency(
-                                  activeCurrency === "TRY" ? order.total_try : order.total_syp,
-                                  activeCurrency,
-                                  locale,
-                                )}
                               </div>
                             </div>
                           ))}

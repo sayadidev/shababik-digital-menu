@@ -81,7 +81,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center"
       onClick={handleClose}
       onKeyDown={handleKeyDown}
       role="dialog"

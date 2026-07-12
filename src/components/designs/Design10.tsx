@@ -13,6 +13,7 @@ import FloatingActiveOrder from "@/components/menu/FloatingActiveOrder";
 import CompletedOrders from "@/components/menu/CompletedOrders";
 import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
+import { useActiveOrder } from "@/context/ActiveOrderContext";
 import { GlobeIcon } from "@/components/admin/icons";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
 import { formatCurrency, getPriceForCurrency, getBeforePriceForCurrency } from "@/lib/format-currency";
@@ -110,6 +111,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
   const orderingEnabled = data.settings?.tier === "pro" && data.settings?.ordering_enabled;
   const enableUsd = data.settings?.enable_usd ?? true;
   const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
+  const { activeOrder } = useActiveOrder();
 
   useEffect(() => { trackMenuLoad().catch(() => {}); setTimeout(() => setLoaded(true), 100); }, []);
   useEffect(() => { setMounted(true); }, []);
@@ -276,7 +278,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: P.bg }}>
+    <div className={`min-h-screen ${activeOrder ? "pb-24" : ""}`} style={{ backgroundColor: P.bg }}>
       {/* ── Hero — logo + 3 featured glassy cards ── */}
       <section ref={heroRef}
         className="relative flex flex-col items-center overflow-hidden min-h-[92dvh] md:min-h-[100dvh] pt-[10dvh] md:pt-[16dvh]"

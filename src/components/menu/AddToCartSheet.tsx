@@ -133,10 +133,10 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
         <div
           key={item.id}
         className="rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col bg-[#f5efdf] overflow-hidden"
-        style={{ maxHeight: "90dvh" }}
+        style={{ maxHeight: "85dvh" }}
       >
         <div className="flex-1 overflow-y-auto" dir={isRtl ? "rtl" : "ltr"}>
-          <div className="relative shrink-0 w-full aspect-video overflow-hidden bg-[#D4B895]/20 rounded-t-3xl md:rounded-t-3xl">
+          <div className="relative shrink-0 w-full overflow-hidden bg-[#D4B895]/20 rounded-t-3xl md:rounded-t-3xl">
             {!imageLoaded && displayImage && (
               <div className="absolute inset-0 animate-pulse bg-[#D4B895]/30" />
             )}
@@ -147,7 +147,7 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
                 alt={imageAlt}
                 fetchPriority="high"
                 onLoad={() => setImageLoaded(true)}
-                className="w-full h-full object-cover"
+                className="w-full h-auto"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

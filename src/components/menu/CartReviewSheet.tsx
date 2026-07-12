@@ -97,7 +97,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
             const remaining = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
             showToast(
               locale === "ar"
-                ? `عذراً، يرجى الانتظار دقيقتين للطلب عبر النظام، أو تفضل بمناداة أحد الموظفين لخدمتك فوراً.`
+                ? `عذراً، يرجى الانتظار ${remaining} دقيقة قبل إرسال طلب جديد، أو تفضل بمناداة أحد الموظفين لخدمتك فوراً.`
                 : `Please wait ${remaining} min before ordering again`,
               "error",
             );

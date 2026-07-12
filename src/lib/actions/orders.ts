@@ -282,7 +282,7 @@ export async function createOrder(input: {
       }
     }
 
-    // ── Server-side cooldown check (per-table-number) ──
+    // ── Server-side cooldown check (per-session-id) ──
     // Bypass for authenticated staff/admin
     let isAdmin = false;
     try {
@@ -305,18 +305,21 @@ export async function createOrder(input: {
       // Not authenticated — proceed with cooldown
     }
 
-    if (!isAdmin) {
+    if (!isAdmin && input.session_id) {
       const { data: recentOrders } = await supabase
         .from("orders")
         .select("created_at")
-        .eq("table_number", tableNum)
+        .eq("session_id", input.session_id)
         .order("created_at", { ascending: false })
         .limit(1);
 
       if (recentOrders && recentOrders.length > 0) {
         const lastOrderTime = new Date(recentOrders[0].created_at).getTime();
-        if (Date.now() - lastOrderTime < COOLDOWN_MS) {
-          throw new Error("يرجى الانتظار 15 دقيقة قبل إرسال طلب جديد لنفس الطاولة.");
+        const remaining = Math.ceil((COOLDOWN_MS - (Date.now() - lastOrderTime)) / 60000);
+        if (remaining > 0) {
+          throw new Error(
+            `عذراً، يرجى الانتظار ${remaining} دقيقة قبل إرسال طلب جديد، أو تفضل بمناداة أحد الموظفين لخدمتك فوراً.`
+          );
         }
       }
     }

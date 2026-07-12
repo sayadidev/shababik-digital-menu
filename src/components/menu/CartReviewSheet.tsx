@@ -29,6 +29,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
   const [submitting, setSubmitting] = useState(false);
   const [editableTable, setEditableTable] = useState(tableNumber ?? "1");
   const [customerName, setCustomerName] = useState("");
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const isRtl = locale === "ar";
   const { show: showToast } = useToast();
 
@@ -41,6 +42,17 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
       document.body.style.overflow = "";
     };
   }, []);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds > 0 ? 1 : 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -95,13 +107,8 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
         if (lastTimestamp) {
           const elapsed = Date.now() - parseInt(lastTimestamp, 10);
           if (elapsed < COOLDOWN_MS) {
-            const remaining = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
-            showToast(
-              locale === "ar"
-                ? `عذراً، يرجى الانتظار ${remaining} دقيقة قبل إرسال طلب جديد، أو تفضل بمناداة أحد الموظفين لخدمتك فوراً.`
-                : `Please wait ${remaining} min before ordering again`,
-              "error",
-            );
+            const remaining = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+            setCooldownSeconds(remaining);
             return;
           }
         }
@@ -352,20 +359,33 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full min-h-[48px] bg-[#5A4A3A] text-white py-3.5 rounded-xl font-semibold mb-2 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {submitting && (
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
-              {locale === "ar" ? "تأكيد وإرسال للمطبخ" : "Confirm & Send"}
-            </button>
+            {cooldownSeconds > 0 ? (
+              <div className="mb-2">
+                <div className="w-full min-h-[48px] bg-amber-50 border border-amber-200 text-amber-800 py-3.5 rounded-xl font-semibold text-sm text-center">
+                  {locale === "ar"
+                    ? `عذراً، يرجى الانتظار ${Math.ceil(cooldownSeconds / 60)} دقيقة قبل إرسال طلب جديد، أو تفضل بمناداة أحد الموظفين لخدمتك فوراً.`
+                    : `Please wait ${Math.ceil(cooldownSeconds / 60)} min before ordering again, or ask a staff member for immediate service.`}
+                  <span className="block text-xs mt-1 opacity-70 tabular-nums">
+                    {Math.floor(cooldownSeconds / 60)}:{(cooldownSeconds % 60).toString().padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full min-h-[48px] bg-[#5A4A3A] text-white py-3.5 rounded-xl font-semibold mb-2 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submitting && (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
+                {locale === "ar" ? "تأكيد وإرسال للمطبخ" : "Confirm & Send"}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleClose}

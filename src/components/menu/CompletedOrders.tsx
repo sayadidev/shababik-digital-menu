@@ -17,8 +17,8 @@ export default function CompletedOrders({ locale, activeCurrency, enableUsd = tr
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[100px] left-4 right-4 z-30 mx-auto bg-white border border-[#E8E6E1] shadow-lg rounded-2xl px-4 py-3 flex items-center justify-between gap-3 active:scale-[0.98] transition-transform"
-        style={{ maxWidth: "420px" }}
+        className="fixed left-4 right-4 z-30 mx-auto bg-white border border-[#E8E6E1] shadow-lg rounded-2xl px-4 py-3 flex items-center justify-between gap-3 active:scale-[0.98] transition-transform"
+        style={{ bottom: `calc(100px + env(safe-area-inset-bottom, 0px))`, maxWidth: "420px" }}
       >
         <div className="flex items-center gap-3" dir={isRtl ? "rtl" : "ltr"}>
           <div className="w-9 h-9 rounded-full bg-[#3B2818]/8 flex items-center justify-center shrink-0">

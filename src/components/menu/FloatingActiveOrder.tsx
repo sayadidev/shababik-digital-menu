@@ -336,7 +336,8 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
             setIsMinimized(false);
             setShowModal(true);
           }}
-          className="fixed bottom-6 left-4 right-4 bg-white border border-[#E8E6E1] shadow-xl rounded-2xl p-4 flex items-center justify-between z-50 cursor-pointer active:scale-[0.98] transition-transform max-w-lg mx-auto"
+          className="fixed left-4 right-4 bg-white border border-[#E8E6E1] shadow-xl rounded-2xl p-4 flex items-center justify-between z-50 cursor-pointer active:scale-[0.98] transition-transform max-w-lg mx-auto"
+          style={{ bottom: `calc(1.5rem + env(safe-area-inset-bottom, 0px))` }}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {

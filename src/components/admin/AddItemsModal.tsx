@@ -163,7 +163,7 @@ export default function AddItemsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -286,28 +286,28 @@ export default function AddItemsModal({
           </div>
         )}
 
-        <div className="shrink-0 px-5 pb-5 flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-black/5 transition-all border-0"
-          >
-            {t("Cancel", "إلغاء")}
-          </button>
+        <div className="shrink-0 px-5 pb-5 pt-2 border-t border-[#E8E6E1] bg-[#f5efdf] sticky bottom-0">
           <button
             type="button"
             onClick={handleSave}
             disabled={selected.length === 0 || saving}
-            className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border-0 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl text-sm font-semibold transition-all border-0 disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ backgroundColor: "#9a6a3a", color: "#fff" }}
           >
-            {saving && (
-              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+            {saving ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-            )}
-            {t("Save", "حفظ")}
+            ) : null}
+            {saving ? t("Saving...", "جارٍ الحفظ...") : t("Save & Add to Order", "حفظ وإضافة للطلب")}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full mt-2 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-black/5 transition-all border-0"
+          >
+            {t("Cancel", "إلغاء")}
           </button>
         </div>
       </div>

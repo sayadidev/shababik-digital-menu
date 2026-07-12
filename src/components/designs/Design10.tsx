@@ -10,10 +10,11 @@ import ItemDetailSheet from "@/components/menu/ItemDetailSheet";
 import AddToCartSheet from "@/components/menu/AddToCartSheet";
 import FloatingCart from "@/components/menu/FloatingCart";
 import FloatingActiveOrder from "@/components/menu/FloatingActiveOrder";
-import CompletedOrders from "@/components/menu/CompletedOrders";
+import CompletedOrdersSheet, { CompletedOrdersBadge } from "@/components/menu/CompletedOrders";
 import CartReviewSheet from "@/components/menu/CartReviewSheet";
 import { ToastProvider, useToast } from "@/components/menu/Toast";
 import { useActiveOrder } from "@/context/ActiveOrderContext";
+import { useCart } from "@/context/CartContext";
 import { GlobeIcon } from "@/components/admin/icons";
 import type { MenuData, ItemWithVariants } from "@/lib/menu";
 import { formatCurrency, getPriceForCurrency, getBeforePriceForCurrency } from "@/lib/format-currency";
@@ -101,6 +102,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
   });
   const [isStaff, setIsStaff] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [completedOrdersOpen, setCompletedOrdersOpen] = useState(false);
   const [showTokenWarning, setShowTokenWarning] = useState(false);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -112,6 +114,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
   const enableUsd = data.settings?.enable_usd ?? true;
   const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
   const { activeOrder } = useActiveOrder();
+  const { totalItems } = useCart();
 
   useEffect(() => { trackMenuLoad().catch(() => {}); setTimeout(() => setLoaded(true), 100); }, []);
   useEffect(() => { setMounted(true); }, []);
@@ -278,7 +281,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
   };
 
   return (
-    <div className={`min-h-screen ${activeOrder ? "pb-24" : ""}`} style={{ backgroundColor: P.bg }}>
+    <div className={`min-h-screen ${activeOrder ? "pb-28" : totalItems > 0 ? "pb-24" : ""}`} style={{ backgroundColor: P.bg }}>
       {/* ── Hero — logo + 3 featured glassy cards ── */}
       <section ref={heroRef}
         className="relative flex flex-col items-center overflow-hidden min-h-[92dvh] md:min-h-[100dvh] pt-[10dvh] md:pt-[16dvh]"
@@ -487,6 +490,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
             className="h-8 w-28 object-contain shrink-0"
           />
           <div className="flex-1 flex justify-end items-center gap-2">
+            <CompletedOrdersBadge onClick={() => setCompletedOrdersOpen(true)} locale={locale} />
             {isStaff && (
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold"
                 style={{ backgroundColor: "#059669", color: "#fff" }}>
@@ -700,8 +704,8 @@ const tParam = secureToken ?? null;  const s = data.settings;
                 enableUsd={enableUsd}
                 onClose={() => setAddToCartItem(null)}
               />
-              <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
-              <CompletedOrders locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
+              <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} cartVisible={totalItems > 0} />
+              <CompletedOrdersSheet open={completedOrdersOpen} onClose={() => setCompletedOrdersOpen(false)} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
               <FloatingCart locale={locale} tableNumber={tableNumber} secureToken={tParam} activeCurrency={activeCurrency} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
               {reviewOpen && (
                 <CartReviewSheet tableNumber={tableNumber} secureToken={tParam} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />

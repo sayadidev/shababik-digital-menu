@@ -157,6 +157,75 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
+function printReceipt(opts: {
+  locale: string;
+  activeCurrency: Currency;
+  customerName: string;
+  tableNumber: string;
+  date: string;
+  items: { qty: number; name: string; variant: string; price: string; hasPrice: boolean }[];
+  totalStr: string;
+  usdStr: string;
+}) {
+  const logoImg = document.querySelector('img[alt="Shababik"]') as HTMLImageElement | null;
+  const logoUrl = logoImg?.src || "/shababik-solid-logo.png";
+  const { locale, customerName, tableNumber, date, items, totalStr, usdStr } = opts;
+  const dateStr = new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const timeStr = formatTime(date);
+  const footerStr = locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit";
+
+  const receiptHtml = `<!DOCTYPE html><html dir="${locale === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; width: 80mm; margin: 0 auto; padding: 3mm; background: white; color: #1a1a1a; font-size: 10px; line-height: 1.4; }
+    .logo { text-align: center; margin-bottom: 2mm; }
+    .logo img { width: 120px; height: auto; filter: grayscale(100%); }
+    .meta { text-align: center; margin-bottom: 2mm; }
+    .meta p { font-size: 9px; color: #666; }
+    .meta .info { font-size: 10px; font-weight: bold; color: #1a1a1a; margin-top: 1mm; }
+    .divider { border: none; border-top: 1px dashed #999; margin: 2mm 0; }
+    .item { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 0.5mm; }
+    .item .desc { flex: 1; }
+    .item .price { font-weight: bold; white-space: nowrap; }
+    .total { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-top: 2mm; }
+    .total .label { font-size: 11px; }
+    .usd { text-align: right; font-size: 9px; color: #666; }
+    .footer { text-align: center; font-size: 9px; color: #666; margin-top: 3mm; }
+    .no-print { display: none; }
+  </style></head><body>
+    <div class="logo"><img src="${logoUrl}" alt="Logo"></div>
+    <div class="meta">
+      <p>${dateStr}  ${timeStr}</p>
+      <p class="info">${locale === "ar" ? "الزبون" : "Customer"}: ${customerName} | ${locale === "ar" ? "الطاولة" : "Table"}: ${tableNumber}</p>
+    </div>
+    <hr class="divider">
+    ${items.map((i) => `<div class="item"><span class="desc">${i.qty}x ${i.name}${i.variant ? ` (${i.variant})` : ""}</span>${i.hasPrice ? `<span class="price">${i.price}</span>` : ""}</div>`).join("")}
+    <hr class="divider">
+    <div class="total"><span class="label">${locale === "ar" ? "إجمالي الجلسة" : "Session Total"}</span><span>${totalStr}</span></div>
+    ${usdStr ? `<div class="usd">${usdStr}</div>` : ""}
+    <p class="footer">${footerStr}</p>
+  </body></html>`;
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.top = "0";
+  iframe.style.left = "0";
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+  iframe.style.zIndex = "9999";
+  iframe.style.background = "white";
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || iframe.contentWindow!.document;
+  doc.open();
+  doc.write(receiptHtml);
+  doc.close();
+  iframe.contentWindow!.focus();
+  setTimeout(() => {
+    iframe.contentWindow!.print();
+    setTimeout(() => document.body.removeChild(iframe), 500);
+  }, 300);
+}
+
 function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable, isInvoiceView = false }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string, currentTable: string) => void; isInvoiceView?: boolean }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
@@ -183,6 +252,44 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
           <span className="text-xs" style={{ color: "#8a7a6a" }}>
             {t(locale, "Table", "الطاولة")} {order.tableNumber}
           </span>
+          {isInvoiceView && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                printReceipt({
+                  locale,
+                  activeCurrency,
+                  customerName: order.customerName || (locale === "ar" ? "—" : "—"),
+                  tableNumber: order.tableNumber,
+                  date: order.createdAt,
+                  items: order.items.map((item) => ({
+                    qty: item.quantity,
+                    name: item.name,
+                    variant: item.variant || "",
+                    price: formatCurrency(
+                      (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
+                      activeCurrency,
+                      locale,
+                    ),
+                    hasPrice: (activeCurrency === "TRY" ? item.priceTry : item.priceSyp) != null,
+                  })),
+                  totalStr: formatCurrency(
+                    activeCurrency === "TRY" ? order.totalTry : order.totalSyp,
+                    activeCurrency,
+                    locale,
+                  ),
+                  usdStr: order.totalUsd > 0 ? formatCurrency(order.totalUsd, "USD", locale) : "",
+                });
+              }}
+              className="min-w-[28px] min-h-[28px] rounded-full flex items-center justify-center hover:bg-[#9a6a3a]/10 transition-all border-0 text-gray-400 hover:text-gray-700"
+              title={t(locale, "Print this order", "طباعة هذا الطلب")}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+            </button>
+          )}
           {!isInvoiceView && onChangeTable && (
             <button
               type="button"
@@ -1043,88 +1150,34 @@ export default function OrdersPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              const logoImg = document.querySelector('img[alt="Shababik"]') as HTMLImageElement | null;
-                              const logoUrl = logoImg?.src || "/shababik-solid-logo.png";
-                              const items = group.orders.flatMap((order) =>
-                                toOrder(order).items.map((item) => ({
-                                  qty: item.quantity,
-                                  name: item.name,
-                                  variant: item.variant || "",
-                                  price: formatCurrency(
-                                    (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
-                                    activeCurrency,
-                                    locale,
-                                  ),
-                                  hasPrice: (activeCurrency === "TRY" ? item.priceTry : item.priceSyp) != null,
-                                }))
-                              );
-                              const dateStr = new Date(group.orders[0].created_at)
-                                .toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" });
-                              const timeStr = formatTime(group.orders[0].created_at);
-                              const totalStr = formatCurrency(
-                                activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
-                                activeCurrency,
+                              printReceipt({
                                 locale,
-                              );
-                              const usdStr = group.grandTotalUsd > 0
-                                ? formatCurrency(group.grandTotalUsd, "USD", locale)
-                                : "";
-                              const customerStr = group.customerName || (locale === "ar" ? "—" : "—");
-                              const tableStr = group.tableNumber;
-                              const footerStr = locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit";
-
-                              const receiptHtml = `<!DOCTYPE html><html dir="${locale === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><style>
-                                * { margin: 0; padding: 0; box-sizing: border-box; }
-                                body { font-family: -apple-system, sans-serif; width: 80mm; margin: 0 auto; padding: 3mm; background: white; color: #1a1a1a; font-size: 10px; line-height: 1.4; }
-                                .logo { text-align: center; margin-bottom: 2mm; }
-                                .logo img { width: 120px; height: auto; filter: grayscale(100%); }
-                                .meta { text-align: center; margin-bottom: 2mm; }
-                                .meta p { font-size: 9px; color: #666; }
-                                .meta .info { font-size: 10px; font-weight: bold; color: #1a1a1a; margin-top: 1mm; }
-                                .divider { border: none; border-top: 1px dashed #999; margin: 2mm 0; }
-                                .item { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 0.5mm; }
-                                .item .desc { flex: 1; }
-                                .item .price { font-weight: bold; white-space: nowrap; }
-                                .total { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-top: 2mm; }
-                                .total .label { font-size: 11px; }
-                                .usd { text-align: right; font-size: 9px; color: #666; }
-                                .footer { text-align: center; font-size: 9px; color: #666; margin-top: 3mm; }
-                              </style></head><body>
-                                <div class="logo"><img src="${logoUrl}" alt="Logo"></div>
-                                <div class="meta">
-                                  <p>${dateStr}  ${timeStr}</p>
-                                  <p class="info">${locale === "ar" ? "الزبون" : "Customer"}: ${customerStr} | ${locale === "ar" ? "الطاولة" : "Table"}: ${tableStr}</p>
-                                </div>
-                                <hr class="divider">
-                                ${items.map((i) => `<div class="item"><span class="desc">${i.qty}x ${i.name}${i.variant ? ` (${i.variant})` : ""}</span>${i.hasPrice ? `<span class="price">${i.price}</span>` : ""}</div>`).join("")}
-                                <hr class="divider">
-                                <div class="total"><span class="label">${locale === "ar" ? "إجمالي الجلسة" : "Session Total"}</span><span>${totalStr}</span></div>
-                                ${usdStr ? `<div class="usd">${usdStr}</div>` : ""}
-                                <p class="footer">${footerStr}</p>
-                              </body></html>`;
-
-                              const iframe = document.createElement("iframe");
-                              iframe.style.position = "fixed";
-                              iframe.style.top = "0";
-                              iframe.style.left = "0";
-                              iframe.style.width = "100%";
-                              iframe.style.height = "100%";
-                              iframe.style.border = "none";
-                              iframe.style.zIndex = "9999";
-                              iframe.style.background = "white";
-                              document.body.appendChild(iframe);
-                              const doc = iframe.contentDocument || iframe.contentWindow!.document;
-                              doc.open();
-                              doc.write(receiptHtml);
-                              doc.close();
-                              iframe.contentWindow!.focus();
-                              iframe.onload = () => {
-                                iframe.contentWindow!.print();
-                              };
-                              setTimeout(() => {
-                                iframe.contentWindow!.print();
-                                setTimeout(() => document.body.removeChild(iframe), 500);
-                              }, 300);
+                                activeCurrency,
+                                customerName: group.customerName || (locale === "ar" ? "—" : "—"),
+                                tableNumber: group.tableNumber,
+                                date: group.orders[0].created_at,
+                                items: group.orders.flatMap((order) =>
+                                  toOrder(order).items.map((item) => ({
+                                    qty: item.quantity,
+                                    name: item.name,
+                                    variant: item.variant || "",
+                                    price: formatCurrency(
+                                      (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
+                                      activeCurrency,
+                                      locale,
+                                    ),
+                                    hasPrice: (activeCurrency === "TRY" ? item.priceTry : item.priceSyp) != null,
+                                  }))
+                                ),
+                                totalStr: formatCurrency(
+                                  activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
+                                  activeCurrency,
+                                  locale,
+                                ),
+                                usdStr: group.grandTotalUsd > 0
+                                  ? formatCurrency(group.grandTotalUsd, "USD", locale)
+                                  : "",
+                              });
                             }}
                             className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border-0 flex items-center justify-center gap-2"
                             style={{ backgroundColor: "#3B2818", color: "#fff" }}

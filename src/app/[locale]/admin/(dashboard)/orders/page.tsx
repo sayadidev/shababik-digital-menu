@@ -881,20 +881,8 @@ export default function OrdersPage() {
 
                     return (
                       <div key={group.sessionId} id={`billing-group-${group.sessionId}`} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
-                        <div className="p-4">
-                          <div className="text-center mb-3 pb-3 border-b border-dashed border-[#dcc8b4]/60">
-                            <p className="text-sm font-bold" style={{ color: "#3B2818" }}>
-                              {locale === "ar" ? "شبابيك كافيه" : "Shababik Cafe"}
-                            </p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "#8a7a6a" }}>
-                              {new Date(group.orders[0].created_at).toLocaleDateString(
-                                locale === "ar" ? "ar-SY" : "en-US",
-                                { year: "numeric", month: "long", day: "numeric" }
-                              )}
-                              {" · "}
-                              {formatTime(group.orders[0].created_at)}
-                            </p>
-                          </div>
+                        {/* === Web UI Section (hidden during print) === */}
+                        <div className="no-print p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
@@ -946,10 +934,8 @@ export default function OrdersPage() {
                               </svg>
                             </button>
                           )}
-                        </div>
 
-                        <div className="px-4 py-3 border-t border-[#E8E6E1]" style={{ backgroundColor: "#faf7f0" }}>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between pt-3 mt-3 border-t border-[#E8E6E1]">
                             <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
                               {t(locale, "Session Total", "إجمالي الجلسة")}
                             </span>
@@ -968,12 +954,80 @@ export default function OrdersPage() {
                               )}
                             </div>
                           </div>
+                        </div>
 
-                          <div className="text-center pt-3 border-t border-dashed border-[#dcc8b4]/60">
-                            <p className="text-[10px] font-medium" style={{ color: "#8a7a6a" }}>
-                              {locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit"}
+                        {/* === Print Receipt Section (hidden until print) === */}
+                        <div className="hidden print-receipt p-3 bg-white" dir={locale === "ar" ? "rtl" : "ltr"}>
+                          <div className="text-center mb-2">
+                            <img
+                              src="/shababik-solid-logo.png"
+                              alt="Shababik"
+                              className="mx-auto"
+                              style={{ width: "120px", height: "auto", filter: "grayscale(100%)" }}
+                            />
+                            <p className="text-[10px] text-gray-500 mt-1" style={{ fontFamily: "monospace" }}>
+                              {new Date(group.orders[0].created_at).toLocaleDateString(
+                                locale === "ar" ? "ar-SY" : "en-US",
+                                { year: "numeric", month: "2-digit", day: "2-digit" }
+                              )}
+                              {"  "}
+                              {formatTime(group.orders[0].created_at)}
+                            </p>
+                            <p className="text-[11px] font-bold text-gray-800 mt-1">
+                              {locale === "ar" ? "الزبون" : "Customer"}: {group.customerName || (locale === "ar" ? "—" : "—")}
+                              <span className="mx-2">|</span>
+                              {locale === "ar" ? "الطاولة" : "Table"}: {group.tableNumber}
                             </p>
                           </div>
+
+                          <div className="border-b border-dashed border-gray-400 mb-2" />
+
+                          <div className="space-y-1">
+                            {group.orders.flatMap((order) =>
+                              toOrder(order).items.map((item, ii) => (
+                                <div key={`${order.id}-${ii}`} className="flex items-start justify-between text-[10px] leading-tight">
+                                  <div className="flex-1 min-w-0 pr-2">
+                                    <span className="font-bold text-gray-800">{item.quantity}x</span>{" "}
+                                    <span className="text-gray-800">{item.name}</span>
+                                    {item.variant && (
+                                      <span className="text-gray-500"> ({item.variant})</span>
+                                    )}
+                                  </div>
+                                  <span className="shrink-0 font-bold tabular-nums text-gray-800">
+                                    {formatCurrency(
+                                      (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
+                                      activeCurrency,
+                                      locale,
+                                    )}
+                                  </span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          <div className="border-b border-dashed border-gray-400 my-2" />
+
+                          <div className="flex items-center justify-between text-[11px] font-bold">
+                            <span className="text-gray-800">
+                              {locale === "ar" ? "إجمالي الجلسة" : "Session Total"}
+                            </span>
+                            <span className="tabular-nums text-gray-900" style={{ fontSize: "13px" }}>
+                              {formatCurrency(
+                                activeCurrency === "TRY" ? group.grandTotalTry : group.grandTotalSyp,
+                                activeCurrency,
+                                locale,
+                              )}
+                            </span>
+                          </div>
+                          {enableUsd && group.grandTotalUsd > 0 && (
+                            <div className="text-right text-[9px] text-gray-500 tabular-nums">
+                              {formatCurrency(group.grandTotalUsd, "USD", locale)}
+                            </div>
+                          )}
+
+                          <p className="text-center text-[10px] text-gray-500 mt-3">
+                            {locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit"}
+                          </p>
                         </div>
 
                         <div className="px-4 pb-4 no-print">
@@ -1229,14 +1283,29 @@ export default function OrdersPage() {
           50% { opacity: 0.85; }
         }
 
+        .print-receipt {
+          display: none;
+        }
+
         @media print {
-          body * {
-            visibility: hidden;
+          .no-print {
+            display: none !important;
           }
-          .print-invoice,
-          .print-invoice * {
-            visibility: visible;
+
+          aside, [class*="sidebar"], [class*="Sidebar"],
+          [class*="NavRail"], [class*="BottomNav"], [class*="TopBar"],
+          [class*="sticky"] {
+            display: none !important;
           }
+
+          body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           .print-invoice {
             position: absolute !important;
             left: 0 !important;
@@ -1244,21 +1313,25 @@ export default function OrdersPage() {
             width: 80mm !important;
             max-width: 80mm !important;
             margin: 0 auto !important;
-            padding: 4mm !important;
-            font-size: 10px !important;
-            line-height: 1.4 !important;
+            background: white !important;
             box-shadow: none !important;
+            border: none !important;
             border-radius: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
           }
+
+          .print-invoice .print-receipt {
+            display: block !important;
+          }
+
           .print-invoice .no-print {
             display: none !important;
           }
-          .no-print {
-            display: none !important;
-          }
+
           @page {
             size: 80mm auto;
-            margin: 0;
+            margin: 2mm;
           }
         }
       `}</style>

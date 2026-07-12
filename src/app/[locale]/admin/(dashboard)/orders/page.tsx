@@ -228,13 +228,18 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
               )}
             </div>
             <span className="text-xs font-bold tabular-nums shrink-0 ml-2" style={{ color: "#3B2818" }}>
-              {item.priceTry != null || item.priceSyp != null
-                ? formatCurrency(
-                    (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
-                    activeCurrency,
-                    locale,
-                  )
-                : ""}
+              {(() => {
+                const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
+                if (unitPrice != null) {
+                  return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
+                }
+                const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
+                const orderTotal = activeCurrency === "TRY" ? order.totalTry : order.totalSyp;
+                if (totalQty > 0) {
+                  return formatCurrency(Math.round((orderTotal / totalQty) * item.quantity), activeCurrency, locale);
+                }
+                return "";
+              })()}
             </span>
           </div>
         ))}
@@ -999,15 +1004,19 @@ export default function OrdersPage() {
                                       )}
                                     </div>
                                     <span className="shrink-0 font-bold tabular-nums text-gray-800">
-                                      {item.priceTry != null || item.priceSyp != null
-                                        ? formatCurrency(
-                                            (activeCurrency === "TRY"
-                                              ? (item.priceTry ?? 0) * item.quantity
-                                              : (item.priceSyp ?? 0) * item.quantity),
-                                            activeCurrency,
-                                            locale,
-                                          )
-                                        : ""}
+                                      {(() => {
+                                        const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
+                                        if (unitPrice != null) {
+                                          return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
+                                        }
+                                        const displayOrder = toOrder(order);
+                                        const totalQty = displayOrder.items.reduce((s, i) => s + i.quantity, 0);
+                                        const orderTotal = activeCurrency === "TRY" ? order.total_try : order.total_syp;
+                                        if (totalQty > 0) {
+                                          return formatCurrency(Math.round((orderTotal / totalQty) * item.quantity), activeCurrency, locale);
+                                        }
+                                        return "";
+                                      })()}
                                     </span>
                                   </div>
                                 ))}

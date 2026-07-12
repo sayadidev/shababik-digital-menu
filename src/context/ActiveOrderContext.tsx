@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface ActiveOrder {
   orderId: string;
-  tableNumber: number;
+  tableNumber: string;
   totalUsd: number;
   totalSyp: number;
   totalTry: number;

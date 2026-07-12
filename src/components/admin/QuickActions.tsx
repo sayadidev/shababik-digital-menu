@@ -25,11 +25,11 @@ export default function QuickActions({ locale }: { locale: string }) {
   }, []);
 
   const handleStaffOrder = () => {
-    const n = parseInt(tableInput, 10);
-    if (n > 0) {
+    const trimmed = tableInput.trim();
+    if (trimmed) {
       setShowTableModal(false);
       setTableInput("");
-      router.push(`/?table=${n}&role=staff`);
+      router.push(`/?table=${encodeURIComponent(trimmed)}&role=staff`);
     }
   };
 
@@ -81,24 +81,22 @@ export default function QuickActions({ locale }: { locale: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowTableModal(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div onClick={(e) => e.stopPropagation()} className="relative bg-surface rounded-2xl p-6 w-full max-w-sm shadow-2xl" style={{ animation: "scaleIn 0.2s ease-out" }}>
-            <h2 className="text-base font-bold text-foreground mb-1">{t("Enter Table Number", "أدخل رقم الطاولة")}</h2>
+            <h2 className="text-base font-bold text-foreground mb-1">{t("Enter Table", "أدخل الطاولة")}</h2>
             <p className="text-xs text-muted mb-5">{t("Staff order entry — select the customer's table", "طلب مساعدة من الموظفين — اختر طاولة العميل")}</p>
 
             <input
-              type="number"
+              type="text"
               value={tableInput}
               onChange={(e) => setTableInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleStaffOrder(); }}
-              placeholder={t("Table number...", "رقم الطاولة...")}
+              placeholder={t("Table...", "الطاولة...")}
               autoFocus
-              min={1}
-              max={99}
               className="w-full px-4 py-3 rounded-xl border border-border bg-white text-foreground text-sm text-center font-bold tracking-widest placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all mb-4"
             />
 
             <div className="flex items-center gap-2">
               <button type="button" onClick={handleStaffOrder}
-                disabled={!tableInput || parseInt(tableInput, 10) <= 0}
+                disabled={!tableInput.trim()}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] border-0 disabled:opacity-40"
                 style={{ backgroundColor: "#9a6a3a", color: "#fff" }}>
                 {t("Start Order", "بدء الطلب")}

@@ -54,7 +54,7 @@ export default async function ActiveOrders({ locale }: { locale: string }) {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-xs" style={{ color: "#8a7a6a" }}>
-                  {locale === "ar" ? `طاولة ${order.table_number}` : `Table ${order.table_number}`}
+                  {locale === "ar" ? `الطاولة ${order.table_number}` : `Table ${order.table_number}`}
                 </span>
                 <span className="text-[11px]" style={{ color: "#8a7a6a" }}>{formatTime(order.created_at)}</span>
               </div>

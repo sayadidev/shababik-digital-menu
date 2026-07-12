@@ -11,14 +11,14 @@ import type { Currency } from "@/types/database";
 const COOLDOWN_MS = 15 * 60 * 1000;
 
 type Props = {
-  tableNumber: number | null;
+  tableNumber: string | null;
   secureToken?: string | null;
   locale: string;
   activeCurrency: Currency;
   enableUsd: boolean;
   onClose: () => void;
   isStaff: boolean;
-  onTableNumberChange?: (n: number) => void;
+  onTableNumberChange?: (n: string) => void;
 };
 
 export default function CartReviewSheet({ tableNumber, secureToken, locale, activeCurrency, enableUsd, onClose, isStaff, onTableNumberChange }: Props) {
@@ -26,7 +26,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
   const { setActiveOrder } = useActiveOrder();
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [editableTable, setEditableTable] = useState(tableNumber ?? 1);
+  const [editableTable, setEditableTable] = useState(tableNumber ?? "1");
   const [customerName, setCustomerName] = useState("");
   const isRtl = locale === "ar";
   const { show: showToast } = useToast();
@@ -132,7 +132,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
       if (res.orderId) {
         setActiveOrder({
           orderId: res.orderId,
-          tableNumber: effectiveTable ?? 1,
+          tableNumber: effectiveTable ?? "1",
           totalUsd: totalPriceUsd,
           totalSyp: totalPriceSyp,
           totalTry: totalPriceTry,
@@ -199,26 +199,22 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
               {isStaff ? (
                 <div className="flex items-center gap-2 mt-0.5">
                   <label htmlFor="table-number" className="text-xs text-gray-500">
-                    {locale === "ar" ? "رقم الطاولة:" : "Table #:"}
+                    {locale === "ar" ? "الطاولة:" : "Table:"}
                   </label>
                   <input
                     id="table-number"
-                    type="number"
-                    min={1}
+                    type="text"
                     value={editableTable}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      if (n > 0) {
-                        setEditableTable(n);
-                        onTableNumberChange?.(n);
-                      }
+                      setEditableTable(e.target.value);
+                      onTableNumberChange?.(e.target.value);
                     }}
-                    className="w-16 px-2 py-1 rounded-lg text-xs font-bold bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#059669]/30 transition-all"
+                    className="w-24 px-2 py-1 rounded-lg text-xs font-bold bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#059669]/30 transition-all"
                   />
                 </div>
               ) : (
                 <p className="text-xs text-gray-500">
-                  {locale === "ar" ? `طاولة رقم ${tableNumber}` : `Table ${tableNumber}`}
+                  {locale === "ar" ? `الطاولة ${tableNumber}` : `Table ${tableNumber}`}
                 </p>
               )}
             </div>

@@ -13,12 +13,14 @@ const P = {
 export default function FloatingCart({
   locale,
   tableNumber,
+  secureToken,
   activeCurrency,
   enableUsd,
   onReview,
 }: {
   locale: string;
-  tableNumber: number | null;
+  tableNumber: string | null;
+  secureToken?: string | null;
   activeCurrency: Currency;
   enableUsd: boolean;
   onReview: () => void;

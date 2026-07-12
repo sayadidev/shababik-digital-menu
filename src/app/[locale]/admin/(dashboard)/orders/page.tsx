@@ -15,7 +15,7 @@ type Tab = "pending" | "kds" | "history";
 
 interface Order {
   id: string;
-  tableNumber: number;
+  tableNumber: string;
   secureToken: string | null;
   customerName: string | null;
   status: OrderStatus;
@@ -151,7 +151,7 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string) => void }) {
+function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string, currentTable: string) => void }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
@@ -171,12 +171,12 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: "#8a7a6a" }}>
-            {t(locale, "Table", "طاولة")} {order.tableNumber}
+            {t(locale, "Table", "الطاولة")} {order.tableNumber}
           </span>
           {onChangeTable && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onChangeTable(order.id); }}
+              onClick={(e) => { e.stopPropagation(); onChangeTable(order.id, order.tableNumber); }}
               className="min-w-[28px] min-h-[28px] rounded-full flex items-center justify-center hover:bg-[#9a6a3a]/10 transition-all border-0"
               title={t(locale, "Change Table", "تغيير الطاولة")}
             >
@@ -319,7 +319,9 @@ export default function OrdersPage() {
   const [loaded, setLoaded] = useState(false);
 
   const [changeTableOrderId, setChangeTableOrderId] = useState<string | null>(null);
+  const [currentTableName, setCurrentTableName] = useState<string>("");
   const [tables, setTables] = useState<Table[]>([]);
+  const [tableSearch, setTableSearch] = useState("");
   const [changeTableLoading, setChangeTableLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -523,8 +525,10 @@ export default function OrdersPage() {
     };
   }, [tier, fetchActiveOrders, playDing, loaded]);
 
-  const handleOpenChangeTable = useCallback(async (orderId: string) => {
+  const handleOpenChangeTable = useCallback(async (orderId: string, currentTable: string) => {
     setChangeTableOrderId(orderId);
+    setCurrentTableName(currentTable);
+    setTableSearch("");
     try {
       const rows = await getTables();
       setTables(rows);
@@ -544,6 +548,12 @@ export default function OrdersPage() {
     }
     setChangeTableLoading(false);
   }, [changeTableOrderId, locale, fetchActiveOrders]);
+
+  const filteredTables = useMemo(() => {
+    if (!tableSearch.trim()) return tables;
+    const q = tableSearch.toLowerCase();
+    return tables.filter((t) => t.table_number.toLowerCase().includes(q));
+  }, [tables, tableSearch]);
 
   // ── Action handlers ──
 
@@ -842,10 +852,10 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Change Table Modal */}
+      {/* Change Table Bottom Sheet */}
       {changeTableOrderId && (
         <div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          className="fixed inset-0 z-50 flex items-end justify-center"
           onClick={() => setChangeTableOrderId(null)}
           role="dialog"
           aria-modal="true"
@@ -853,48 +863,71 @@ export default function OrdersPage() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setChangeTableOrderId(null)} />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm mx-4 bg-[#f5efdf] rounded-t-3xl md:rounded-3xl shadow-2xl p-5"
+            className="relative w-full max-w-lg bg-[#f5efdf] rounded-t-3xl shadow-2xl flex flex-col"
+            style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
           >
-            <div className="flex justify-center mb-3">
+            <div className="shrink-0 flex justify-center pt-3 pb-1">
               <span className="h-1 w-10 rounded-full bg-[#dcc8b4]/60" />
             </div>
-            <h3 className="text-base font-bold text-center mb-4" style={{ color: "#3B2818" }}>
-              {t(locale, "Select New Table", "اختيار طاولة جديدة")}
-            </h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {tables.map((table) => (
-                <button
-                  key={table.id}
-                  type="button"
-                  onClick={() => handleChangeTable(table.secure_token)}
-                  disabled={changeTableLoading}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border-0 bg-white hover:bg-[#9a6a3a]/5 active:scale-[0.98] disabled:opacity-50"
-                  style={{ color: "#3B2818" }}
-                >
-                  <span>
-                    {t(locale, "Table", "طاولة")} {table.table_number}
-                  </span>
-                  {changeTableLoading && (
-                    <svg className="w-4 h-4 animate-spin" style={{ color: "#9a6a3a" }} viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-              {tables.length === 0 && (
-                <p className="text-center text-sm py-4" style={{ color: "#8a7a6a" }}>
-                  {t(locale, "No tables available", "لا توجد طاولات متاحة")}
-                </p>
-              )}
+
+            <div className="shrink-0 px-5 pb-3">
+              <h3 className="text-base font-bold text-center" style={{ color: "#3B2818" }}>
+                {t(locale, `Change table from ${currentTableName} to:`, `تغيير الطاولة من ${currentTableName} إلى:`)}
+              </h3>
             </div>
-            <button
-              type="button"
-              onClick={() => setChangeTableOrderId(null)}
-              className="w-full mt-3 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-black/5 transition-all border-0"
-            >
-              {t(locale, "Cancel", "إلغاء")}
-            </button>
+
+            <div className="px-5 pb-3">
+              <input
+                type="text"
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                placeholder={t(locale, "Search tables...", "ابحث عن طاولة...")}
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all"
+              />
+            </div>
+
+            <div className="px-5 overflow-y-auto flex-1 min-h-0 pb-4">
+              <div className="space-y-1">
+                {filteredTables.map((table) => (
+                  <button
+                    key={table.id}
+                    type="button"
+                    onClick={() => handleChangeTable(table.secure_token)}
+                    disabled={changeTableLoading}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border-0 bg-white hover:bg-[#9a6a3a]/5 active:scale-[0.98] disabled:opacity-50"
+                    style={{ color: "#3B2818" }}
+                  >
+                    <span>
+                      {t(locale, "Table", "الطاولة")} {table.table_number}
+                    </span>
+                    {changeTableLoading && (
+                      <svg className="w-4 h-4 animate-spin" style={{ color: "#9a6a3a" }} viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+                {filteredTables.length === 0 && (
+                  <p className="text-center text-sm py-6" style={{ color: "#8a7a6a" }}>
+                    {tableSearch.trim()
+                      ? t(locale, "No tables match your search", "لا توجد طاولات تطابق بحثك")
+                      : t(locale, "No tables available", "لا توجد طاولات متاحة")}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 px-5 pb-5">
+              <button
+                type="button"
+                onClick={() => setChangeTableOrderId(null)}
+                className="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-black/5 transition-all border-0"
+              >
+                {t(locale, "Cancel", "إلغاء")}
+              </button>
+            </div>
           </div>
         </div>
       )}

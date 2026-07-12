@@ -266,7 +266,7 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
                       {locale === "ar" ? "حالة الطلب" : "Order Status"}
                     </h2>
                     <p className="text-xs text-gray-500">
-                      #{shortId} &middot; {locale === "ar" ? `طاولة ${activeOrder.tableNumber}` : `Table ${activeOrder.tableNumber}`}
+                      #{shortId} &middot; {locale === "ar" ? `الطاولة ${activeOrder.tableNumber}` : `Table ${activeOrder.tableNumber}`}
                     </p>
                   </div>
                 </div>

@@ -63,8 +63,17 @@ function Placeholder() {
   );
 }
 
-export default function Design10({ data }: { data: MenuData }) {
-  const s = data.settings;
+export default function Design10({
+  data,
+  secureToken,
+  tableResult,
+}: {
+  data: MenuData;
+  secureToken?: string | null;
+  tableResult?: { valid: boolean; table_number: string | null } | null;
+}) {
+
+const tParam = secureToken ?? null;  const s = data.settings;
   const heroBg = s?.hero_image_url || "/hero.jpg?v=3";
   const heroLogo = s?.hero_logo_url || "/shababik-solid-logo.png";
   const headerLogo = s?.header_logo_url || "/shababik-solid-logo.png";
@@ -82,26 +91,68 @@ export default function Design10({ data }: { data: MenuData }) {
   const [heroExited, setHeroExited] = useState(false);
   const [canAnimate, setCanAnimate] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [tableNumber, setTableNumber] = useState<number | null>(null);
+  const [tableNumber, setTableNumber] = useState<string | null>(() => {
+    if (tableResult?.valid && tableResult.table_number != null) {
+      return tableResult.table_number;
+    }
+    return null;
+  });
   const [isStaff, setIsStaff] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [showTokenWarning, setShowTokenWarning] = useState(false);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const tickingRef = useRef(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
+  const orderingEnabled = data.settings?.tier === "pro" && data.settings?.ordering_enabled;
+  const enableUsd = data.settings?.enable_usd ?? true;
+  const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
+
   useEffect(() => { trackMenuLoad().catch(() => {}); setTimeout(() => setLoaded(true), 100); }, []);
   useEffect(() => { setMounted(true); }, []);
-  // Read table number from URL query param
+
+  // Read secure token from URL query param (client-side fallback)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const t = params.get("table");
-    if (t) {
-      const n = parseInt(t, 10);
-      if (n > 0) setTableNumber(n);
+    if (!orderingEnabled) return;
+
+    // Staff bypass: no QR enforcement
+    if (isStaff) {
+      setShowTokenWarning(false);
+      return;
     }
-  }, []);
+
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("t");
+
+    // If server already validated, use that
+    if (tableResult) {
+      if (tableResult.valid && tableResult.table_number != null) {
+        setTableNumber(tableResult.table_number);
+        setShowTokenWarning(false);
+      } else {
+        setShowTokenWarning(true);
+      }
+      return;
+    }
+
+    if (t) {
+      // Client-side validation via server action
+      import("@/lib/actions/tables").then(({ validateToken }) => {
+        validateToken(t).then((res) => {
+          if (res.valid && res.table_number != null) {
+            setTableNumber(res.table_number);
+            setShowTokenWarning(false);
+          } else {
+            setShowTokenWarning(true);
+          }
+        });
+      });
+    } else {
+      setShowTokenWarning(true);
+    }
+  }, [orderingEnabled, tableResult, isStaff]);
 
   // Auth session check — real Supabase session for staff/admin
   useEffect(() => {
@@ -181,10 +232,6 @@ export default function Design10({ data }: { data: MenuData }) {
     sections.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
   }, [data.categories]);
-
-  const orderingEnabled = data.settings?.tier === "pro" && data.settings?.ordering_enabled;
-  const enableUsd = data.settings?.enable_usd ?? true;
-  const activeCurrency: Currency = data.settings?.active_currency ?? "TRY";
 
   const handleItemClick = useCallback((item: ItemWithVariants) => {
     if (orderingEnabled) {
@@ -446,7 +493,7 @@ export default function Design10({ data }: { data: MenuData }) {
             {tableNumber && (
               <span className="px-3 py-1 rounded-full text-xs font-bold"
                 style={{ backgroundColor: `${P.deep}0e`, color: P.deep }}>
-                {locale === "ar" ? `طاولة ${tableNumber}` : `Table ${tableNumber}`}
+                {locale === "ar" ? `الطاولة ${tableNumber}` : `Table ${tableNumber}`}
               </span>
             )}
           </div>
@@ -608,18 +655,54 @@ export default function Design10({ data }: { data: MenuData }) {
       </div>
       {orderingEnabled ? (
         <>
-          <AddToCartSheet
-            item={addToCartItem?.item ?? null}
-            variant={addToCartItem?.variant ?? null}
-            locale={locale}
-            activeCurrency={activeCurrency}
-            enableUsd={enableUsd}
-            onClose={() => setAddToCartItem(null)}
-          />
-          <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
-          <FloatingCart locale={locale} tableNumber={tableNumber} activeCurrency={activeCurrency} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
-          {reviewOpen && (
-            <CartReviewSheet tableNumber={tableNumber} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
+          {showTokenWarning && !isStaff ? (
+            <div
+              className="fixed bottom-0 left-0 right-0 z-40 transition-all duration-500 ease-out"
+              style={{ animation: "cartSlideUp 0.4s cubic-bezier(0.32,0.72,0,1)" }}
+            >
+              <div
+                className="mx-auto px-3 pb-[max(12px,env(safe-area-inset-bottom))]"
+                style={{ maxWidth: "min(100vw, 1200px)" }}
+              >
+                <div className="w-full rounded-2xl px-4 py-4 flex items-center gap-3 border-0"
+                  style={{
+                    backgroundColor: "#FEF3C7",
+                    boxShadow: "0 4px 24px rgba(217, 119, 6, 0.22)",
+                    border: "1px solid #F59E0B",
+                  }}>
+                  <svg className="w-6 h-6 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm font-semibold text-amber-800" style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {locale === "ar"
+                      ? "يرجى مسح رمز الـ QR الموجود على الطاولة للطلب"
+                      : "Please scan the QR code on your table to order."}
+                  </p>
+                </div>
+              </div>
+              <style>{`
+                @keyframes cartSlideUp {
+                  from { transform: translateY(100%); opacity: 0; }
+                  to { transform: translateY(0); opacity: 1; }
+                }
+              `}</style>
+            </div>
+          ) : (
+            <>
+              <AddToCartSheet
+                item={addToCartItem?.item ?? null}
+                variant={addToCartItem?.variant ?? null}
+                locale={locale}
+                activeCurrency={activeCurrency}
+                enableUsd={enableUsd}
+                onClose={() => setAddToCartItem(null)}
+              />
+              <FloatingActiveOrder locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} />
+              <FloatingCart locale={locale} tableNumber={tableNumber} secureToken={tParam} activeCurrency={activeCurrency} enableUsd={enableUsd} onReview={() => setReviewOpen(true)} />
+              {reviewOpen && (
+                <CartReviewSheet tableNumber={tableNumber} secureToken={tParam} locale={locale} activeCurrency={activeCurrency} enableUsd={enableUsd} onClose={() => setReviewOpen(false)} isStaff={isStaff} onTableNumberChange={setTableNumber} />
+              )}
+            </>
           )}
         </>
       ) : (

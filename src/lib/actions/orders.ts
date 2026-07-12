@@ -20,7 +20,7 @@ export interface OrderItemRow {
 
 export interface OrderRow {
   id: string;
-  table_number: number;
+  table_number: string;
   secure_token: string | null;
   customer_name: string | null;
   status: OrderStatus;
@@ -118,7 +118,7 @@ const COOLDOWN_MS = 15 * 60 * 1000;
 
 export async function createOrder(input: {
   secure_token?: string | null;
-  table_number?: number;
+  table_number?: string;
   customer_name?: string | null;
   items: { name: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
@@ -131,7 +131,7 @@ export async function createOrder(input: {
     const supabase = createAdminClient();
 
     // ── Validate table via secure_token ──
-    let resolvedTableNumber: number | null = null;
+    let resolvedTableNumber: string | null = null;
 
     if (input.secure_token) {
       const { data: tableRow } = await supabase
@@ -144,17 +144,14 @@ export async function createOrder(input: {
         throw new Error("يرجى مسح رمز الـ QR الموجود على طاولتك لإتمام الطلب.");
       }
 
-      resolvedTableNumber = Number(tableRow.table_number);
-      if (isNaN(resolvedTableNumber)) {
-        resolvedTableNumber = null;
-      }
+      resolvedTableNumber = tableRow.table_number;
     }
 
     // ── Fallback to explicit table_number (staff override / backwards compat) ──
-    const tableNum = input.table_number ?? resolvedTableNumber ?? 1;
+    const tableNum = input.table_number ?? resolvedTableNumber ?? "1";
 
     // ── Validate table_number ──
-    if (input.table_number != null && input.table_number < 1) {
+    if (input.table_number != null && input.table_number.trim().length === 0) {
       throw new Error("Invalid table number");
     }
 
@@ -488,7 +485,7 @@ export async function updateOrderTable(
   const { error } = await supabase
     .from("orders")
     .update({
-      table_number: Number(tableRow.table_number),
+      table_number: tableRow.table_number,
       secure_token: tableRow.secure_token,
       updated_at: new Date().toISOString(),
     })

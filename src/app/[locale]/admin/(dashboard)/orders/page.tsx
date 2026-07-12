@@ -966,10 +966,9 @@ export default function OrdersPage() {
                               style={{ width: "120px", height: "auto", filter: "grayscale(100%)" }}
                             />
                             <p className="text-[10px] text-gray-500 mt-1" style={{ fontFamily: "monospace" }}>
-                              {new Date(group.orders[0].created_at).toLocaleDateString(
-                                locale === "ar" ? "ar-SY" : "en-US",
-                                { year: "numeric", month: "2-digit", day: "2-digit" }
-                              )}
+                              {new Date(group.orders[0].created_at)
+                                .toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" })
+                                .replace(/\//g, "/")}
                               {"  "}
                               {formatTime(group.orders[0].created_at)}
                             </p>
@@ -982,28 +981,46 @@ export default function OrdersPage() {
 
                           <div className="border-b border-dashed border-gray-400 mb-2" />
 
-                          <div className="space-y-1">
-                            {group.orders.flatMap((order) =>
-                              toOrder(order).items.map((item, ii) => (
-                                <div key={`${order.id}-${ii}`} className="flex items-start justify-between text-[10px] leading-tight">
-                                  <div className="flex-1 min-w-0 pr-2">
-                                    <span className="font-bold text-gray-800">{item.quantity}x</span>{" "}
-                                    <span className="text-gray-800">{item.name}</span>
-                                    {item.variant && (
-                                      <span className="text-gray-500"> ({item.variant})</span>
-                                    )}
-                                  </div>
-                                  <span className="shrink-0 font-bold tabular-nums text-gray-800">
-                                    {formatCurrency(
-                                      (activeCurrency === "TRY" ? (item.priceTry ?? 0) : (item.priceSyp ?? 0)) * item.quantity,
-                                      activeCurrency,
-                                      locale,
-                                    )}
-                                  </span>
+                          {group.orders.map((order, oi) => (
+                            <div key={order.id}>
+                              {oi > 0 && group.orders.length > 1 && (
+                                <div className="text-[9px] text-gray-400 text-center my-1">
+                                  — {locale === "ar" ? "الطلب" : "Order"} {oi + 1} —
                                 </div>
-                              ))
-                            )}
-                          </div>
+                              )}
+                              <div className="space-y-0.5">
+                                {toOrder(order).items.map((item, ii) => (
+                                  <div key={ii} className="flex items-start justify-between text-[10px] leading-tight">
+                                    <div className="flex-1 min-w-0 pr-2">
+                                      <span className="font-bold text-gray-800">{item.quantity}x</span>{" "}
+                                      <span className="text-gray-800">{item.name}</span>
+                                      {item.variant && (
+                                        <span className="text-gray-500"> ({item.variant})</span>
+                                      )}
+                                    </div>
+                                    <span className="shrink-0 font-bold tabular-nums text-gray-800">
+                                      {item.priceTry != null || item.priceSyp != null
+                                        ? formatCurrency(
+                                            (activeCurrency === "TRY"
+                                              ? (item.priceTry ?? 0) * item.quantity
+                                              : (item.priceSyp ?? 0) * item.quantity),
+                                            activeCurrency,
+                                            locale,
+                                          )
+                                        : ""}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="text-right text-[10px] font-bold tabular-nums text-gray-600 mt-0.5">
+                                {formatCurrency(
+                                  activeCurrency === "TRY" ? order.total_try : order.total_syp,
+                                  activeCurrency,
+                                  locale,
+                                )}
+                              </div>
+                            </div>
+                          ))}
 
                           <div className="border-b border-dashed border-gray-400 my-2" />
 

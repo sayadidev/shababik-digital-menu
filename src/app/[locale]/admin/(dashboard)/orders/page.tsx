@@ -230,7 +230,7 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
             <span className="text-xs font-bold tabular-nums shrink-0 ml-2" style={{ color: "#3B2818" }}>
               {(() => {
                 const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
-                if (unitPrice != null && unitPrice > 0) {
+                if (unitPrice != null) {
                   return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
                 }
                 return null;
@@ -1001,7 +1001,7 @@ export default function OrdersPage() {
                                     <span className="shrink-0 font-bold tabular-nums text-gray-800">
                                       {(() => {
                                         const unitPrice = activeCurrency === "TRY" ? item.priceTry : item.priceSyp;
-                                        if (unitPrice != null && unitPrice > 0) {
+                                        if (unitPrice != null) {
                                           return formatCurrency(unitPrice * item.quantity, activeCurrency, locale);
                                         }
                                         return null;

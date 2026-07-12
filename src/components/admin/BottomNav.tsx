@@ -3,18 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Link, usePathname } from "@/i18n/navigation";
-import { HomeIcon, CategoriesIcon, ItemsIcon, PlusIcon, SettingsIcon, OrdersIcon } from "./icons";
+import { HomeIcon, CategoriesIcon, ItemsIcon, PlusIcon, SettingsIcon, OrdersIcon, TablesIcon } from "./icons";
 import type { UserRole } from "@/lib/role-utils";
 
 const allLinks = [
   { href: "/admin", labelEn: "Dashboard", labelAr: "لوحة التحكم", icon: HomeIcon },
   { href: "/admin/categories", labelEn: "Categories", labelAr: "الأقسام", icon: CategoriesIcon },
   { href: "/admin/items", labelEn: "Items", labelAr: "الأصناف", icon: ItemsIcon },
-  { href: "/admin/orders", labelEn: "Orders", labelAr: "الطلبات", icon: OrdersIcon },
+  { href: "/admin/tables", labelEn: "Tables", labelAr: "الطاولات", icon: TablesIcon, proOnly: true },
+  { href: "/admin/orders", labelEn: "Orders", labelAr: "الطلبات", icon: OrdersIcon, proOnly: true },
   { href: "/admin/settings", labelEn: "Settings", labelAr: "الإعدادات", icon: SettingsIcon },
 ];
 
-export default function BottomNav({ role }: { role: UserRole | null }) {
+export default function BottomNav({ role, isPro }: { role: UserRole | null; isPro: boolean }) {
   const pathname = usePathname();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale || "en";
@@ -26,7 +27,7 @@ export default function BottomNav({ role }: { role: UserRole | null }) {
 
   const isStaff = role === "staff";
   const links = isStaff
-    ? allLinks.filter((l) => l.href === "/admin/orders" || l.href === "/admin")
+    ? allLinks.filter((l) => l.href === "/admin/orders" || l.href === "/admin" || l.href === "/admin/tables")
     : allLinks;
 
   // Hide FAB on item create/edit routes
@@ -94,13 +95,16 @@ export default function BottomNav({ role }: { role: UserRole | null }) {
           boxShadow: "0 -2px 16px rgba(0,0,0,0.04)",
         }}
       >
-        {links.map(({ href, labelEn, labelAr, icon: Icon }) => (
+        {links.map(({ href, labelEn, labelAr, icon: Icon, proOnly }) => (
           <Link key={href} href={href}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[48px] py-1"
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[48px] py-1 relative"
             style={{ color: isActive(href) ? "#9a6a3a" : "#8a7a6a" }}>
             <Icon className="w-5 h-5" />
-            <span className="text-[10px] font-semibold whitespace-nowrap leading-none">
+            <span className="text-[10px] font-semibold whitespace-nowrap leading-none inline-flex items-center gap-0.5">
               {t(labelEn, labelAr)}
+              {proOnly && !isPro && (
+                <span className="text-[8px] opacity-40">🔒</span>
+              )}
             </span>
           </Link>
         ))}

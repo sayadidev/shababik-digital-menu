@@ -34,3 +34,24 @@ export async function getOrderingSettings(): Promise<OrderingSettings> {
     active_currency: data.active_currency ?? "TRY",
   };
 }
+
+export async function isProActive(): Promise<boolean> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("tier, ordering_enabled")
+    .eq("id", 1)
+    .single();
+
+  if (error) return false;
+
+  return data.tier === "pro" && data.ordering_enabled === true;
+}
+
+export async function requirePro(): Promise<void> {
+  const active = await isProActive();
+  if (!active) {
+    throw new Error("Feature locked. Please upgrade to Pro.");
+  }
+}

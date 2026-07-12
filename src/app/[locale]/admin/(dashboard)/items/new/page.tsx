@@ -97,6 +97,7 @@ export default function NewItemPage() {
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
           price_before_try: v.isOffer ? (parseFloat(v.priceBeforeTry) || null) : null,
+          image_url: v.imageUrl || "",
         }));
 
       if (variantInputs.length > 0) {

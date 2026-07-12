@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/auth";
+import { requirePro } from "@/lib/actions/settings-public";
 import { revalidatePath } from "next/cache";
 
 export type StaffAccount = {
@@ -17,6 +18,7 @@ export async function createStaffAccount(
 ): Promise<{ success: boolean; error?: string; user?: StaffAccount }> {
   try {
     await requireSuperAdmin();
+    await requirePro();
   } catch {
     return { success: false, error: "AUTH_REQUIRED" };
   }

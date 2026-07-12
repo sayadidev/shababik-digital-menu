@@ -74,6 +74,7 @@ export const itemVariantSchema = z.object({
   price_before_usd: z.coerce.number().optional().nullable(),
   price_before_syp: z.coerce.number().int().optional().nullable(),
   price_before_try: z.coerce.number().optional().nullable(),
+  image_url: z.string().max(2048).default(""),
 });
 
 export const itemVariantUpdateSchema = z.object({
@@ -87,6 +88,7 @@ export const itemVariantUpdateSchema = z.object({
   price_before_usd: z.coerce.number().optional().nullable(),
   price_before_syp: z.coerce.number().int().optional().nullable(),
   price_before_try: z.coerce.number().optional().nullable(),
+  image_url: z.string().max(2048).optional(),
 });
 
 export const itemVariantRowSchema = itemVariantSchema.extend({
@@ -145,3 +147,18 @@ export type SiteSettingsRow = z.infer<typeof siteSettingsRowSchema>;
 
 export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>;
 export type AnalyticsEventRow = z.infer<typeof analyticsEventRowSchema>;
+
+export const tableSchema = z.object({
+  table_number: z.string().min(1, "Table number is required").max(50),
+});
+
+export const tableRowSchema = tableSchema.extend({
+  id: z.string().uuid(),
+  secure_token: z.string().uuid(),
+  created_at: z.string().datetime().optional(),
+});
+
+export const tokenParamSchema = z.string().uuid("Invalid table token");
+
+export type TableInput = z.infer<typeof tableSchema>;
+export type TableRow = z.infer<typeof tableRowSchema>;

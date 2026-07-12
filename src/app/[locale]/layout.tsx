@@ -3,6 +3,7 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { Playfair_Display, Amiri, Lora } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { notFound } from "next/navigation";
+import PwaRegister from "@/components/menu/PwaRegister";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -42,10 +43,13 @@ export default async function LocaleLayout({ children, params }: Props) {
       className={`${lora.variable} ${amiri.variable} h-full antialiased`}
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#D4B895" />
         <link rel="preconnect" href="https://bfkjimqsznebqhtqwafo.supabase.co" />
         <link rel="preload" href="/shababik-solid-logo.png" as="image" fetchPriority="high" />
       </head>
       <body className="min-h-full flex flex-col w-full">
+        <PwaRegister />
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>

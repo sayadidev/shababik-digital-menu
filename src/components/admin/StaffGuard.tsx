@@ -8,7 +8,7 @@ import type { UserRole } from "@/lib/role-utils";
 const STAFF_ALLOWED = ["/admin/orders"];
 
 function isStaffAllowedPath(path: string): boolean {
-  if (path === "/admin" || path === "/admin/orders") return true;
+  if (path === "/admin" || path === "/admin/orders" || path === "/admin/tables") return true;
   return STAFF_ALLOWED.some((allowed) => path.startsWith(allowed + "/"));
 }
 

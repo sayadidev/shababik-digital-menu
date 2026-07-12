@@ -32,19 +32,22 @@ export default async function DashboardLayout({ children, params }: Props) {
 
   const settings = await getSettings().catch(() => null);
   const headerLogoUrl = settings?.header_logo_url || FALLBACK_LOGO;
+  const tier = (settings?.tier as "basic" | "pro") ?? "basic";
+  const orderingEnabled = settings?.ordering_enabled ?? false;
+  const isPro = tier === "pro" && orderingEnabled;
 
   return (
-    <>
-      <NavRail headerLogoUrl={headerLogoUrl} role={role} />
-      <div className="md:pl-[72px] rtl:md:pr-[72px] rtl:md:pl-0 pb-[80px] md:pb-0 h-screen flex flex-col bg-background">
+    <div className="flex h-screen overflow-hidden">
+      <NavRail headerLogoUrl={headerLogoUrl} role={role} isPro={isPro} />
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-[80px] md:pb-0 bg-background md:pl-60 rtl:md:pr-60 rtl:md:pl-0">
         <TopBar headerLogoUrl={headerLogoUrl} />
-        <main className="flex-1 overflow-y-auto min-h-0">
+        <main className="flex-1">
           <StaffGuard role={role} locale={locale}>
             {children}
           </StaffGuard>
         </main>
       </div>
-      <BottomNav role={role} />
-    </>
+      <BottomNav role={role} isPro={isPro} />
+    </div>
   );
 }

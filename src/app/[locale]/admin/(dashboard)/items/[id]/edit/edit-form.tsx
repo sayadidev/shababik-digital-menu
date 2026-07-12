@@ -29,6 +29,7 @@ type ItemData = {
     price_before_usd?: number | null;
     price_before_syp?: number | null;
     price_before_try?: number | null;
+    image_url?: string;
   }[];
 };
 
@@ -43,11 +44,12 @@ type Variant = {
   priceBeforeUsd: string;
   priceBeforeSyp: string;
   priceBeforeTry: string;
+  imageUrl: string;
 };
 
 function dataToVariants(item: ItemData): Variant[] {
   if (item.variants.length === 0) {
-    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "" }];
+    return [{ id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "", imageUrl: "" }];
   }
   return item.variants.map((v) => ({
     id: v.id,
@@ -60,6 +62,7 @@ function dataToVariants(item: ItemData): Variant[] {
     priceBeforeUsd: v.price_before_usd?.toString() || "",
     priceBeforeSyp: v.price_before_syp?.toString() || "",
     priceBeforeTry: v.price_before_try?.toString() || "",
+    imageUrl: v.image_url || "",
   }));
 }
 
@@ -86,7 +89,7 @@ export default function EditItemForm({
   const [error, setError] = useState("");
 
   const addVariant = () =>
-    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "" }]);
+    setVariantsState((prev) => [...prev, { id: crypto.randomUUID(), sizeEn: "", sizeAr: "", priceUsd: "", priceSyp: "", priceTry: "", isOffer: false, priceBeforeUsd: "", priceBeforeSyp: "", priceBeforeTry: "", imageUrl: "" }]);
   const removeVariant = (id: string) =>
     setVariantsState((prev) => (prev.length <= 1 ? prev : prev.filter((v) => v.id !== id)));
   const updateVariant = (id: string, field: keyof Variant, value: string) => {
@@ -134,6 +137,7 @@ export default function EditItemForm({
           price_before_usd: v.isOffer ? (parseFloat(v.priceBeforeUsd) || null) : null,
           price_before_syp: v.isOffer ? (parseInt(v.priceBeforeSyp, 10) || null) : null,
           price_before_try: v.isOffer ? (parseFloat(v.priceBeforeTry) || null) : null,
+          image_url: v.imageUrl || "",
         }));
 
       const varRes = await setVariants(item.id, variantInputs);
@@ -268,6 +272,11 @@ export default function EditItemForm({
           <div className="space-y-3">
             {variants.map((v) => (
               <div key={v.id} className="flex flex-wrap items-end gap-3 p-3 rounded-xl bg-background/50">
+                <div className="shrink-0">
+                  <label className="block text-[10px] text-muted mb-1">{t("Image", "صورة")}</label>
+                  <ImageUpload onUpload={(url) => updateVariant(v.id, "imageUrl", url)} locale={locale} currentUrl={v.imageUrl} compact />
+                </div>
+
                 <div className="flex-1 min-w-[120px]">
                   <label className="block text-xs text-muted mb-1">{t("Size (EN)", "المقاس (إنج)")}</label>
                   <input

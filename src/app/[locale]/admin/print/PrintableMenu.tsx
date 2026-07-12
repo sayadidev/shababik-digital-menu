@@ -48,7 +48,7 @@ export default function PrintableMenu({ data, locale }: Props) {
       <style>{`
         @page {
           size: A4;
-          margin: 14mm 12mm;
+          margin: 0 !important;
         }
 
         @media print {
@@ -100,7 +100,7 @@ export default function PrintableMenu({ data, locale }: Props) {
 
       <div
         dir={dir}
-        className="print-root min-h-screen"
+        className="print-root min-h-screen w-full p-12"
         style={{
           backgroundColor: "#FDFBF7",
           fontFamily: "var(--font-sans)",

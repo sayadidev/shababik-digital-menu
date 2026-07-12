@@ -7,11 +7,13 @@ import SkeletonMenu from "@/components/menu/SkeletonMenu";
 import { CartProvider } from "@/context/CartContext";
 import { ActiveOrderProvider } from "@/context/ActiveOrderContext";
 import { ToastProvider } from "@/components/menu/Toast";
+import { validateToken } from "@/lib/actions/tables";
 
 export const revalidate = 60;
 
 type Props = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ t?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -30,15 +32,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function HomePage() {
-  const data = await getMenuData();
+export default async function HomePage({ searchParams }: Props) {
+  const [data, sp] = await Promise.all([getMenuData(), searchParams]);
+
+  let tableResult: { valid: boolean; table_number: string | null } | null = null;
+  if (sp.t) {
+    tableResult = await validateToken(sp.t);
+  }
 
   return (
     <Suspense fallback={<SkeletonMenu />}>
       <CartProvider>
         <ActiveOrderProvider>
           <ToastProvider>
-            <Design10 data={data} />
+            <Design10 data={data} secureToken={sp.t ?? null} tableResult={tableResult} />
           </ToastProvider>
         </ActiveOrderProvider>
       </CartProvider>

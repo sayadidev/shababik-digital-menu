@@ -34,6 +34,7 @@ export interface ItemVariant {
   price_before_usd: number | null;
   price_before_syp: number | null;
   price_before_try: number | null;
+  image_url: string;
   created_at?: string;
 }
 
@@ -68,6 +69,18 @@ export interface SiteSettings {
   active_currency: Currency;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface Table {
+  id: string;
+  table_number: string;
+  secure_token: string;
+  created_at?: string;
+}
+
+export interface TableValidationResult {
+  valid: boolean;
+  table_number: string | null;
 }
 
 export type Locale = "en" | "ar";

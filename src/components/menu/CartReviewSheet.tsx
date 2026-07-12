@@ -118,6 +118,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
       session_id: getSessionId(),
       items: items.map((item) => ({
         name: locale === "ar" ? item.nameAr : item.nameEn,
+        nameEn: item.nameEn,
         quantity: item.quantity,
         variant: locale === "ar" ? item.variantNameAr : item.variantNameEn,
         notes: item.notes || undefined,
@@ -141,6 +142,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
           status: "pending",
           items: items.map((item) => ({
             name: locale === "ar" ? item.nameAr : item.nameEn,
+            nameEn: item.nameEn,
             variant: locale === "ar" ? item.variantNameAr : item.variantNameEn,
             quantity: item.quantity,
             notes: item.notes || undefined,

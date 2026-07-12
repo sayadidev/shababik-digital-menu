@@ -13,6 +13,7 @@ export interface OrderItemRow {
   id: string;
   order_id: string;
   item_name: string;
+  item_name_en?: string | null;
   variant_name?: string | null;
   quantity: number;
   notes?: string | null;
@@ -126,7 +127,7 @@ export async function createOrder(input: {
   table_number?: string;
   customer_name?: string | null;
   session_id?: string | null;
-  items: { name: string; quantity: number; notes?: string; variant?: string }[];
+  items: { name: string; nameEn?: string; quantity: number; notes?: string; variant?: string }[];
   total_usd: number;
   total_syp: number;
   total_try: number;
@@ -343,6 +344,7 @@ export async function createOrder(input: {
     const orderItems = input.items.map((item, idx) => ({
       order_id: order.id,
       item_name: item.name,
+      item_name_en: item.nameEn || null,
       variant_name: item.variant || null,
       quantity: item.quantity,
       notes: item.notes || null,
@@ -518,7 +520,7 @@ export async function updateOrderTable(
 
 export async function addItemsToOrder(
   orderId: string,
-  newItems: { name: string; quantity: number; notes?: string; variant?: string }[],
+  newItems: { name: string; nameEn?: string; quantity: number; notes?: string; variant?: string }[],
   additionalUsd: number,
   additionalSyp: number,
   additionalTry: number,
@@ -639,6 +641,7 @@ export async function addItemsToOrder(
   const orderItems = newItems.map((item, idx) => ({
     order_id: orderId,
     item_name: item.name,
+    item_name_en: item.nameEn || null,
     variant_name: item.variant || null,
     quantity: item.quantity,
     notes: item.notes || null,

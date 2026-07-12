@@ -20,7 +20,7 @@ interface Order {
   secureToken: string | null;
   customerName: string | null;
   status: OrderStatus;
-  items: { name: string; variant?: string; quantity: number; notes?: string; isAddedLater?: boolean; priceUsd?: number; priceSyp?: number; priceTry?: number }[];
+  items: { name: string; nameEn?: string; variant?: string; quantity: number; notes?: string; isAddedLater?: boolean; priceUsd?: number; priceSyp?: number; priceTry?: number }[];
   totalUsd: number;
   totalSyp: number;
   totalTry: number;
@@ -42,6 +42,7 @@ function toOrder(row: OrderRow): Order {
     status: row.status as OrderStatus,
     items: (row.order_items ?? []).map((oi: OrderItemRow) => ({
       name: oi.item_name,
+      nameEn: oi.item_name_en ?? undefined,
       variant: oi.variant_name ?? undefined,
       quantity: oi.quantity,
       notes: oi.notes ?? undefined,

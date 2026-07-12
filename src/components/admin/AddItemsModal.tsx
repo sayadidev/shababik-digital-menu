@@ -142,6 +142,7 @@ export default function AddItemsModal({
       orderId,
       selected.map((s) => ({
         name: s.nameAr,
+        nameEn: s.nameEn,
         variant: s.variantAr,
         quantity: s.quantity,
       })),

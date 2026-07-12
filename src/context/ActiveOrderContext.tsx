@@ -9,7 +9,7 @@ export interface ActiveOrder {
   totalUsd: number;
   totalSyp: number;
   totalTry: number;
-  items: { name: string; variant?: string; quantity: number; notes?: string }[];
+  items: { name: string; nameEn?: string; variant?: string; quantity: number; notes?: string }[];
   status: string;
   createdAt: string;
 }

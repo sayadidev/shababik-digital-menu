@@ -97,7 +97,7 @@ export default function CompletedOrders({ locale, activeCurrency, enableUsd = tr
                         <div key={i} className="flex items-center justify-between text-xs">
                           <span style={{ color: "#3B2818" }}>
                             <span className="font-bold">{item.quantity}x</span>{" "}
-                            {item.name}
+                            {locale === "ar" ? item.name : item.nameEn || item.name}
                             {item.variant && <span style={{ color: "#8a7a6a" }}> — {item.variant}</span>}
                           </span>
                         </div>

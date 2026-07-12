@@ -153,15 +153,19 @@ function CalendarPicker({ value, onChange, locale }: { value: string; onChange: 
 
 // ── Order Card ──
 
-function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string, currentTable: string) => void }) {
+function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit = false, showFeedback = false, actions = [], onChangeTable, isInvoiceView = false }: { order: Order; locale: string; activeCurrency: Currency; enableUsd?: boolean; showAudit?: boolean; showFeedback?: boolean; actions?: { label: string; onClick: () => void; style?: React.CSSProperties; loading?: boolean }[]; onChangeTable?: (orderId: string, currentTable: string) => void; isInvoiceView?: boolean }) {
   return (
     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-bold text-foreground" style={{ fontFamily: "monospace", fontSize: "11px" }}>#{order.id.slice(0, 8)}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${STATUS_COLORS[order.status]}18`, color: STATUS_COLORS[order.status], border: `1px solid ${STATUS_COLORS[order.status]}30` }}>
-            {t(locale, STATUS_LABELS[order.status].en, STATUS_LABELS[order.status].ar)}
-          </span>
+          {!isInvoiceView && (
+            <span className="text-sm font-bold text-foreground" style={{ fontFamily: "monospace", fontSize: "11px" }}>#{order.id.slice(0, 8)}</span>
+          )}
+          {!isInvoiceView && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${STATUS_COLORS[order.status]}18`, color: STATUS_COLORS[order.status], border: `1px solid ${STATUS_COLORS[order.status]}30` }}>
+              {t(locale, STATUS_LABELS[order.status].en, STATUS_LABELS[order.status].ar)}
+            </span>
+          )}
           <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "#f5efdf", color: "#8a7a6a" }}>
             {formatTime(order.createdAt)}
           </span>
@@ -175,7 +179,7 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
           <span className="text-xs" style={{ color: "#8a7a6a" }}>
             {t(locale, "Table", "الطاولة")} {order.tableNumber}
           </span>
-          {onChangeTable && (
+          {!isInvoiceView && onChangeTable && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onChangeTable(order.id, order.tableNumber); }}
@@ -457,6 +461,13 @@ export default function OrdersPage() {
     }
   }, [toast]);
 
+  useEffect(() => {
+    if (tab === "billing" && !billingSearched) {
+      handleBillingSearch("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   // ── Fetch history orders when date or tab changes ──
   useEffect(() => {
     if (tab !== "history" || tier !== "pro") return;
@@ -553,11 +564,6 @@ export default function OrdersPage() {
 
   const handleBillingSearch = useCallback(async (q: string) => {
     setBillingQuery(q);
-    if (!q.trim()) {
-      setBillingResults([]);
-      setBillingSearched(false);
-      return;
-    }
     setBillingLoading(true);
     setBillingSearched(true);
     try {
@@ -857,11 +863,13 @@ export default function OrdersPage() {
                   {billingResults.map((group) => {
                     const hasMultiple = group.orders.length > 1;
                     const isExpanded = expandedSessions.has(group.sessionId);
+                    const visibleOrders = hasMultiple && !isExpanded
+                      ? [group.orders[0]]
+                      : group.orders;
 
                     return (
                       <div key={group.sessionId} className="bg-surface rounded-xl shadow-[0_1px_3px_rgba(212,196,176,0.25)] overflow-hidden">
                         <div className="p-4">
-                          {/* Header */}
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
@@ -879,59 +887,18 @@ export default function OrdersPage() {
                             )}
                           </div>
 
-                          {/* All orders (receipt-style) */}
-                          {group.orders.map((order, oi) => {
-                            const displayOrder = toOrder(order);
-                            const showAll = !hasMultiple || oi === 0 || isExpanded;
+                          <div className="space-y-2">
+                            {visibleOrders.map((order) => (
+                              <OrderCard
+                                key={order.id}
+                                order={toOrder(order)}
+                                locale={locale}
+                                activeCurrency={activeCurrency}
+                                isInvoiceView
+                              />
+                            ))}
+                          </div>
 
-                            if (!showAll) return null;
-
-                            return (
-                              <div key={order.id}>
-                                {oi > 0 && <hr className="border-dashed border-[#dcc8b4]/40 my-3" />}
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[10px] font-medium" style={{ color: "#8a7a6a" }}>
-                                    {locale === "ar" ? "الطلب" : "Order"} {hasMultiple ? oi + 1 : ""}
-                                    {" · "}
-                                    {formatTime(order.created_at)}
-                                  </span>
-                                </div>
-                                <div className="space-y-1.5">
-                                  {displayOrder.items.map((item, ii) => (
-                                    <div key={ii} className="flex items-start justify-between text-xs">
-                                      <div className="min-w-0 flex-1">
-                                        <span style={{ color: "#3B2818" }}>
-                                          <span className="font-bold">{item.quantity}x</span>{" "}
-                                          {item.name}
-                                        </span>
-                                        {item.variant && (
-                                          <span style={{ color: "#8a7a6a" }}>
-                                            {" · "}{item.variant}
-                                          </span>
-                                        )}
-                                        {item.notes && (
-                                          <span className="block text-[10px] italic" style={{ color: "#dc2626" }}>
-                                            {item.notes}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                                <div className="flex justify-end mt-1.5">
-                                  <span className="text-xs font-bold tabular-nums" style={{ color: "#5a4a3a" }}>
-                                    {formatCurrency(
-                                      activeCurrency === "TRY" ? order.total_try : order.total_syp,
-                                      activeCurrency,
-                                      locale,
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {/* Accordion toggle for older orders */}
                           {hasMultiple && (
                             <button
                               type="button"
@@ -956,7 +923,6 @@ export default function OrdersPage() {
                           )}
                         </div>
 
-                        {/* Grand total for this session */}
                         <div className="px-4 py-3 border-t border-[#E8E6E1]" style={{ backgroundColor: "#faf7f0" }}>
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-bold" style={{ color: "#3B2818" }}>

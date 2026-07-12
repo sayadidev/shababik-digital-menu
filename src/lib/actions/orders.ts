@@ -662,17 +662,10 @@ export async function searchAndGroupOrders(
 ): Promise<{ grouped: GroupedSession[]; totalOrders: number }> {
   await requireAuth();
 
-  if (!query || query.trim().length === 0) {
-    return { grouped: [], totalOrders: 0 };
-  }
-
   const supabase = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
   const start = `${today}T00:00:00Z`;
   const end = `${today}T23:59:59Z`;
-
-  const trimmed = query.trim();
-  const isTableSearch = /^\d+$/.test(trimmed);
 
   let builder = supabase
     .from("orders")
@@ -681,10 +674,17 @@ export async function searchAndGroupOrders(
     .lte("created_at", end)
     .order("created_at", { ascending: false });
 
-  if (isTableSearch) {
-    builder = builder.eq("table_number", trimmed);
+  const trimmed = query.trim();
+  if (trimmed) {
+    const isTableSearch = /^\d+$/.test(trimmed);
+
+    if (isTableSearch) {
+      builder = builder.eq("table_number", trimmed);
+    } else {
+      builder = builder.or(`customer_name.ilike.%${trimmed}%,table_number.ilike.%${trimmed}%`);
+    }
   } else {
-    builder = builder.or(`customer_name.ilike.%${trimmed}%,table_number.ilike.%${trimmed}%`);
+    builder = builder.limit(50);
   }
 
   const { data, error } = await builder;

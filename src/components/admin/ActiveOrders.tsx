@@ -5,7 +5,7 @@ async function getActiveOrders() {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("orders")
-    .select("id, table_number, status, created_at")
+    .select("id, table_number, status, created_at, daily_order_number")
     .in("status", ["pending", "processing"])
     .order("created_at", { ascending: false })
     .limit(4);
@@ -44,7 +44,9 @@ export default async function ActiveOrders({ locale }: { locale: string }) {
           {orders.map((order) => (
             <div key={order.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: "#f5efdf" }}>
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-xs font-mono font-bold shrink-0" style={{ color: "#3B2818" }}>#{order.id.slice(0, 8)}</span>
+                <span className="text-xs font-mono font-bold shrink-0" style={{ color: "#3B2818" }}>
+                  {order.daily_order_number != null ? `#${order.daily_order_number}` : `#${order.id.slice(0, 8)}`}
+                </span>
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold shrink-0"
                   style={{ backgroundColor: `${statusColor[order.status] ?? "#8a7a6a"}18`, color: statusColor[order.status] ?? "#8a7a6a" }}>
                   {locale === "ar"

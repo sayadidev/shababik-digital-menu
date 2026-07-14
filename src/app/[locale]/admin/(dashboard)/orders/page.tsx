@@ -10,12 +10,15 @@ import { formatCurrency } from "@/lib/format-currency";
 import type { Currency, Table } from "@/types/database";
 import ProLockedScreen from "@/components/admin/ProLockedScreen";
 import AddItemsModal from "@/components/admin/AddItemsModal";
+import KitchenDisplay from "@/components/admin/KitchenDisplay";
+import PendingOrdersView from "@/components/admin/PendingOrdersView";
 
 type OrderStatus = "pending" | "processing" | "completed" | "cancelled";
 type Tab = "pending" | "kds" | "billing" | "history";
 
 interface Order {
   id: string;
+  dailyOrderNumber: number | null;
   tableNumber: string;
   secureToken: string | null;
   customerName: string | null;
@@ -36,6 +39,7 @@ interface Order {
 function toOrder(row: OrderRow): Order {
   return {
     id: row.id,
+    dailyOrderNumber: row.daily_order_number ?? null,
     tableNumber: row.table_number,
     secureToken: row.secure_token ?? null,
     customerName: row.customer_name ?? null,
@@ -163,13 +167,14 @@ function printReceipt(opts: {
   customerName: string;
   tableNumber: string;
   date: string;
+  dailyOrderNumber: number | null;
   items: { qty: number; name: string; variant: string; price: string; hasPrice: boolean }[];
   totalStr: string;
   usdStr: string;
 }) {
   const logoImg = document.querySelector('img[alt="Shababik"]') as HTMLImageElement | null;
   const logoUrl = logoImg?.src || "/shababik-solid-logo.png";
-  const { locale, customerName, tableNumber, date, items, totalStr, usdStr } = opts;
+  const { locale, customerName, tableNumber, date, dailyOrderNumber, items, totalStr, usdStr } = opts;
   const dateStr = new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" });
   const timeStr = formatTime(date);
   const footerStr = locale === "ar" ? "شكراً لزيارتكم" : "Thank you for your visit";
@@ -194,7 +199,7 @@ function printReceipt(opts: {
   </style></head><body>
     <div class="logo"><img src="${logoUrl}" alt="Logo"></div>
     <div class="meta">
-      <p>${dateStr}  ${timeStr}</p>
+      <p>${dailyOrderNumber != null ? `${locale === "ar" ? "رقم الطلب" : "Order"} #${dailyOrderNumber} · ` : ""}${dateStr}  ${timeStr}</p>
       <p class="info">${locale === "ar" ? "الزبون" : "Customer"}: ${customerName} | ${locale === "ar" ? "الطاولة" : "Table"}: ${tableNumber}</p>
     </div>
     <hr class="divider">
@@ -232,7 +237,9 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           {!isInvoiceView && (
-            <span className="text-sm font-bold text-foreground" style={{ fontFamily: "monospace", fontSize: "11px" }}>#{order.id.slice(0, 8)}</span>
+            <span className="text-sm font-bold text-foreground" style={{ fontFamily: "monospace", fontSize: "11px" }}>
+              {order.dailyOrderNumber != null ? `#${order.dailyOrderNumber}` : `#${order.id.slice(0, 8)}`}
+            </span>
           )}
           {!isInvoiceView && (
             <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${STATUS_COLORS[order.status]}18`, color: STATUS_COLORS[order.status], border: `1px solid ${STATUS_COLORS[order.status]}30` }}>
@@ -263,6 +270,7 @@ function OrderCard({ order, locale, activeCurrency, enableUsd = true, showAudit 
                   customerName: order.customerName || (locale === "ar" ? "—" : "—"),
                   tableNumber: order.tableNumber,
                   date: order.createdAt,
+                  dailyOrderNumber: order.dailyOrderNumber,
                   items: order.items.map((item) => ({
                     qty: item.quantity,
                     name: item.name,
@@ -785,7 +793,7 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+    <div className={`p-4 md:p-6 mx-auto ${tab === "kds" ? "" : "max-w-3xl"}`}>
       {tier === "pro" ? (
         <>
           {/* ── Audio Alerts Toggle ── */}
@@ -842,76 +850,33 @@ export default function OrdersPage() {
 
           {/* ── Pending Orders Tab ── */}
           {tab === "pending" && (
-            pendingOrders.length === 0 ? (
-              <div className="bg-surface rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
-                <p className="text-sm" style={{ color: "#8a7a6a" }}>
-                  {t(locale, "No pending orders", "لا توجد طلبات قيد الانتظار")}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingOrders.map((order) => (
-                  <div key={order.id} className="space-y-2">
-                  <OrderCard order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
-                    {
-                      label: t(locale, "Accept", "قبول"),
-                      onClick: () => handleStatusUpdate(order.id, "processing"),
-                      loading: loadingAction === order.id,
-                      style: { backgroundColor: "#9a6a3a", color: "#fff" },
-                    },
-                    {
-                      label: t(locale, "Reject", "رفض"),
-                      onClick: () => handleStatusUpdate(order.id, "cancelled"),
-                      loading: loadingAction === order.id,
-                      style: { backgroundColor: "#fce8e8", color: "#b55a5a" },
-                    },
-                  ]} />
-                  <button
-                    type="button"
-                    onClick={() => setAddItemsOrderId(order.id)}
-                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] border-0"
-                    style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
-                  >
-                    {t(locale, "Edit / Add Items", "تعديل / إضافة أصناف")}
-                  </button>
-                  </div>
-                ))}
-              </div>
-            )
+            <PendingOrdersView
+              orders={pendingOrders}
+              locale={locale}
+              activeCurrency={activeCurrency}
+              onAccept={(orderId) => handleStatusUpdate(orderId, "processing")}
+              onReject={(orderId) => handleStatusUpdate(orderId, "cancelled")}
+              onEditItems={setAddItemsOrderId}
+              onChangeTable={handleOpenChangeTable}
+              loadingAction={loadingAction}
+            />
           )}
 
           {/* ── Kitchen Display Tab ── */}
           {tab === "kds" && (
-            processingOrders.length === 0 ? (
-              <div className="bg-surface rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
-                <p className="text-sm" style={{ color: "#8a7a6a" }}>
-                  {t(locale, "Kitchen is clear", "المطبخ جاهز")}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {processingOrders.map((order) => (
-                  <div key={order.id} className="space-y-2">
-                  <OrderCard order={order} locale={locale} activeCurrency={activeCurrency} onChangeTable={handleOpenChangeTable} actions={[
-                    {
-                      label: t(locale, "Ready", "جاهز"),
-                      onClick: () => handleStatusUpdate(order.id, "completed"),
-                      loading: loadingAction === order.id,
-                      style: { backgroundColor: "#5a8a3a", color: "#fff" },
-                    },
-                  ]} />
-                  <button
-                    type="button"
-                    onClick={() => setAddItemsOrderId(order.id)}
-                    className="w-full py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] border-0"
-                    style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}
-                  >
-                    {t(locale, "Edit / Add Items", "تعديل / إضافة أصناف")}
-                  </button>
-                  </div>
-                ))}
-              </div>
-            )
+            <KitchenDisplay
+              orders={processingOrders.map((o) => ({
+                id: o.id,
+                dailyOrderNumber: o.dailyOrderNumber,
+                tableNumber: o.tableNumber,
+                items: o.items,
+                createdAt: o.createdAt,
+              }))}
+              locale={locale}
+              onReady={(orderId) => handleStatusUpdate(orderId, "completed")}
+              onEditItems={setAddItemsOrderId}
+              loadingAction={loadingAction}
+            />
           )}
 
           {/* ── Billing Tab ── */}
@@ -1085,6 +1050,15 @@ export default function OrdersPage() {
                               <span className="mx-2">|</span>
                               {locale === "ar" ? "الطاولة" : "Table"}: {group.tableNumber}
                             </p>
+                            {group.orders.map((o) => {
+                              const oDetails = toOrder(o);
+                              const orderNum = oDetails.dailyOrderNumber;
+                              return orderNum != null ? (
+                                <p key={o.id} className="text-[11px] font-bold text-gray-800 mt-0.5" style={{ fontFamily: "monospace" }}>
+                                  {locale === "ar" ? "رقم الطلب" : "Order"} #{orderNum}
+                                </p>
+                              ) : null;
+                            })}
                           </div>
 
                           <div className="border-b border-dashed border-gray-400 mb-2" />
@@ -1156,6 +1130,7 @@ export default function OrdersPage() {
                                 customerName: group.customerName || (locale === "ar" ? "—" : "—"),
                                 tableNumber: group.tableNumber,
                                 date: group.orders[0].created_at,
+                                dailyOrderNumber: group.orders.length === 1 ? toOrder(group.orders[0]).dailyOrderNumber : null,
                                 items: group.orders.flatMap((order) =>
                                   toOrder(order).items.map((item) => ({
                                     qty: item.quantity,
@@ -1420,6 +1395,11 @@ export default function OrdersPage() {
         @keyframes pulseAdded {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.85; }
+        }
+
+        @keyframes kdsPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
 
         .print-receipt {

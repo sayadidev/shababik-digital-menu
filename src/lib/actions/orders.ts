@@ -33,6 +33,7 @@ export interface OrderRow {
   total_usd: number;
   total_syp: number;
   total_try: number;
+  daily_order_number: number | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -131,7 +132,7 @@ export async function createOrder(input: {
   total_usd: number;
   total_syp: number;
   total_try: number;
-}): Promise<{ success: boolean; orderId?: string; error?: string }> {
+}): Promise<{ success: boolean; orderId?: string; dailyOrderNumber?: number | null; error?: string }> {
   try {
     await requirePro();
 
@@ -337,7 +338,7 @@ export async function createOrder(input: {
         total_syp: computedSyp,
         total_try: computedTry,
       })
-      .select("id")
+      .select("id, daily_order_number")
       .single();
 
     if (orderErr || !order) {
@@ -365,7 +366,7 @@ export async function createOrder(input: {
     }
 
     revalidatePath("/admin/orders");
-    return { success: true, orderId: order.id };
+    return { success: true, orderId: order.id, dailyOrderNumber: order.daily_order_number };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("CREATE_ORDER_ERROR:", message);

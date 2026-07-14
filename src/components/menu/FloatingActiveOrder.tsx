@@ -109,7 +109,9 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
   if (!activeOrder) return null;
 
   const isRtl = locale === "ar";
-  const shortId = activeOrder.orderId.slice(0, 5).toUpperCase();
+  const displayOrderNumber = activeOrder.dailyOrderNumber != null
+    ? `#${activeOrder.dailyOrderNumber}`
+    : `#${activeOrder.orderId.slice(0, 5).toUpperCase()}`;
   const config = getStatusConfig(activeOrder.status);
   const isReady = activeOrder.status === "completed";
 
@@ -266,7 +268,7 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
                       {locale === "ar" ? "حالة الطلب" : "Order Status"}
                     </h2>
                     <p className="text-xs text-gray-500">
-                      #{shortId} &middot; {locale === "ar" ? `الطاولة ${activeOrder.tableNumber}` : `Table ${activeOrder.tableNumber}`}
+                      {displayOrderNumber} &middot; {locale === "ar" ? `الطاولة ${activeOrder.tableNumber}` : `Table ${activeOrder.tableNumber}`}
                     </p>
                   </div>
                 </div>
@@ -358,7 +360,7 @@ export default function FloatingActiveOrder({ locale, activeCurrency, enableUsd 
                 {locale === "ar" ? config.text.ar : config.text.en}
               </p>
               <p className="text-xs text-gray-500">
-                #{shortId}
+                {displayOrderNumber}
               </p>
             </div>
           </div>

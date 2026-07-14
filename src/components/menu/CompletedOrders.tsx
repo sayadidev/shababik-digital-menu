@@ -47,7 +47,7 @@ export default function CompletedOrdersSheet({ open, onClose, locale, activeCurr
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-mono font-bold" style={{ color: "#8a7a6a" }}>
-                      #{order.orderId.slice(0, 8)}
+                      {order.dailyOrderNumber != null ? `#${order.dailyOrderNumber}` : `#${order.orderId.slice(0, 8)}`}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-700">
                       {locale === "ar" ? "مكتمل" : "Completed"}

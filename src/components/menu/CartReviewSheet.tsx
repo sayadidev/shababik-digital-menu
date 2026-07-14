@@ -142,6 +142,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
       if (res.orderId) {
         setActiveOrder({
           orderId: res.orderId,
+          dailyOrderNumber: res.dailyOrderNumber ?? null,
           tableNumber: effectiveTable ?? "1",
           totalUsd: totalPriceUsd,
           totalSyp: totalPriceSyp,

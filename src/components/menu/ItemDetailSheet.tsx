@@ -119,6 +119,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                   sizes="(max-width: 768px) 100vw, 512px"
                   className="object-cover object-bottom"
                   priority
+                  quality={75}
                   unoptimized
                 />
               ) : allImages.length > 0 ? (
@@ -135,6 +136,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                         fill
                         sizes="(max-width: 768px) 100vw, 512px"
                         className="object-cover object-bottom"
+                        quality={75}
                         unoptimized
                         priority={i === 0}
                       />
@@ -266,6 +268,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                               width={40}
                               height={40}
                               className="object-cover w-full h-full"
+                              quality={75}
                               unoptimized
                             />
                           </div>
@@ -320,6 +323,7 @@ export default function ItemDetailSheet({ item, onClose, activeCurrency, enableU
                         width={512}
                         height={512}
                         priority
+                        quality={75}
                         unoptimized
                       />
                     ) : null

@@ -374,6 +374,7 @@ const tParam = secureToken ?? null;  const s = data.settings;
                             fill
                             sizes="(max-width: 640px) 38vw, 190px"
                             className="object-cover rounded-xl"
+                            quality={75}
                             unoptimized
                             {...(isCenter ? { priority: true } : { loading: "eager" })}
                           />
@@ -564,10 +565,11 @@ const tParam = secureToken ?? null;  const s = data.settings;
                                   src={item.image_url}
                                   alt={name}
                                   fill
-                                  sizes="100px"
+                                  sizes="(max-width: 640px) 100px, 100px"
                                   className="object-cover rounded-xl"
+                                  quality={75}
                                   unoptimized
-                                  loading="eager"
+                                  priority
                                 />
                                 {item.is_bestseller && (
                                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#B8743A] text-[10px] font-bold flex items-center justify-center text-white shadow-sm z-10">

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getMenuData } from "@/lib/menu";
-import Design10 from "@/components/designs/Design10";
+import MenuClient from "@/components/menu/MenuClient";
 import SkeletonMenu from "@/components/menu/SkeletonMenu";
 import { CartProvider } from "@/context/CartContext";
 import { ActiveOrderProvider } from "@/context/ActiveOrderContext";
@@ -45,7 +45,7 @@ export default async function HomePage({ searchParams }: Props) {
       <CartProvider>
         <ActiveOrderProvider>
           <ToastProvider>
-            <Design10 data={data} secureToken={sp.t ?? null} tableResult={tableResult} />
+            <MenuClient data={data} secureToken={sp.t ?? null} tableResult={tableResult} />
           </ToastProvider>
         </ActiveOrderProvider>
       </CartProvider>

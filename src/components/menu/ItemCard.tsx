@@ -36,6 +36,7 @@ export default function ItemCard({ item, onSelect, activeCurrency, enableUsd = t
             className="w-24 h-24 rounded-xl object-cover"
             loading="eager"
             fetchPriority="high"
+            quality={75}
             unoptimized
           />
         ) : (

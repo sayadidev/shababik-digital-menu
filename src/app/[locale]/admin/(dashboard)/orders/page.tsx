@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updateOrderStatus, updateOrderTable, searchAndGroupOrders } from "@/lib/actions/orders";
 import { getTables } from "@/lib/actions/tables";
@@ -476,7 +476,12 @@ export default function OrdersPage() {
   const params = useParams<{ locale: string }>();
   const locale = params?.locale || "en";
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("pending");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => {
+    const spTab = searchParams.get("tab");
+    if (spTab === "pending" || spTab === "kds" || spTab === "billing" || spTab === "history") return spTab;
+    return "pending";
+  });
   const [tier, setTier] = useState<"basic" | "pro">("basic");
   const [enableUsd, setEnableUsd] = useState(true);
   const [activeCurrency, setActiveCurrency] = useState<Currency>("TRY");
@@ -509,6 +514,35 @@ export default function OrdersPage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingSearched, setBillingSearched] = useState(false);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+
+  // Auto-expand sessions whose child orders match the frontend filter
+  useEffect(() => {
+    if (!billingFrontendFilter.trim()) return;
+    const q = billingFrontendFilter.replace("#", "").trim().toLowerCase();
+    if (!q) return;
+    const toExpand = new Set<string>();
+    for (const g of billingResults) {
+      if (g.orders.length > 1) {
+        const parent = g.orders[0];
+        const parentDn = parent.daily_order_number != null ? String(parent.daily_order_number) : "";
+        const parentMatch = parentDn.includes(q) || parent.id.slice(0, 8).toLowerCase().includes(q);
+        if (!parentMatch) {
+          const childMatch = g.orders.slice(1).some((o) => {
+            const dn = o.daily_order_number != null ? String(o.daily_order_number) : "";
+            return dn.includes(q) || o.id.slice(0, 8).toLowerCase().includes(q);
+          });
+          if (childMatch) toExpand.add(g.sessionId);
+        }
+      }
+    }
+    if (toExpand.size > 0) {
+      setExpandedSessions((prev) => {
+        const next = new Set(prev);
+        toExpand.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }, [billingFrontendFilter, billingResults]);
 
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
@@ -793,7 +827,7 @@ export default function OrdersPage() {
   const [historySearch, setHistorySearch] = useState("");
 
   const filteredHistory = useMemo(() => {
-    const q = historySearch.trim().toLowerCase();
+    const q = historySearch.replace("#", "").trim().toLowerCase();
     if (!q) return history;
     const filterOrders = (orders: Order[]) =>
       orders.filter((o) => {
@@ -886,7 +920,7 @@ export default function OrdersPage() {
           {/* ── Tab Navigation ── */}
           <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ backgroundColor: "#f5efdf" }}>
             {TABS.map((tabItem) => (
-              <button key={tabItem.key} type="button" onClick={() => setTab(tabItem.key)}
+              <button key={tabItem.key} type="button" onClick={() => { setTab(tabItem.key); router.replace(`?tab=${tabItem.key}`, { scroll: false }); }}
                 className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border-0 relative min-h-[40px] flex items-center justify-center gap-1"
                 style={{
                   backgroundColor: tab === tabItem.key ? "#fff" : "transparent",
@@ -943,34 +977,19 @@ export default function OrdersPage() {
             <div className="space-y-4">
               <div className="sticky top-0 z-10 bg-background pb-3 pt-1 no-print">
                 <div className="relative">
-                  <input
-                    type="text"
-                    value={billingQuery}
-                    onChange={(e) => handleBillingSearch(e.target.value)}
-                    placeholder={t(locale, "Search by name or table...", "ابحث باسم الزبون أو الطاولة...")}
-                    className="w-full px-4 py-3 pl-10 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all shadow-sm"
-                  />
-                  <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-
-              {billingSearched && billingResults.length > 0 && (
-                <div className="relative mb-3">
                   <svg className="absolute top-1/2 -translate-y-1/2 w-4 h-4" style={{ [locale === "ar" ? "right" : "left"]: "12px", color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
                     type="text"
-                    value={billingFrontendFilter}
-                    onChange={(e) => setBillingFrontendFilter(e.target.value)}
-                    placeholder={t(locale, "Filter by order #, table, or customer...", "تصفية برقم الطلب، الطاولة، أو اسم الزبون...")}
+                    value={billingQuery}
+                    onChange={(e) => { setBillingFrontendFilter(e.target.value); handleBillingSearch(e.target.value); }}
+                    placeholder={t(locale, "Search by order #, table, or customer...", "ابحث برقم الطلب، الطاولة، أو اسم الزبون...")}
                     className="w-full py-2.5 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all shadow-sm"
                     style={{ [locale === "ar" ? "paddingRight" : "paddingLeft"]: "36px" }}
                   />
                 </div>
-              )}
+              </div>
 
               {billingLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -996,35 +1015,12 @@ export default function OrdersPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {billingResults.length > 0 && (
-                    <div className="flex items-center justify-between px-1 py-2 border-b border-[#E8E6E1] no-print">
-                      <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
-                        {t(locale, "Grand Total", "إجمالي الفاتورة")}
-                      </span>
-                      <div className="text-right">
-                        <p className="text-lg font-bold tabular-nums" style={{ color: "#3B2818" }}>
-                          {formatCurrency(
-                            activeCurrency === "TRY"
-                              ? billingResults.reduce((s, g) => s + g.grandTotalTry, 0)
-                              : billingResults.reduce((s, g) => s + g.grandTotalSyp, 0),
-                            activeCurrency,
-                            locale,
-                          )}
-                        </p>
-                        {enableUsd && billingResults.reduce((s, g) => s + g.grandTotalUsd, 0) > 0 && (
-                          <p className="text-xs tabular-nums" style={{ color: "#8a7a6a" }}>
-                            {formatCurrency(billingResults.reduce((s, g) => s + g.grandTotalUsd, 0), "USD", locale)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
 
                   {billingResults.filter((g) => {
                     if (!billingFrontendFilter.trim()) return true;
-                    const q = billingFrontendFilter.trim().toLowerCase();
+                    const q = billingFrontendFilter.replace("#", "").trim().toLowerCase();
                     const customer = (g.customerName ?? "").toLowerCase();
                     const table = g.tableNumber.toLowerCase();
                     return customer.includes(q) || table.includes(q) ||
@@ -1069,13 +1065,31 @@ export default function OrdersPage() {
 
                           <div className="space-y-2">
                             {visibleOrders.map((order) => (
-                              <OrderCard
-                                key={order.id}
-                                order={toOrder(order)}
-                                locale={locale}
-                                activeCurrency={activeCurrency}
-                                isInvoiceView
-                              />
+                              <div key={order.id} className="relative">
+                                <div className="flex items-center gap-1 mb-1 px-1">
+                                  {order.daily_order_number != null && (
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}>
+                                      #{order.daily_order_number}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setAddItemsOrderId(order.id)}
+                                    className="min-w-[24px] min-h-[24px] rounded-full flex items-center justify-center border-0 hover:bg-gray-100 transition-colors"
+                                    title={t(locale, "Edit this order", "تعديل هذا الطلب")}
+                                  >
+                                    <svg className="w-3 h-3" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                <OrderCard
+                                  order={toOrder(order)}
+                                  locale={locale}
+                                  activeCurrency={activeCurrency}
+                                  isInvoiceView
+                                />
+                              </div>
                             ))}
                           </div>
 
@@ -1405,6 +1419,7 @@ export default function OrdersPage() {
           onSuccess={() => {
             setAddItemsOrderId(null);
             fetchActiveOrders();
+            if (tab === "billing") handleBillingSearch(billingQuery);
             setToast({ message: t(locale, "Items added to order", "تمت إضافة الأصناف للطلب بنجاح"), type: "success" });
           }}
         />

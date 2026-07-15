@@ -104,6 +104,9 @@ const tParam = secureToken ?? null;  const s = data.settings;
   const [reviewOpen, setReviewOpen] = useState(false);
   const [completedOrdersOpen, setCompletedOrdersOpen] = useState(false);
   const [showTokenWarning, setShowTokenWarning] = useState(false);
+  const [tableLocked, setTableLocked] = useState(false);
+  const [lockedTableName, setLockedTableName] = useState<string | null>(null);
+  const [lockCooldownSeconds, setLockCooldownSeconds] = useState(0);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const tickingRef = useRef(false);
@@ -159,6 +162,52 @@ const tParam = secureToken ?? null;  const s = data.settings;
       setShowTokenWarning(true);
     }
   }, [orderingEnabled, tableResult, isStaff]);
+
+  // Table lock check — prevent table-hopping during cooldown
+  useEffect(() => {
+    if (!orderingEnabled || isStaff || !tableNumber) return;
+    try {
+      const COOLDOWN_MS = 15 * 60 * 1000;
+      const lastTimestamp = localStorage.getItem("last_order_timestamp");
+      if (!lastTimestamp) return;
+      const elapsed = Date.now() - parseInt(lastTimestamp, 10);
+      if (elapsed >= COOLDOWN_MS) {
+        localStorage.removeItem("shababik_locked_table");
+        localStorage.removeItem("last_order_timestamp");
+        setTableLocked(false);
+        setLockedTableName(null);
+        setLockCooldownSeconds(0);
+        return;
+      }
+      const lockedTable = localStorage.getItem("shababik_locked_table");
+      if (lockedTable && lockedTable !== tableNumber) {
+        setTableLocked(true);
+        setLockedTableName(lockedTable);
+        setLockCooldownSeconds(Math.ceil((COOLDOWN_MS - elapsed) / 1000));
+      } else {
+        setTableLocked(false);
+        setLockedTableName(null);
+        setLockCooldownSeconds(0);
+      }
+    } catch {}
+  }, [orderingEnabled, isStaff, tableNumber]);
+
+  useEffect(() => {
+    if (lockCooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockCooldownSeconds(prev => {
+        if (prev <= 1) {
+          localStorage.removeItem("shababik_locked_table");
+          localStorage.removeItem("last_order_timestamp");
+          setTableLocked(false);
+          setLockedTableName(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockCooldownSeconds > 0 ? 1 : 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auth session check — real Supabase session for staff/admin
   useEffect(() => {
@@ -240,12 +289,13 @@ const tParam = secureToken ?? null;  const s = data.settings;
   }, [data.categories]);
 
   const handleItemClick = useCallback((item: ItemWithVariants) => {
+    if (tableLocked) return;
     if (orderingEnabled) {
       setAddToCartItem({ item, variant: item.item_variants[0] ?? null });
     } else {
       setSelectedItem(item);
     }
-  }, [orderingEnabled]);
+  }, [orderingEnabled, tableLocked]);
 
   const featuredItems = useMemo(() => {
     const allActive = data.categories.flatMap(c => c.items).filter(i => i.is_active);
@@ -664,7 +714,44 @@ const tParam = secureToken ?? null;  const s = data.settings;
       </div>
       {orderingEnabled ? (
         <>
-          {showTokenWarning && !isStaff ? (
+          {tableLocked ? (
+            <div
+              className="fixed bottom-0 left-0 right-0 z-40 transition-all duration-500 ease-out"
+              style={{ animation: "cartSlideUp 0.4s cubic-bezier(0.32,0.72,0,1)" }}
+            >
+              <div
+                className="mx-auto px-3 pb-[max(12px,env(safe-area-inset-bottom))]"
+                style={{ maxWidth: "min(100vw, 1200px)" }}
+              >
+                <div className="w-full rounded-2xl px-4 py-4 flex flex-col gap-2 border-0"
+                  style={{
+                    backgroundColor: "#FEF2F2",
+                    boxShadow: "0 4px 24px rgba(220, 38, 38, 0.22)",
+                    border: "1px solid #EF4444",
+                  }}>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <p className="text-sm font-semibold text-red-800 flex-1">
+                      {locale === "ar"
+                        ? `عذراً! لقد قمت بالطلب مسبقاً من طاولة ${lockedTableName}. لا يمكنك تغيير الطاولة أو إرسال طلب جديد إلا بعد مرور 15 دقيقة. يرجى مناداة الموظف إذا كنت بحاجة للمساعدة أو لتغيير طاولتك.`
+                        : `Sorry! You have previously ordered from Table ${lockedTableName}. You cannot change tables or place a new order until 15 minutes have passed. Please call a staff member if you need assistance or to change your table.`}
+                    </p>
+                  </div>
+                  <div className="text-center text-xs text-red-600 font-semibold tabular-nums">
+                    {Math.floor(lockCooldownSeconds / 60)}:{String(lockCooldownSeconds % 60).padStart(2, "0")}
+                  </div>
+                </div>
+              </div>
+              <style>{`
+                @keyframes cartSlideUp {
+                  from { transform: translateY(100%); opacity: 0; }
+                  to { transform: translateY(0); opacity: 1; }
+                }
+              `}</style>
+            </div>
+          ) : showTokenWarning && !isStaff ? (
             <div
               className="fixed bottom-0 left-0 right-0 z-40 transition-all duration-500 ease-out"
               style={{ animation: "cartSlideUp 0.4s cubic-bezier(0.32,0.72,0,1)" }}

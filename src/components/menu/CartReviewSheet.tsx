@@ -138,6 +138,7 @@ export default function CartReviewSheet({ tableNumber, secureToken, locale, acti
     if (res.success) {
       if (!isStaff) {
         localStorage.setItem("last_order_timestamp", String(Date.now()));
+        localStorage.setItem("shababik_locked_table", effectiveTable ?? "");
       }
       if (res.orderId) {
         setActiveOrder({

@@ -101,60 +101,95 @@ function sameDay(a: string, b: string): boolean {
 // ── Calendar ──
 
 function CalendarPicker({ value, onChange, locale }: { value: string; onChange: (d: string) => void; locale: string }) {
+  const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => {
     const d = value ? new Date(value) : new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
   });
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   const daysInMonth = new Date(month.year, month.month + 1, 0).getDate();
   const firstDayOfWeek = new Date(month.year, month.month, 1).getDay();
-  const todayStr = dateKey(new Date().toISOString());
+  const todayKey = dateKey(new Date().toISOString());
   const selectedDate = value.split("T")[0];
+
+  const displayDate = new Date(value);
+  const dateLocale = locale === "ar" ? "ar-u-nu-latn-ca-gregory" : "en-US";
+  const dateLabel = displayDate.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
+
+  const monthLabel = new Date(month.year, month.month).toLocaleDateString(dateLocale, { month: "long", year: "numeric" });
 
   const days: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-3">
-        <button type="button" onClick={() => setMonth(m => ({ year: m.month === 0 ? m.year - 1 : m.year, month: m.month === 0 ? 11 : m.month - 1 }))}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold hover:bg-primary/10 transition-all border-0"
-          style={{ color: "#8a7a6a" }}>
-          ←
-        </button>
-        <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
-          {new Date(month.year, month.month).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { month: "long", year: "numeric" })}
-        </span>
-        <button type="button" onClick={() => setMonth(m => ({ year: m.month === 11 ? m.year + 1 : m.year, month: m.month === 11 ? 0 : m.month + 1 }))}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold hover:bg-primary/10 transition-all border-0"
-          style={{ color: "#8a7a6a" }}>
-          →
-        </button>
-      </div>
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
-          <span key={d} className="text-center text-[10px] font-semibold uppercase py-1" style={{ color: "#8a7a6a" }}>{d}</span>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((d, i) => {
-          if (d === null) return <div key={`e-${i}`} />;
-          const dateStr = `${month.year}-${String(month.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-          const isSelected = dateStr === selectedDate;
-          const isToday = dateStr === todayStr;
-          return (
-            <button key={d} type="button" onClick={() => onChange(dateStr)}
-              className="w-full aspect-square rounded-lg text-xs font-semibold transition-all border-0 flex items-center justify-center"
-              style={{
-                backgroundColor: isSelected ? "#9a6a3a" : "transparent",
-                color: isSelected ? "#fff" : isToday ? "#9a6a3a" : "#3B2818",
-              }}>
-              {d}
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all border hover:bg-gray-50"
+        style={{ backgroundColor: "#fff", color: "#3B2818", borderColor: "#dcc8b4" }}
+      >
+        <svg className="w-4 h-4" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        {dateLabel}
+        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-2 z-50 bg-white border border-[#dcc8b4] rounded-xl shadow-lg p-3" style={{ width: "280px", maxWidth: "calc(100vw - 2rem)", [locale === "ar" ? "left" : "right"]: 0, [locale === "ar" ? "right" : "left"]: "auto" }}>
+          <div className="flex items-center justify-between mb-3">
+            <button type="button" onClick={() => setMonth(m => ({ year: m.month === 0 ? m.year - 1 : m.year, month: m.month === 0 ? 11 : m.month - 1 }))}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold hover:bg-gray-100 transition-all border-0"
+              style={{ color: "#8a7a6a" }}>
+              ←
             </button>
-          );
-        })}
-      </div>
+            <span className="text-sm font-bold" style={{ color: "#3B2818" }}>
+              {monthLabel}
+            </span>
+            <button type="button" onClick={() => setMonth(m => ({ year: m.month === 11 ? m.year + 1 : m.year, month: m.month === 11 ? 0 : m.month + 1 }))}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold hover:bg-gray-100 transition-all border-0"
+              style={{ color: "#8a7a6a" }}>
+              →
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
+              <span key={d} className="text-center text-[10px] font-semibold uppercase py-0.5" style={{ color: "#8a7a6a" }}>{d}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((d, i) => {
+              if (d === null) return <div key={`e-${i}`} />;
+              const dateStr = `${month.year}-${String(month.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+              const isSelected = dateStr === selectedDate;
+              const isToday = dateStr === todayKey;
+              return (
+                <button key={d} type="button" onClick={() => { onChange(dateStr); setOpen(false); }}
+                  className="w-full aspect-square rounded-lg text-xs font-semibold transition-all border-0 flex items-center justify-center"
+                  style={{
+                    backgroundColor: isSelected ? "#9a6a3a" : "transparent",
+                    color: isSelected ? "#fff" : isToday ? "#9a6a3a" : "#3B2818",
+                  }}>
+                  {d.toLocaleString("en-US")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -452,7 +487,10 @@ export default function OrdersPage() {
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [processingOrders, setProcessingOrders] = useState<Order[]>([]);
   const [historyOrders, setHistoryOrders] = useState<{ completed: Order[]; cancelled: Order[] }>({ completed: [], cancelled: [] });
-  const [historyDate, setHistoryDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [historyDate, setHistoryDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -466,6 +504,7 @@ export default function OrdersPage() {
   const [addItemsOrderId, setAddItemsOrderId] = useState<string | null>(null);
 
   const [billingQuery, setBillingQuery] = useState("");
+  const [billingFrontendFilter, setBillingFrontendFilter] = useState("");
   const [billingResults, setBillingResults] = useState<GroupedSession[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingSearched, setBillingSearched] = useState(false);
@@ -751,15 +790,33 @@ export default function OrdersPage() {
 
   const history = useMemo(() => historyOrders, [historyOrders]);
 
+  const [historySearch, setHistorySearch] = useState("");
+
+  const filteredHistory = useMemo(() => {
+    const q = historySearch.trim().toLowerCase();
+    if (!q) return history;
+    const filterOrders = (orders: Order[]) =>
+      orders.filter((o) => {
+        const id = o.id.slice(0, 8).toLowerCase();
+        const table = o.tableNumber.toLowerCase();
+        const customer = (o.customerName ?? "").toLowerCase();
+        return id.includes(q) || table.includes(q) || customer.includes(q);
+      });
+    return {
+      completed: filterOrders(history.completed),
+      cancelled: filterOrders(history.cancelled),
+    };
+  }, [history, historySearch]);
+
   const topItems = useMemo(() => {
     const count = new Map<string, number>();
-    for (const order of history.completed) {
+    for (const order of filteredHistory.completed) {
       for (const item of order.items) {
         count.set(item.name, (count.get(item.name) || 0) + item.quantity);
       }
     }
     return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [history.completed]);
+    }, [filteredHistory.completed]);
 
   if (tierLoading || !roleLoaded) {
     return (
@@ -791,11 +848,11 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className={`p-4 md:p-6 mx-auto ${tab === "kds" ? "" : "max-w-3xl"}`}>
+    <div className="p-4 md:p-6 w-full">
       {tier === "pro" ? (
         <>
           {/* ── Audio Alerts Toggle ── */}
-          <div className="flex items-center justify-end mb-3">
+          <div className="flex items-center justify-end mb-6">
             <button
               type="button"
               onClick={() => {
@@ -827,21 +884,24 @@ export default function OrdersPage() {
           </div>
 
           {/* ── Tab Navigation ── */}
-          <div className="flex gap-1 mb-5 p-1 rounded-xl" style={{ backgroundColor: "#f5efdf" }}>
+          <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ backgroundColor: "#f5efdf" }}>
             {TABS.map((tabItem) => (
               <button key={tabItem.key} type="button" onClick={() => setTab(tabItem.key)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border-0 relative"
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border-0 relative min-h-[40px] flex items-center justify-center gap-1"
                 style={{
                   backgroundColor: tab === tabItem.key ? "#fff" : "transparent",
                   color: tab === tabItem.key ? "#3B2818" : "#8a7a6a",
-                  boxShadow: tab === tabItem.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none",
+                  boxShadow: tab === tabItem.key ? "0 1px 4px rgba(0,0,0,0.06)" : "0 1px 4px rgba(0,0,0,0)",
                 }}>
-                {t(locale, tabItem.labelEn, tabItem.labelAr)}
-                {tabItem.count !== undefined && tabItem.count > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: "#9a6a3a", color: "#fff" }}>
-                    {tabItem.count}
-                  </span>
-                )}
+                <span>{t(locale, tabItem.labelEn, tabItem.labelAr)}</span>
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold min-w-[20px] inline-flex items-center justify-center"
+                  style={{
+                    backgroundColor: tab === tabItem.key ? "#9a6a3a" : "#d1c3b0",
+                    color: tab === tabItem.key ? "#fff" : "#8a7a6a",
+                    visibility: tabItem.count !== undefined && tabItem.count > 0 ? "visible" : "hidden",
+                  }}>
+                  {tabItem.count ?? 0}
+                </span>
               </button>
             ))}
           </div>
@@ -873,6 +933,7 @@ export default function OrdersPage() {
               locale={locale}
               onReady={(orderId) => handleStatusUpdate(orderId, "completed")}
               onEditItems={setAddItemsOrderId}
+              onChangeTable={handleOpenChangeTable}
               loadingAction={loadingAction}
             />
           )}
@@ -894,6 +955,22 @@ export default function OrdersPage() {
                   </svg>
                 </div>
               </div>
+
+              {billingSearched && billingResults.length > 0 && (
+                <div className="relative mb-3">
+                  <svg className="absolute top-1/2 -translate-y-1/2 w-4 h-4" style={{ [locale === "ar" ? "right" : "left"]: "12px", color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={billingFrontendFilter}
+                    onChange={(e) => setBillingFrontendFilter(e.target.value)}
+                    placeholder={t(locale, "Filter by order #, table, or customer...", "تصفية برقم الطلب، الطاولة، أو اسم الزبون...")}
+                    className="w-full py-2.5 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all shadow-sm"
+                    style={{ [locale === "ar" ? "paddingRight" : "paddingLeft"]: "36px" }}
+                  />
+                </div>
+              )}
 
               {billingLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -943,7 +1020,20 @@ export default function OrdersPage() {
                     </div>
                   )}
 
-                  {billingResults.map((group) => {
+                  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
+
+                  {billingResults.filter((g) => {
+                    if (!billingFrontendFilter.trim()) return true;
+                    const q = billingFrontendFilter.trim().toLowerCase();
+                    const customer = (g.customerName ?? "").toLowerCase();
+                    const table = g.tableNumber.toLowerCase();
+                    return customer.includes(q) || table.includes(q) ||
+                      g.orders.some((o) => {
+                        const idMatch = o.id.slice(0, 8).toLowerCase().includes(q);
+                        const dailyNumMatch = o.daily_order_number != null ? String(o.daily_order_number).includes(q) : false;
+                        return idMatch || dailyNumMatch;
+                      });
+                  }).map((group) => {
                     const hasMultiple = group.orders.length > 1;
                     const isExpanded = expandedSessions.has(group.sessionId);
                     const visibleOrders = hasMultiple && !isExpanded
@@ -961,6 +1051,12 @@ export default function OrdersPage() {
                               </span>
                               <span className="text-xs ml-2" style={{ color: "#8a7a6a" }}>
                                 {t(locale, "Table", "الطاولة")} {group.tableNumber}
+                              </span>
+                              <span className="text-[10px] font-mono font-bold ml-2 px-1.5 py-0.5 rounded" style={{ backgroundColor: "#f5efdf", color: "#5a4a3a" }}>
+                                {group.orders.map((o) => {
+                                  const dn = (o as OrderRow).daily_order_number;
+                                  return dn != null ? `#${dn}` : "";
+                                }).filter(Boolean).join(", ")}
                               </span>
                             </div>
                             {hasMultiple && (
@@ -1161,6 +1257,7 @@ export default function OrdersPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1169,8 +1266,22 @@ export default function OrdersPage() {
           {/* ── History & Calendar Tab ── */}
           {tab === "history" && (
             <div className="space-y-4">
-              <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
+              <div className="flex items-center justify-end gap-2">
                 <CalendarPicker value={historyDate} onChange={setHistoryDate} locale={locale} />
+              </div>
+
+              <div className="relative">
+                <svg className="absolute top-1/2 -translate-y-1/2 w-4 h-4" style={{ [locale === "ar" ? "right" : "left"]: "12px", color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder={t(locale, "Search by order #, table, or customer...", "ابحث برقم الطلب، الطاولة، أو اسم الزبون...")}
+                  className="w-full py-2.5 rounded-xl text-sm bg-white border border-[#dcc8b4] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9a6a3a]/30 transition-all shadow-sm"
+                  style={{ [locale === "ar" ? "paddingRight" : "paddingLeft"]: "36px" }}
+                />
               </div>
 
               {historyLoading ? (
@@ -1184,19 +1295,19 @@ export default function OrdersPage() {
                 <>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] text-center">
-                      <p className="text-2xl font-bold" style={{ color: "#5a8a3a" }}>{history.completed.length}</p>
+                      <p className="text-2xl font-bold" style={{ color: "#5a8a3a" }}>{filteredHistory.completed.length}</p>
                       <p className="text-[10px] font-semibold uppercase tracking-wider mt-1" style={{ color: "#8a7a6a" }}>
                         {t(locale, "Completed", "منجز")}
                       </p>
                     </div>
                     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] text-center">
-                      <p className="text-2xl font-bold" style={{ color: "#b55a5a" }}>{history.cancelled.length}</p>
+                      <p className="text-2xl font-bold" style={{ color: "#b55a5a" }}>{filteredHistory.cancelled.length}</p>
                       <p className="text-[10px] font-semibold uppercase tracking-wider mt-1" style={{ color: "#8a7a6a" }}>
                         {t(locale, "Incomplete", "غير منجز")}
                       </p>
                     </div>
                     <div className="bg-surface rounded-xl p-4 shadow-[0_1px_3px_rgba(212,196,176,0.25)] text-center">
-                      <p className="text-2xl font-bold" style={{ color: "#9a6a3a" }}>{history.completed.reduce((s, o) => s + o.items.reduce((si, i) => si + i.quantity, 0), 0)}</p>
+                      <p className="text-2xl font-bold" style={{ color: "#9a6a3a" }}>{filteredHistory.completed.reduce((s, o) => s + o.items.reduce((si, i) => si + i.quantity, 0), 0)}</p>
                       <p className="text-[10px] font-semibold uppercase tracking-wider mt-1" style={{ color: "#8a7a6a" }}>
                         {t(locale, "Items Sold", "مباع")}
                       </p>
@@ -1227,15 +1338,15 @@ export default function OrdersPage() {
                     </div>
                   )}
 
-                  {history.completed.length === 0 && history.cancelled.length === 0 ? (
+                  {filteredHistory.completed.length === 0 && filteredHistory.cancelled.length === 0 ? (
                     <div className="bg-surface rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(212,196,176,0.25)]">
                       <p className="text-sm" style={{ color: "#8a7a6a" }}>
                         {t(locale, "No orders for this date", "لا توجد طلبات في هذا التاريخ")}
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {history.completed.length > 0 && (
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
+                      {filteredHistory.completed.length > 0 && (
                         <>
                           <div className="flex items-center gap-2 mb-2">
                             <svg className="w-4 h-4" style={{ color: "#8a7a6a" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1245,10 +1356,10 @@ export default function OrdersPage() {
                               {t(locale, "Completed Orders", "الطلبات المنجزة")}
                             </span>
                             <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: "#eaf5e8", color: "#5a8a3a" }}>
-                              {history.completed.length}
+                              {filteredHistory.completed.length}
                             </span>
                           </div>
-                          {history.completed.map((order) => (
+                          {filteredHistory.completed.map((order) => (
                             <OrderCard key={order.id} order={order} locale={locale} activeCurrency={activeCurrency} showAudit showFeedback />
                           ))}
                         </>

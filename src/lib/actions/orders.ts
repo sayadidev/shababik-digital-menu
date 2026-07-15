@@ -782,3 +782,67 @@ export async function searchAndGroupOrders(
 
   return { grouped, totalOrders: rows.length };
 }
+
+// ── Remove item from order ──
+
+export async function removeOrderItem(
+  orderItemId: string,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAuth();
+
+  if (!orderItemId) {
+    return { success: false, error: "Invalid order item ID" };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: item, error: itemErr } = await supabase
+    .from("order_items")
+    .select("order_id, price_usd, price_syp, price_try, quantity")
+    .eq("id", orderItemId)
+    .single();
+
+  if (itemErr || !item) {
+    return { success: false, error: "Order item not found" };
+  }
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, total_usd, total_syp, total_try")
+    .eq("id", item.order_id)
+    .single();
+
+  if (orderErr || !order) {
+    return { success: false, error: "Order not found" };
+  }
+
+  const del = await supabase
+    .from("order_items")
+    .delete()
+    .eq("id", orderItemId);
+
+  if (del.error) {
+    return { success: false, error: del.error.message };
+  }
+
+  const newTotalUsd = Math.max(0, order.total_usd - (item.price_usd ?? 0) * item.quantity);
+  const newTotalSyp = Math.max(0, order.total_syp - (item.price_syp ?? 0) * item.quantity);
+  const newTotalTry = Math.max(0, order.total_try - (item.price_try ?? 0) * item.quantity);
+
+  const upd = await supabase
+    .from("orders")
+    .update({
+      total_usd: Math.round(newTotalUsd * 100) / 100,
+      total_syp: Math.round(newTotalSyp),
+      total_try: Math.round(newTotalTry),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", item.order_id);
+
+  if (upd.error) {
+    return { success: false, error: upd.error.message };
+  }
+
+  revalidatePath("/[locale]/admin/orders", "page");
+  return { success: true };
+}

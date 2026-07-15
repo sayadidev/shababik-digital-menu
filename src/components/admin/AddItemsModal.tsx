@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { addItemsToOrder } from "@/lib/actions/orders";
+import { addItemsToOrder, removeOrderItem } from "@/lib/actions/orders";
 
 interface MenuItem {
   id: string;
@@ -38,6 +38,8 @@ export default function AddItemsModal({
   const [selected, setSelected] = useState<SelectedItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentItems, setCurrentItems] = useState<{ id: string; itemName: string; variantName: string | null; quantity: number; isAddedLater?: boolean }[]>([]);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,7 +68,24 @@ export default function AddItemsModal({
         }
         setLoading(false);
       });
-  }, []);
+
+    supabase
+      .from("order_items")
+      .select("id, item_name, variant_name, quantity, is_added_later")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (data) {
+          setCurrentItems(data.map((row: any) => ({
+            id: row.id,
+            itemName: row.item_name,
+            variantName: row.variant_name ?? null,
+            quantity: row.quantity,
+            isAddedLater: row.is_added_later ?? undefined,
+          })));
+        }
+      });
+  }, [orderId]);
 
   const t = (en: string, ar: string) => (locale === "ar" ? ar : en);
 
@@ -114,6 +133,19 @@ export default function AddItemsModal({
         })
         .filter(Boolean) as SelectedItem[],
     );
+  };
+
+  const handleRemoveExisting = async (itemId: string) => {
+    setRemoving(itemId);
+    setError(null);
+    const res = await removeOrderItem(itemId);
+    if (res.success) {
+      setCurrentItems((prev) => prev.filter((i) => i.id !== itemId));
+      onSuccess();
+    } else {
+      setError(res.error ?? t("Failed to remove item", "فشل حذف الصنف"));
+    }
+    setRemoving(null);
   };
 
   const handleSave = async () => {
@@ -180,10 +212,46 @@ export default function AddItemsModal({
 
         <div className="shrink-0 px-5 pb-3">
           <h3 className="text-base font-bold text-center" style={{ color: "#3B2818" }}>
-            {t("Add Items to Order", "إضافة أصناف للطلب")}
+            {t("Edit Order Items", "تعديل أصناف الطلب")}
           </h3>
         </div>
 
+        {/* Current order items */}
+        {currentItems.length > 0 && (
+          <div className="shrink-0 px-5 pb-3">
+            <div className="bg-white rounded-xl p-3 space-y-1.5">
+              <p className="text-xs font-bold" style={{ color: "#8a7a6a" }}>
+                {t("Current items:", "الأصناف الحالية:")}
+              </p>
+              {currentItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between text-xs">
+                  <span style={{ color: "#3B2818" }}>
+                    <span className="font-bold">{item.quantity}x</span>{" "}
+                    {item.itemName}
+                    {item.variantName ? ` (${item.variantName})` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveExisting(item.id)}
+                    disabled={removing === item.id}
+                    className="min-w-[22px] min-h-[22px] rounded-full flex items-center justify-center text-[11px] border-0 disabled:opacity-50"
+                    style={{ backgroundColor: "#fce8e8", color: "#b55a5a" }}
+                    title={t("Remove item", "حذف الصنف")}
+                  >
+                    {removing === item.id ? (
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      "🗑️"
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Selected items summary */}
         {selected.length > 0 && (
           <div className="shrink-0 px-5 pb-3">

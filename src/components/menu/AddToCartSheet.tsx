@@ -221,7 +221,7 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           </div>
         </div>
 
-        <div className="w-full bg-[#FDFBF7] border-t border-[#E8E6E1] p-3 shrink-0 flex items-center gap-3" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+        <div className="w-full bg-[#FDFBF7] border-t border-[#E8E6E1] p-3 shrink-0 flex items-center gap-2" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
           <div className="flex items-center gap-1.5 bg-[#F0EBE1] px-2 py-1 rounded-full shrink-0" dir="ltr">
             <button
               type="button"
@@ -250,7 +250,7 @@ export default function AddToCartSheet({ item, variant, locale, activeCurrency, 
           <button
             type="button"
             onClick={handleAddToCart}
-            className="flex-1 bg-[#3C3025] text-white text-sm font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-transform truncate"
+            className="flex-1 min-w-0 bg-[#3C3025] text-white text-xs sm:text-sm font-bold py-3 px-2 rounded-xl shadow-md active:scale-[0.98] transition-transform leading-tight text-center"
           >
             {locale === "ar" ? "إضافة للسلة" : "Add to Cart"}
             {" — "}
